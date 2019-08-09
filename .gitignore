@@ -192,3 +192,11 @@ fabric.properties
 .idea/httpRequests
 
 MocoTool_solution.sto
+*solution.sto
+*.png
+*.eps
+*.omoco
+delete_this*.txt
+err.log
+out.log
+*tracked_states.sto

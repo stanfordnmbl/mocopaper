@@ -1,17 +1,21 @@
 from abc import ABC, abstractmethod
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 import pylab as pl
 
 import opensim as osim
+
 
 class MocoPaperResult(ABC):
     @abstractmethod
     def generate_results(self):
         pass
+
     @abstractmethod
     def report_results(self):
         pass
+
 
 def suspended_mass():
     width = 0.2
@@ -159,6 +163,8 @@ class MotionTrackingWalking(MocoPaperResult):
         self.mesh_interval = 0.10
         self.mocotrack_solution_file = 'motion_tracking_walking_track_solution.sto'
         self.mocoinverse_solution_file = 'motion_tracking_walking_inverse_solution.sto'
+        self.side = 'l'
+
     def generate_results(self):
         # Create and name an instance of the MocoTrack tool.
         track = osim.MocoTrack()
@@ -169,12 +175,14 @@ class MotionTrackingWalking(MocoPaperResult):
         # DeGrooteFregly2016Muscles, and adjustments are made to the default muscle
         # parameters.
         modelProcessor = osim.ModelProcessor("subject_walk_armless.osim")
-        modelProcessor.append(osim.ModOpAddExternalLoads("grf_walk.xml"))
         modelProcessor.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())
         # Only valid for DeGrooteFregly2016Muscles.
         modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
         # Only valid for DeGrooteFregly2016Muscles.
         modelProcessor.append(osim.ModOpScaleActiveFiberForceCurveWidthDGF(1.5))
+        modelProcessor.append(osim.ModOpAddReserves(10))
+        modelProcessor.process().printToXML("subject_walk_armless_for_cmc.osim")
+        modelProcessor.append(osim.ModOpAddExternalLoads("grf_walk.xml"))
         track.setModel(modelProcessor)
 
         # TODO:
@@ -223,7 +231,8 @@ class MotionTrackingWalking(MocoPaperResult):
         # Get a reference to the MocoControlCost that is added to every MocoTrack
         # problem by default.
         problem = moco.updProblem()
-        effort = osim.MocoControlGoal.safeDownCast(problem.updGoal("control_effort"))
+        effort = osim.MocoControlGoal.safeDownCast(
+            problem.updGoal("control_effort"))
 
         # Put a large weight on the pelvis CoordinateActuators, which act as the
         # residual, or 'hand-of-god', forces which we would like to keep as small
@@ -238,18 +247,27 @@ class MotionTrackingWalking(MocoPaperResult):
 
         # Solve and visualize.
         moco.printToXML('motion_tracking_walking.omoco')
-        solution = moco.solve()
-        solution.print(self.mocotrack_solution_file)
+        # solution = moco.solve()
+        # solution.print(self.mocotrack_solution_file)
         # moco.visualize(solution)
 
+        # tasks = osim.CMC_TaskSet()
+        # for coord in model.getCoordinateSet():
+        #     task = osim.CMC_Joint()
+        #     task.setName(coord.getName())
+        #     task.setCoordinateName(coord.getName())
+        #     tasks.cloneAndAppend(task)
+        # tasks.printToXML('motion_tracking_walking_cmc_tasks.xml')
         # TODO plotting should happen separately from generating the results.
-        cmc = osim.CMCTool()
-        cmc.setName('motion_tracking_walking_cmc')
-        cmc.setModel(model)
-        # TODO filter:
-        cmc.setDesiredKinematicsFileName('coordinates.sto')
-        # cmc.setLowpassCutoffFrequency(6)
-        cmc.run()
+        # cmc = osim.CMCTool()
+        # cmc.setName('motion_tracking_walking_cmc')
+        # cmc.setExternalLoadsFileName('grf_walk.xml')
+        # # TODO filter:
+        # cmc.setDesiredKinematicsFileName('coordinates.sto')
+        # # cmc.setLowpassCutoffFrequency(6)
+        # cmc.printToXML('motion_tracking_walking_cmc_setup.xml')
+        # cmc = osim.CMCTool('motion_tracking_walking_cmc_setup.xml')
+        # cmc.run()
 
         # TODO compare to MocoInverse.
         inverse = osim.MocoInverse()
@@ -257,18 +275,70 @@ class MotionTrackingWalking(MocoPaperResult):
         inverse.setKinematics(coordinates)
         inverse.set_initial_time(self.initial_time)
         inverse.set_final_time(self.final_time)
-        inverse.set_mesh_interval(self.mesh_interval)
-        solution = inverse.solve()
-        solution.getMocoSolution().print(self.mocoinverse_solution_file)
-
+        inverse.set_mesh_interval(0.01)
+        inverse.set_kinematics_allow_extra_columns(True)
+        # solution = inverse.solve()
+        # solution.getMocoSolution().write(self.mocoinverse_solution_file)
 
     def report_results(self):
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        solution = osim.MocoTrajectory(self.mocotrack_solution_file)
-        ax.plot(solution.getTimeMat(), solution.getStatesTrajectoryMat())
+        fig = plt.figure(figsize=(4, 5.5))
+        # TODO plot only right muscles?
+        gs = gridspec.GridSpec(9, 2)
+        sol_track = osim.MocoTrajectory(self.mocotrack_solution_file)
+        time_track = sol_track.getTimeMat()
+        sol_inverse = osim.MocoTrajectory(self.mocoinverse_solution_file)
+        time_inverse = sol_inverse.getTimeMat()
+        coords = [
+            (f'/jointset/hip_{self.side}/hip_flexion_{self.side}', 'hip flexion', 1.0),
+            (f'/jointset/walker_knee_{self.side}/knee_angle_{self.side}', 'knee flexion', 1.0),
+            (f'/jointset/ankle_{self.side}/ankle_angle_{self.side}', 'ankle plantarflexion', 1.0),
+        ]
+        for ic, coord in enumerate(coords):
+            ax = plt.subplot(gs[(3 * ic):(3 * (ic + 1)), 0])
+            y_track = coord[2] * np.rad2deg(sol_track.getStateMat(f'{coord[0]}/value'))
+            ax.plot(time_track, y_track)
+            y_inverse = coord[2] * np.rad2deg(sol_inverse.getStateMat(f'{coord[0]}/value'))
+            ax.plot(time_inverse, y_inverse)
+            # TODO: change to percent gait cycle.
+            ax.set_xlim(time_track[0], time_track[len(time_track) - 1])
+            if ic < len(coords) - 1:
+                ax.set_xticks([])
+            else:
+                # TODO: percent gait cycle.
+                ax.set_xlabel('time (s)')
+            ax.set_ylabel(f'{coord[1]} (degrees)')
+
+        # TODO: Compare to EMG.
+        muscles = [
+            ('glmax2', 'gluteus maximus'),
+            ('iliacus', 'iliacus'),  # TODO psoas?
+            ('semimem', 'semimembranosus'),
+            ('recfem', 'rectus femoris'),
+            ('bfsh', 'biceps femoris short head'),
+            ('vasint', 'vastus intermedialis'),
+            ('gasmed', 'gastrocnemius medialis'),
+            ('soleus', 'soleus'),
+            ('tibant', 'tibialis anterior'),
+        ]
+        for im, muscle in enumerate(muscles):
+            ax = plt.subplot(gs[im, 1])
+            # TODO: percent gait cycle.
+            activation_path = f'/forceset/{muscle[0]}_{self.side}/activation'
+            ax.plot(time_track, sol_track.getStateMat(activation_path))
+            ax.plot(time_inverse, sol_inverse.getStateMat(activation_path))
+            ax.set_ylim(0, 1)
+            ax.set_xlim(time_track[0], time_track[len(time_track) - 1])
+            if im < len(muscles) - 1:
+                ax.set_xticks([])
+            else:
+                # TODO: percent gait cycle.
+                ax.set_xlabel('time (s)')
+            ax.set_title(muscle[1], fontsize=8)
+
+        fig.tight_layout(h_pad=0.05)
 
         fig.savefig('motion_tracking_walking.eps')
+        fig.savefig('motion_tracking_walking.pdf')
         fig.savefig('motion_tracking_walking.png', dpi=600)
 
 

@@ -194,9 +194,11 @@ fabric.properties
 MocoTool_solution.sto
 *solution.sto
 *.png
+*.pdf
 *.eps
 *.omoco
 delete_this*.txt
 err.log
 out.log
 *tracked_states.sto
+subject_walk_armless_for_cmc.osim

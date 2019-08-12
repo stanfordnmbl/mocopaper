@@ -158,31 +158,32 @@ def suspended_mass():
 
 class MotionTrackingWalking(MocoPaperResult):
     def __init__(self):
-        self.initial_time = 0.81
-        self.final_time = 1.65
-        self.mesh_interval = 0.10
+        self.initial_time = 0.73
+        self.final_time = 1.795
         self.mocotrack_solution_file = 'motion_tracking_walking_track_solution.sto'
         self.mocoinverse_solution_file = 'motion_tracking_walking_inverse_solution.sto'
-        self.side = 'l'
+        self.side = 'r'
 
     def generate_results(self):
         # Create and name an instance of the MocoTrack tool.
         track = osim.MocoTrack()
-        track.setName("muscle_driven_state_tracking")
+        track.setName("motion_tracking_walking")
 
         # Construct a ModelProcessor and set it on the tool. The default
         # muscles in the model are replaced with optimization-friendly
         # DeGrooteFregly2016Muscles, and adjustments are made to the default muscle
         # parameters.
-        modelProcessor = osim.ModelProcessor("subject_walk_armless.osim")
+        modelProcessor = osim.ModelProcessor(
+            "resources/ArnoldSubject02Walk3/subject02_armless.osim")
+        modelProcessor.append(osim.ModOpReplaceJointsWithWelds(
+            ['subtalar_r', 'mtp_r', 'subtalar_l', 'mtp_l']))
         modelProcessor.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())
-        # Only valid for DeGrooteFregly2016Muscles.
         modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
-        # Only valid for DeGrooteFregly2016Muscles.
         modelProcessor.append(osim.ModOpScaleActiveFiberForceCurveWidthDGF(1.5))
         modelProcessor.append(osim.ModOpAddReserves(10))
         modelProcessor.process().printToXML("subject_walk_armless_for_cmc.osim")
-        modelProcessor.append(osim.ModOpAddExternalLoads("grf_walk.xml"))
+        ext_loads_xml = "resources/ArnoldSubject02Walk3/external_loads.xml"
+        modelProcessor.append(osim.ModOpAddExternalLoads(ext_loads_xml))
         track.setModel(modelProcessor)
 
         # TODO:
@@ -205,7 +206,9 @@ class MotionTrackingWalking(MocoPaperResult):
         # ModelProcessors by appending TableOperators to modify the base table.
         # A TableProcessor with no operators, as we have here, simply returns the
         # base table.
-        coordinates = osim.TableProcessor("coordinates.sto")
+        coordinates = osim.TableProcessor(
+            "resources/ArnoldSubject02Walk3/subject02_walk3_ik_solution.mot")
+        coordinates.append(osim.TabOpLowPassFilter(6))
         track.setStatesReference(coordinates)
         track.set_states_global_tracking_weight(10)
 
@@ -221,7 +224,7 @@ class MotionTrackingWalking(MocoPaperResult):
         # Initial time, final time, and mesh interval.
         track.set_initial_time(self.initial_time)
         track.set_final_time(self.final_time)
-        track.set_mesh_interval(self.mesh_interval)
+        track.set_mesh_interval(0.10)
 
         # Instead of calling solve(), call initialize() to receive a pre-configured
         # MocoStudy object based on the settings above. Use this to customize the
@@ -247,8 +250,8 @@ class MotionTrackingWalking(MocoPaperResult):
 
         # Solve and visualize.
         moco.printToXML('motion_tracking_walking.omoco')
-        # solution = moco.solve()
-        # solution.print(self.mocotrack_solution_file)
+        solution = moco.solve()
+        solution.write(self.mocotrack_solution_file)
         # moco.visualize(solution)
 
         # tasks = osim.CMC_TaskSet()
@@ -277,8 +280,8 @@ class MotionTrackingWalking(MocoPaperResult):
         inverse.set_final_time(self.final_time)
         inverse.set_mesh_interval(0.01)
         inverse.set_kinematics_allow_extra_columns(True)
-        # solution = inverse.solve()
-        # solution.getMocoSolution().write(self.mocoinverse_solution_file)
+        solution = inverse.solve()
+        solution.getMocoSolution().write(self.mocoinverse_solution_file)
 
     def report_results(self):
         fig = plt.figure(figsize=(4, 5.5))
@@ -302,23 +305,29 @@ class MotionTrackingWalking(MocoPaperResult):
             # TODO: change to percent gait cycle.
             ax.set_xlim(time_track[0], time_track[len(time_track) - 1])
             if ic < len(coords) - 1:
-                ax.set_xticks([])
+                ax.set_xticklabels([])
             else:
                 # TODO: percent gait cycle.
                 ax.set_xlabel('time (s)')
             ax.set_ylabel(f'{coord[1]} (degrees)')
 
+            ax.spines['right'].set_visible(False)
+            ax.spines['top'].set_visible(False)
+            ax.spines['bottom'].set_position('zero')
+            ax.yaxis.set_ticks_position('left')
+            ax.xaxis.set_ticks_position('bottom')
+
         # TODO: Compare to EMG.
         muscles = [
-            ('glmax2', 'gluteus maximus'),
-            ('iliacus', 'iliacus'),  # TODO psoas?
-            ('semimem', 'semimembranosus'),
-            ('recfem', 'rectus femoris'),
-            ('bfsh', 'biceps femoris short head'),
-            ('vasint', 'vastus intermedialis'),
-            ('gasmed', 'gastrocnemius medialis'),
+            ('glut_max2', 'glutes'),
+            ('psoas', 'iliopsoas'),
+            ('semimem', 'hamstrings'),
+            ('rect_fem', 'rectus femoris'),
+            ('bifemsh', 'biceps femoris short head'),
+            ('vas_int', 'vasti'),
+            ('med_gas', 'gastrocnemius'),
             ('soleus', 'soleus'),
-            ('tibant', 'tibialis anterior'),
+            ('tib_ant', 'tibialis anterior'),
         ]
         for im, muscle in enumerate(muscles):
             ax = plt.subplot(gs[im, 1])
@@ -329,11 +338,16 @@ class MotionTrackingWalking(MocoPaperResult):
             ax.set_ylim(0, 1)
             ax.set_xlim(time_track[0], time_track[len(time_track) - 1])
             if im < len(muscles) - 1:
-                ax.set_xticks([])
+                ax.set_xticklabels([])
             else:
                 # TODO: percent gait cycle.
                 ax.set_xlabel('time (s)')
             ax.set_title(muscle[1], fontsize=8)
+
+            ax.spines['right'].set_visible(False)
+            ax.spines['top'].set_visible(False)
+            ax.yaxis.set_ticks_position('left')
+            ax.xaxis.set_ticks_position('bottom')
 
         fig.tight_layout(h_pad=0.05)
 

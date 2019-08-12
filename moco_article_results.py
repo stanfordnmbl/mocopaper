@@ -201,11 +201,6 @@ class MotionTrackingWalking(MocoPaperResult):
         #  - report duration to solve the problem.
         #  - figure could contain still frames of the model throughout the motion.
 
-        # Construct a TableProcessor of the coordinate data and pass it to the
-        # tracking tool. TableProcessors can be used in the same way as
-        # ModelProcessors by appending TableOperators to modify the base table.
-        # A TableProcessor with no operators, as we have here, simply returns the
-        # base table.
         coordinates = osim.TableProcessor(
             "resources/ArnoldSubject02Walk3/subject02_walk3_ik_solution.mot")
         coordinates.append(osim.TabOpLowPassFilter(6))
@@ -216,30 +211,19 @@ class MotionTrackingWalking(MocoPaperResult):
         # reference that don't correspond to model coordinates.
         track.set_allow_unused_references(True)
 
-        # Since there is only coordinate position data the states references, this
-        # setting is enabled to fill in the missing coordinate speed data using
-        # the derivative of splined position data.
         track.set_track_reference_position_derivatives(True)
 
         # Initial time, final time, and mesh interval.
         track.set_initial_time(self.initial_time)
         track.set_final_time(self.final_time)
-        track.set_mesh_interval(0.10)
+        track.set_mesh_interval(0.01)
 
-        # Instead of calling solve(), call initialize() to receive a pre-configured
-        # MocoStudy object based on the settings above. Use this to customize the
-        # problem beyond the MocoTrack interface.
         moco = track.initialize()
 
-        # Get a reference to the MocoControlCost that is added to every MocoTrack
-        # problem by default.
         problem = moco.updProblem()
         effort = osim.MocoControlGoal.safeDownCast(
             problem.updGoal("control_effort"))
 
-        # Put a large weight on the pelvis CoordinateActuators, which act as the
-        # residual, or 'hand-of-god', forces which we would like to keep as small
-        # as possible.
         model = modelProcessor.process()
         model.initSystem()
         forceSet = model.getForceSet()
@@ -285,30 +269,39 @@ class MotionTrackingWalking(MocoPaperResult):
 
     def report_results(self):
         fig = plt.figure(figsize=(4, 5.5))
-        # TODO plot only right muscles?
         gs = gridspec.GridSpec(9, 2)
         sol_track = osim.MocoTrajectory(self.mocotrack_solution_file)
         time_track = sol_track.getTimeMat()
+        pgc_track = 100.0 * (time_track - time_track[0]) / (
+                    time_track[-1] - time_track[0])
         sol_inverse = osim.MocoTrajectory(self.mocoinverse_solution_file)
         time_inverse = sol_inverse.getTimeMat()
+        pgc_inverse = 100.0 * (time_inverse - time_inverse[0]) / (
+                    time_inverse[-1] - time_inverse[0])
         coords = [
-            (f'/jointset/hip_{self.side}/hip_flexion_{self.side}', 'hip flexion', 1.0),
-            (f'/jointset/walker_knee_{self.side}/knee_angle_{self.side}', 'knee flexion', 1.0),
-            (f'/jointset/ankle_{self.side}/ankle_angle_{self.side}', 'ankle plantarflexion', 1.0),
+            (
+            f'/jointset/hip_{self.side}/hip_flexion_{self.side}', 'hip flexion',
+            1.0),
+            (f'/jointset/walker_knee_{self.side}/knee_angle_{self.side}',
+             'knee flexion', 1.0),
+            (f'/jointset/ankle_{self.side}/ankle_angle_{self.side}',
+             'ankle plantarflexion', 1.0),
         ]
         for ic, coord in enumerate(coords):
             ax = plt.subplot(gs[(3 * ic):(3 * (ic + 1)), 0])
-            y_track = coord[2] * np.rad2deg(sol_track.getStateMat(f'{coord[0]}/value'))
-            ax.plot(time_track, y_track)
-            y_inverse = coord[2] * np.rad2deg(sol_inverse.getStateMat(f'{coord[0]}/value'))
-            ax.plot(time_inverse, y_inverse)
-            # TODO: change to percent gait cycle.
-            ax.set_xlim(time_track[0], time_track[len(time_track) - 1])
+            y_track = coord[2] * np.rad2deg(
+                sol_track.getStateMat(f'{coord[0]}/value'))
+            ax.plot(pgc_track, y_track, label='track')
+            y_inverse = coord[2] * np.rad2deg(
+                sol_inverse.getStateMat(f'{coord[0]}/value'))
+            ax.plot(pgc_inverse, y_inverse, label='inverse')
+            ax.set_xlim(0, 100)
+            if ic == 0:
+                ax.legend(frameon=False)
             if ic < len(coords) - 1:
                 ax.set_xticklabels([])
             else:
-                # TODO: percent gait cycle.
-                ax.set_xlabel('time (s)')
+                ax.set_xlabel('time (% gait cycle)')
             ax.set_ylabel(f'{coord[1]} (degrees)')
 
             ax.spines['right'].set_visible(False)
@@ -333,15 +326,16 @@ class MotionTrackingWalking(MocoPaperResult):
             ax = plt.subplot(gs[im, 1])
             # TODO: percent gait cycle.
             activation_path = f'/forceset/{muscle[0]}_{self.side}/activation'
-            ax.plot(time_track, sol_track.getStateMat(activation_path))
-            ax.plot(time_inverse, sol_inverse.getStateMat(activation_path))
+            ax.plot(pgc_track, sol_track.getStateMat(activation_path),
+                    label='MocoTrack')
+            ax.plot(pgc_inverse, sol_inverse.getStateMat(activation_path),
+                    label='MocoInverse')
             ax.set_ylim(0, 1)
-            ax.set_xlim(time_track[0], time_track[len(time_track) - 1])
+            ax.set_xlim(0, 100)
             if im < len(muscles) - 1:
                 ax.set_xticklabels([])
             else:
-                # TODO: percent gait cycle.
-                ax.set_xlabel('time (s)')
+                ax.set_xlabel('time (% gait cycle)')
             ax.set_title(muscle[1], fontsize=8)
 
             ax.spines['right'].set_visible(False)

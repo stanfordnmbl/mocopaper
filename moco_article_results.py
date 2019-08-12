@@ -181,7 +181,7 @@ class MotionTrackingWalking(MocoPaperResult):
         modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
         modelProcessor.append(osim.ModOpScaleActiveFiberForceCurveWidthDGF(1.5))
         modelProcessor.append(osim.ModOpAddReserves(10))
-        modelProcessor.process().printToXML("subject_walk_armless_for_cmc.osim")
+        modelProcessor.process().printToXML("subject02_armless_for_cmc.osim")
         ext_loads_xml = "resources/ArnoldSubject02Walk3/external_loads.xml"
         modelProcessor.append(osim.ModOpAddExternalLoads(ext_loads_xml))
         track.setModel(modelProcessor)
@@ -200,6 +200,7 @@ class MotionTrackingWalking(MocoPaperResult):
         #    of subjects (5 subjects?). **create a separate git repository.
         #  - report duration to solve the problem.
         #  - figure could contain still frames of the model throughout the motion.
+        #  - make sure residuals and reserves are small.
 
         coordinates = osim.TableProcessor(
             "resources/ArnoldSubject02Walk3/subject02_walk3_ik_solution.mot")
@@ -234,8 +235,8 @@ class MotionTrackingWalking(MocoPaperResult):
 
         # Solve and visualize.
         moco.printToXML('motion_tracking_walking.omoco')
-        solution = moco.solve()
-        solution.write(self.mocotrack_solution_file)
+        # solution = moco.solve()
+        # solution.write(self.mocotrack_solution_file)
         # moco.visualize(solution)
 
         # tasks = osim.CMC_TaskSet()
@@ -243,6 +244,9 @@ class MotionTrackingWalking(MocoPaperResult):
         #     task = osim.CMC_Joint()
         #     task.setName(coord.getName())
         #     task.setCoordinateName(coord.getName())
+        #     task.setKP(100, 1, 1)
+        #     task.setKV(20, 1, 1)
+        #     task.setActive(True, False, False)
         #     tasks.cloneAndAppend(task)
         # tasks.printToXML('motion_tracking_walking_cmc_tasks.xml')
         # TODO plotting should happen separately from generating the results.
@@ -253,8 +257,8 @@ class MotionTrackingWalking(MocoPaperResult):
         # cmc.setDesiredKinematicsFileName('coordinates.sto')
         # # cmc.setLowpassCutoffFrequency(6)
         # cmc.printToXML('motion_tracking_walking_cmc_setup.xml')
-        # cmc = osim.CMCTool('motion_tracking_walking_cmc_setup.xml')
-        # cmc.run()
+        cmc = osim.CMCTool('motion_tracking_walking_cmc_setup.xml')
+        cmc.run()
 
         # TODO compare to MocoInverse.
         inverse = osim.MocoInverse()
@@ -264,8 +268,8 @@ class MotionTrackingWalking(MocoPaperResult):
         inverse.set_final_time(self.final_time)
         inverse.set_mesh_interval(0.01)
         inverse.set_kinematics_allow_extra_columns(True)
-        solution = inverse.solve()
-        solution.getMocoSolution().write(self.mocoinverse_solution_file)
+        # solution = inverse.solve()
+        # solution.getMocoSolution().write(self.mocoinverse_solution_file)
 
     def report_results(self):
         fig = plt.figure(figsize=(4, 5.5))
@@ -278,6 +282,16 @@ class MotionTrackingWalking(MocoPaperResult):
         time_inverse = sol_inverse.getTimeMat()
         pgc_inverse = 100.0 * (time_inverse - time_inverse[0]) / (
                     time_inverse[-1] - time_inverse[0])
+
+        sol_cmc = osim.TimeSeriesTable('motion_tracking_walking_cmc_results/'
+                                       'motion_tracking_walking_cmc_states.sto')
+        time_cmc = np.array(sol_cmc.getIndependentColumn())
+        pgc_cmc = 100.0 * (time_cmc - time_cmc[0]) / (time_cmc[-1] - time_cmc[0])
+        def toarray(simtk_vector):
+            array = np.empty(simtk_vector.size())
+            for i in range(simtk_vector.size()):
+                array[i] = simtk_vector[i]
+            return array
         coords = [
             (
             f'/jointset/hip_{self.side}/hip_flexion_{self.side}', 'hip flexion',
@@ -295,6 +309,9 @@ class MotionTrackingWalking(MocoPaperResult):
             y_inverse = coord[2] * np.rad2deg(
                 sol_inverse.getStateMat(f'{coord[0]}/value'))
             ax.plot(pgc_inverse, y_inverse, label='inverse')
+            y_cmc = coord[2] * np.rad2deg(
+                toarray(sol_cmc.getDependentColumn(f'{coord[0]}/value')),)
+            ax.plot(pgc_cmc, y_cmc, label='CMC')
             ax.set_xlim(0, 100)
             if ic == 0:
                 ax.legend(frameon=False)
@@ -330,6 +347,7 @@ class MotionTrackingWalking(MocoPaperResult):
                     label='MocoTrack')
             ax.plot(pgc_inverse, sol_inverse.getStateMat(activation_path),
                     label='MocoInverse')
+            ax.plot(pgc_cmc, toarray(sol_cmc.getDependentColumn(activation_path)))
             ax.set_ylim(0, 1)
             ax.set_xlim(0, 100)
             if im < len(muscles) - 1:

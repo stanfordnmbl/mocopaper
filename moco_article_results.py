@@ -303,17 +303,21 @@ class MotionTrackingWalking(MocoPaperResult):
         ]
         for ic, coord in enumerate(coords):
             ax = plt.subplot(gs[(3 * ic):(3 * (ic + 1)), 0])
-            y_track = coord[2] * np.rad2deg(
-                sol_track.getStateMat(f'{coord[0]}/value'))
-            ax.plot(pgc_track, y_track, label='track')
-            y_inverse = coord[2] * np.rad2deg(
-                sol_inverse.getStateMat(f'{coord[0]}/value'))
-            ax.plot(pgc_inverse, y_inverse, label='inverse')
+
             y_cmc = coord[2] * np.rad2deg(
                 toarray(sol_cmc.getDependentColumn(f'{coord[0]}/value')),)
             ax.plot(pgc_cmc, y_cmc, label='CMC')
+
+            y_inverse = coord[2] * np.rad2deg(
+                sol_inverse.getStateMat(f'{coord[0]}/value'))
+            ax.plot(pgc_inverse, y_inverse, label='Inverse')
+
+            y_track = coord[2] * np.rad2deg(
+                sol_track.getStateMat(f'{coord[0]}/value'))
+            ax.plot(pgc_track, y_track, label='Track')
+
             ax.set_xlim(0, 100)
-            if ic == 0:
+            if ic == 1:
                 ax.legend(frameon=False)
             if ic < len(coords) - 1:
                 ax.set_xticklabels([])
@@ -341,13 +345,12 @@ class MotionTrackingWalking(MocoPaperResult):
         ]
         for im, muscle in enumerate(muscles):
             ax = plt.subplot(gs[im, 1])
-            # TODO: percent gait cycle.
             activation_path = f'/forceset/{muscle[0]}_{self.side}/activation'
-            ax.plot(pgc_track, sol_track.getStateMat(activation_path),
-                    label='MocoTrack')
-            ax.plot(pgc_inverse, sol_inverse.getStateMat(activation_path),
-                    label='MocoInverse')
             ax.plot(pgc_cmc, toarray(sol_cmc.getDependentColumn(activation_path)))
+            ax.plot(pgc_inverse, sol_inverse.getStateMat(activation_path),
+                    label='Inverse')
+            ax.plot(pgc_track, sol_track.getStateMat(activation_path),
+                    label='Track')
             ax.set_ylim(0, 1)
             ax.set_xlim(0, 100)
             if im < len(muscles) - 1:

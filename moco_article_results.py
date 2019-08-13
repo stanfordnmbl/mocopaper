@@ -376,28 +376,9 @@ class MotionTrackingWalking(MocoPaperResult):
 class MotionPredictionAndAssistanceWalking(MocoPaperResult):
     def __init__(self):
         self.side = 'r'
-    def generate_results(self):
-        track = osim.MocoTrack()
-        track.setName("motion_prediction_tracking");
 
-        modelProcessor = osim.ModelProcessor("resources/Falisse2019/2D_gait.osim")
-        modelProcessor.append(osim.ModOpSetPathLengthApproximation(False))
-        track.setModel(modelProcessor)
-        tableProcessor = osim.TableProcessor("resources/Falisse2019/referenceCoordinates.sto")
-        tableProcessor.append(osim.TabOpLowPassFilter(6))
-        track.setStatesReference(tableProcessor)
-        track.set_states_global_tracking_weight(10.0)
-        track.set_allow_unused_references(True)
-        track.set_track_reference_position_derivatives(True)
-        track.set_apply_tracked_states_to_guess(True)
-        track.set_initial_time(0.0)
-        track.set_final_time(0.47008941)
-        moco = track.initialize();
-        problem = moco.updProblem();
-
+    def configure_problem(self, problem, model):
         symmetry = osim.MocoPeriodicityGoal("symmetry")
-        model = modelProcessor.process()
-        model.initSystem()
         # Symmetric coordinate values (except for pelvis_tx) and speeds.
         for coord in model.getComponentsList():
             if not type(coord) is osim.Coordinate: continue
@@ -437,34 +418,54 @@ class MotionPredictionAndAssistanceWalking(MocoPaperResult):
                     muscle.getStateVariableNames().get(0).replace("_l", "_r")))
         problem.addGoal(symmetry)
 
-        # problem.addGoal(osim.MocoInitialActivationGoal("init_activation"))
+        pi = np.pi
+        problem.setStateInfo("/jointset/groundPelvis/pelvis_tilt/value",
+                             [-20 * pi / 180, -10 * pi / 180])
+        problem.setStateInfo("/jointset/groundPelvis/pelvis_tx/value", [0, 1])
+        problem.setStateInfo(
+            "/jointset/groundPelvis/pelvis_ty/value", [0.75, 1.25])
+        problem.setStateInfo("/jointset/hip_l/hip_flexion_l/value",
+                             [-10 * pi / 180, 60 * pi / 180])
+        problem.setStateInfo("/jointset/hip_r/hip_flexion_r/value",
+                             [-10 * pi / 180, 60 * pi / 180])
+        problem.setStateInfo(
+            "/jointset/knee_l/knee_angle_l/value", [-50 * pi / 180, 0])
+        problem.setStateInfo(
+            "/jointset/knee_r/knee_angle_r/value", [-50 * pi / 180, 0])
+        problem.setStateInfo("/jointset/ankle_l/ankle_angle_l/value",
+                             [-15 * pi / 180, 25 * pi / 180])
+        problem.setStateInfo("/jointset/ankle_r/ankle_angle_r/value",
+                             [-15 * pi / 180, 25 * pi / 180])
+        problem.setStateInfo("/jointset/lumbar/lumbar/value", [0, 20 * pi / 180])
+
+    def generate_results(self):
+        track = osim.MocoTrack()
+        track.setName("motion_prediction_tracking");
+
+        modelProcessor = osim.ModelProcessor("resources/Falisse2019/2D_gait.osim")
+        modelProcessor.append(osim.ModOpSetPathLengthApproximation(False))
+        track.setModel(modelProcessor)
+        tableProcessor = osim.TableProcessor("resources/Falisse2019/referenceCoordinates.sto")
+        tableProcessor.append(osim.TabOpLowPassFilter(6))
+        track.setStatesReference(tableProcessor)
+        track.set_states_global_tracking_weight(10.0)
+        track.set_allow_unused_references(True)
+        track.set_track_reference_position_derivatives(True)
+        track.set_apply_tracked_states_to_guess(True)
+        track.set_initial_time(0.0)
+        track.set_final_time(0.47008941)
+        moco = track.initialize()
+        problem = moco.updProblem()
+
+        model = modelProcessor.process()
+        model.initSystem()
+
+        self.configure_problem(problem, model)
 
         # Effort. Get a reference to the MocoControlGoal that is added to every
         # MocoTrack problem by default.
         effort = problem.updGoal("control_effort")
         effort.setWeight(10)
-
-        # Bounds.
-        # =======
-        pi = np.pi
-        problem.setStateInfo("/jointset/groundPelvis/pelvis_tilt/value",
-                [-20 * pi / 180, -10 * pi / 180])
-        problem.setStateInfo("/jointset/groundPelvis/pelvis_tx/value", [0, 1])
-        problem.setStateInfo(
-                "/jointset/groundPelvis/pelvis_ty/value", [0.75, 1.25])
-        problem.setStateInfo("/jointset/hip_l/hip_flexion_l/value",
-                [-10 * pi / 180, 60 * pi / 180])
-        problem.setStateInfo("/jointset/hip_r/hip_flexion_r/value",
-                [-10 * pi / 180, 60 * pi / 180])
-        problem.setStateInfo(
-                "/jointset/knee_l/knee_angle_l/value", [-50 * pi / 180, 0])
-        problem.setStateInfo(
-                "/jointset/knee_r/knee_angle_r/value", [-50 * pi / 180, 0])
-        problem.setStateInfo("/jointset/ankle_l/ankle_angle_l/value",
-                [-15 * pi / 180, 25 * pi / 180])
-        problem.setStateInfo("/jointset/ankle_r/ankle_angle_r/value",
-                [-15 * pi / 180, 25 * pi / 180])
-        problem.setStateInfo("/jointset/lumbar/lumbar/value", [0, 20 * pi / 180])
 
         # Configure the solver.
         # =====================
@@ -479,135 +480,57 @@ class MotionPredictionAndAssistanceWalking(MocoPaperResult):
         # Solve problem.
         # ==============
         moco.printToXML("motion_prediction_tracking.omoco")
-        solution = moco.solve()
-        full = osim.createPeriodicTrajectory(solution)
-        full.write("motion_prediction_tracking_solution_fullcycle.sto")
+        trackingSolution = moco.solve()
+        trackingSolutionFull = osim.createPeriodicTrajectory(trackingSolution)
+        trackingSolutionFull.write("motion_prediction_tracking_solution_fullcycle.sto")
 
         # moco.visualize(solution)
 
-# // Set a gait prediction problem where the goal is to minimize effort (squared
-# // controls) over distance traveled while enforcing symmetry of the walking
-# // cycle and a prescribed average gait speed through endpoint constraints. The
-# // solution of the coordinate tracking problem is passed as an input argument
-# // and used as an initial guess for the prediction. The predictive problem is
-# // solved using polynomial approximations of muscle path lengths if true is
-# // passed as an input argument, whereas geometry paths are used with the
-# // argument false. Polynomial approximations should improve the computation
-# // speeds by about 25% for this problem.
-# void gaitPrediction(const MocoSolution& gaitTrackingSolution,
-#         const bool& setPathLengthApproximation) {
-#
-#     using SimTK::Pi;
-#
-#     MocoStudy moco;
-#     moco.setName("gaitPrediction");
-#
-#     // Define the optimal control problem.
-#     // ===================================
-#     MocoProblem& problem = moco.updProblem();
-#     ModelProcessor modelprocessor =
-#             ModelProcessor("2D_gait.osim") |
-#             ModOpSetPathLengthApproximation(setPathLengthApproximation);
-#     problem.setModelProcessor(modelprocessor);
-#
-#     // Goals.
-#     // =====
-#     // Symmetry.
-#     auto* symmetryGoal = problem.addGoal<MocoPeriodicityGoal>("symmetryGoal");
-#     Model model = modelprocessor.process();
-#     model.initSystem();
-#     // Symmetric coordinate values (except for pelvis_tx) and speeds.
-#     for (const auto& coord : model.getComponentList<Coordinate>()) {
-#         if (endsWith(coord.getName(), "_r")) {
-#             symmetryGoal->addStatePair({coord.getStateVariableNames()[0],
-#                     std::regex_replace(coord.getStateVariableNames()[0],
-#                             std::regex("_r"), "_l")});
-#             symmetryGoal->addStatePair({coord.getStateVariableNames()[1],
-#                     std::regex_replace(coord.getStateVariableNames()[1],
-#                             std::regex("_r"), "_l")});
-#         }
-#         if (endsWith(coord.getName(), "_l")) {
-#             symmetryGoal->addStatePair({coord.getStateVariableNames()[0],
-#                     std::regex_replace(coord.getStateVariableNames()[0],
-#                             std::regex("_l"), "_r")});
-#             symmetryGoal->addStatePair({coord.getStateVariableNames()[1],
-#                     std::regex_replace(coord.getStateVariableNames()[1],
-#                             std::regex("_l"), "_r")});
-#         }
-#         if (!endsWith(coord.getName(), "_l") &&
-#                 !endsWith(coord.getName(), "_r") &&
-#                 !endsWith(coord.getName(), "_tx")) {
-#             symmetryGoal->addStatePair({coord.getStateVariableNames()[0],
-#                     coord.getStateVariableNames()[0]});
-#             symmetryGoal->addStatePair({coord.getStateVariableNames()[1],
-#                     coord.getStateVariableNames()[1]});
-#         }
-#     }
-#     symmetryGoal->addStatePair({"/jointset/groundPelvis/pelvis_tx/speed"});
-#     // Symmetric coordinate actuator controls.
-#     symmetryGoal->addControlPair({"/lumbarAct"});
-#     // Symmetric muscle activations.
-#     for (const auto& muscle : model.getComponentList<Muscle>()) {
-#         if (endsWith(muscle.getName(), "_r")) {
-#             symmetryGoal->addStatePair({muscle.getStateVariableNames()[0],
-#                     std::regex_replace(muscle.getStateVariableNames()[0],
-#                             std::regex("_r"), "_l")});
-#         }
-#         if (endsWith(muscle.getName(), "_l")) {
-#             symmetryGoal->addStatePair({muscle.getStateVariableNames()[0],
-#                     std::regex_replace(muscle.getStateVariableNames()[0],
-#                             std::regex("_l"), "_r")});
-#         }
-#     }
-#     // Prescribed average gait speed.
-#     auto* speedGoal = problem.addGoal<MocoAverageSpeedGoal>("speed");
-#     speedGoal->set_desired_average_speed(1.2);
-#     // Effort over distance.
-#     auto* effortGoal = problem.addGoal<MocoControlGoal>("effort", 10);
-#     effortGoal->setExponent(3);
-#     effortGoal->setDivideByDisplacement(true);
-#
-#     // Bounds.
-#     // =======
-#     problem.setTimeBounds(0, {0.4, 0.6});
-#     problem.setStateInfo("/jointset/groundPelvis/pelvis_tilt/value",
-#             {-20 * Pi / 180, -10 * Pi / 180});
-#     problem.setStateInfo("/jointset/groundPelvis/pelvis_tx/value", {0, 1});
-#     problem.setStateInfo(
-#             "/jointset/groundPelvis/pelvis_ty/value", {0.75, 1.25});
-#     problem.setStateInfo("/jointset/hip_l/hip_flexion_l/value",
-#             {-10 * Pi / 180, 60 * Pi / 180});
-#     problem.setStateInfo("/jointset/hip_r/hip_flexion_r/value",
-#             {-10 * Pi / 180, 60 * Pi / 180});
-#     problem.setStateInfo(
-#             "/jointset/knee_l/knee_angle_l/value", {-50 * Pi / 180, 0});
-#     problem.setStateInfo(
-#             "/jointset/knee_r/knee_angle_r/value", {-50 * Pi / 180, 0});
-#     problem.setStateInfo("/jointset/ankle_l/ankle_angle_l/value",
-#             {-15 * Pi / 180, 25 * Pi / 180});
-#     problem.setStateInfo("/jointset/ankle_r/ankle_angle_r/value",
-#             {-15 * Pi / 180, 25 * Pi / 180});
-#     problem.setStateInfo("/jointset/lumbar/lumbar/value", {0, 20 * Pi / 180});
-#
-#     // Configure the solver.
-#     // =====================
-#     auto& solver = moco.initCasADiSolver();
-#     solver.set_num_mesh_points(50);
-#     solver.set_verbosity(2);
-#     solver.set_optim_solver("ipopt");
-#     solver.set_optim_convergence_tolerance(1e-4);
-#     solver.set_optim_constraint_tolerance(1e-4);
-#     solver.set_optim_max_iterations(1000);
-#     // Use the solution from the tracking simulation as initial guess.
-#     solver.setGuess(gaitTrackingSolution);
-#
-#     // Solve problem.
-#     // ==============
-#     MocoSolution solution = moco.solve();
-#     auto full = createPeriodicTrajectory(solution);
-#     full.write("gaitPrediction_solution_fullcycle.sto");
-#
-#     moco.visualize(full);
+
+        # Prediction
+        # ==========
+        moco = osim.MocoStudy()
+        moco.setName("motion_prediction_prediction")
+
+        problem = moco.updProblem()
+        modelProcessor = osim.ModelProcessor("resources/Falisse2019/2D_gait.osim")
+        modelProcessor.append(osim.ModOpSetPathLengthApproximation(False))
+        problem.setModelProcessor(modelProcessor)
+
+        model = modelProcessor.process()
+        model.initSystem()
+
+        self.configure_problem(problem, model)
+
+        # Prescribed average gait speed.
+        speedGoal = osim.MocoAverageSpeedGoal("speed")
+        speedGoal.set_desired_average_speed(1.2)
+        problem.addGoal(speedGoal)
+        # Effort over distance.
+        effortGoal = osim.MocoControlGoal("effort", 10)
+        effortGoal.setExponent(3)
+        effortGoal.setDivideByDisplacement(True)
+        problem.addGoal(effortGoal)
+
+        problem.setTimeBounds(0, [0.4, 0.6])
+
+        solver = moco.initCasADiSolver()
+        solver.set_num_mesh_points(50)
+        solver.set_verbosity(2)
+        solver.set_optim_solver("ipopt")
+        solver.set_optim_convergence_tolerance(1e-4)
+        solver.set_optim_constraint_tolerance(1e-4)
+        solver.set_optim_max_iterations(1000)
+        # Use the solution from the tracking simulation as initial guess.
+        solver.setGuess(trackingSolution)
+
+        predictionSolution = moco.solve()
+        predictionSolutionFull = osim.createPeriodicTrajectory(predictionSolution)
+        predictionSolutionFull.write("motion_prediction_prediction_solution_fullcycle.sto");
+
+        # moco.visualize(full);
+
+        # TODO: Add assistive device.
 
 
     def report_results(self):
@@ -618,6 +541,11 @@ class MotionPredictionAndAssistanceWalking(MocoPaperResult):
         time_track = sol_track.getTimeMat()
         pgc_track = 100.0 * (time_track - time_track[0]) / (
                 time_track[-1] - time_track[0])
+
+        sol_predict = osim.MocoTrajectory("motion_prediction_prediction_solution_fullcycle.sto")
+        time_predict = sol_predict.getTimeMat()
+        pgc_predict = 100.0 * (time_predict - time_predict[0]) / (
+                time_predict[-1] - time_predict[0])
 
         def toarray(simtk_vector):
             array = np.empty(simtk_vector.size())
@@ -636,9 +564,15 @@ class MotionPredictionAndAssistanceWalking(MocoPaperResult):
         for ic, coord in enumerate(coords):
             ax = plt.subplot(gs[(3 * ic):(3 * (ic + 1)), 0])
 
+            # TODO: Plot tracked kinematics.
+
             y_track = coord[2] * np.rad2deg(
                 sol_track.getStateMat(f'{coord[0]}/value'))
-            ax.plot(pgc_track, y_track, label='Track')
+            ax.plot(pgc_track, y_track, label='track')
+
+            y_predict = coord[2] * np.rad2deg(
+                sol_predict.getStateMat(f'{coord[0]}/value'))
+            ax.plot(pgc_predict, y_predict, label='predict')
 
             ax.set_xlim(0, 100)
             if ic == 1:
@@ -671,7 +605,9 @@ class MotionPredictionAndAssistanceWalking(MocoPaperResult):
             ax = plt.subplot(gs[im, 1])
             activation_path = f'/{muscle[0]}_{self.side}/activation'
             ax.plot(pgc_track, sol_track.getStateMat(activation_path),
-                    label='Track')
+                    label='track')
+            ax.plot(pgc_predict, sol_predict.getStateMat(activation_path),
+                    label='predict')
             ax.set_ylim(0, 1)
             ax.set_xlim(0, 100)
             if im < len(muscles) - 1:

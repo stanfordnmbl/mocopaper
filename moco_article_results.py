@@ -624,10 +624,10 @@ class MotionPredictionAndAssistanceWalking(MocoPaperResult):
             for i in range(simtk_vector.size()):
                 array[i] = simtk_vector[i]
             return array
+
         coords = [
-            (
-                f'/jointset/hip_{self.side}/hip_flexion_{self.side}', 'hip flexion',
-                1.0),
+            (f'/jointset/hip_{self.side}/hip_flexion_{self.side}',
+             'hip flexion', 1.0),
             (f'/jointset/knee_{self.side}/knee_angle_{self.side}',
              'knee flexion', -1.0),
             (f'/jointset/ankle_{self.side}/ankle_angle_{self.side}',
@@ -690,6 +690,8 @@ class MotionPredictionAndAssistanceWalking(MocoPaperResult):
         fig.savefig('motion_prediction_tracking_walking.eps')
         fig.savefig('motion_prediction_tracking_walking.pdf')
         fig.savefig('motion_prediction_tracking_walking.png', dpi=600)
+
+        # TODO: Plot model-generated GRFs.
 
 if __name__ == "__main__":
     import argparse

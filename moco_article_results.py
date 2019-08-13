@@ -375,7 +375,7 @@ class MotionTrackingWalking(MocoPaperResult):
 
 class MotionPredictionAndAssistanceWalking(MocoPaperResult):
     def __init__(self):
-        pass
+        self.side = 'r'
     def generate_results(self):
         track = osim.MocoTrack()
         track.setName("motion_prediction_tracking");
@@ -435,12 +435,14 @@ class MotionPredictionAndAssistanceWalking(MocoPaperResult):
                 symmetry.addStatePair(osim.MocoPeriodicityGoalPair(
                     muscle.getStateVariableNames().get(0),
                     muscle.getStateVariableNames().get(0).replace("_l", "_r")))
+        problem.addGoal(symmetry)
+
+        # problem.addGoal(osim.MocoInitialActivationGoal("init_activation"))
+
         # Effort. Get a reference to the MocoControlGoal that is added to every
         # MocoTrack problem by default.
         effort = problem.updGoal("control_effort")
         effort.setWeight(10)
-
-        problem.addGoal(osim.MocoInitialActivationGoal("init_activation"))
 
         # Bounds.
         # =======
@@ -607,8 +609,88 @@ class MotionPredictionAndAssistanceWalking(MocoPaperResult):
 #
 #     moco.visualize(full);
 
+
     def report_results(self):
-        pass
+        fig = plt.figure(figsize=(4, 5.5))
+        gs = gridspec.GridSpec(9, 2)
+
+        sol_track = osim.MocoTrajectory("motion_prediction_tracking_solution_fullcycle.sto")
+        time_track = sol_track.getTimeMat()
+        pgc_track = 100.0 * (time_track - time_track[0]) / (
+                time_track[-1] - time_track[0])
+
+        def toarray(simtk_vector):
+            array = np.empty(simtk_vector.size())
+            for i in range(simtk_vector.size()):
+                array[i] = simtk_vector[i]
+            return array
+        coords = [
+            (
+                f'/jointset/hip_{self.side}/hip_flexion_{self.side}', 'hip flexion',
+                1.0),
+            (f'/jointset/knee_{self.side}/knee_angle_{self.side}',
+             'knee flexion', -1.0),
+            (f'/jointset/ankle_{self.side}/ankle_angle_{self.side}',
+             'ankle plantarflexion', 1.0),
+        ]
+        for ic, coord in enumerate(coords):
+            ax = plt.subplot(gs[(3 * ic):(3 * (ic + 1)), 0])
+
+            y_track = coord[2] * np.rad2deg(
+                sol_track.getStateMat(f'{coord[0]}/value'))
+            ax.plot(pgc_track, y_track, label='Track')
+
+            ax.set_xlim(0, 100)
+            if ic == 1:
+                ax.legend(frameon=False)
+            if ic < len(coords) - 1:
+                ax.set_xticklabels([])
+            else:
+                ax.set_xlabel('time (% gait cycle)')
+            ax.set_ylabel(f'{coord[1]} (degrees)')
+
+            ax.spines['right'].set_visible(False)
+            ax.spines['top'].set_visible(False)
+            ax.spines['bottom'].set_position('zero')
+            ax.yaxis.set_ticks_position('left')
+            ax.xaxis.set_ticks_position('bottom')
+
+        # TODO: Compare to EMG.
+        muscles = [
+            ('glut_max', 'glutes'),
+            ('iliopsoas', 'iliopsoas'),
+            ('hamstrings', 'hamstrings'),
+            ('rect_fem', 'rectus femoris'),
+            ('bifemsh', 'biceps femoris short head'),
+            ('vasti', 'vasti'),
+            ('gastroc', 'gastrocnemius'),
+            ('soleus', 'soleus'),
+            ('tib_ant', 'tibialis anterior'),
+        ]
+        for im, muscle in enumerate(muscles):
+            ax = plt.subplot(gs[im, 1])
+            activation_path = f'/{muscle[0]}_{self.side}/activation'
+            ax.plot(pgc_track, sol_track.getStateMat(activation_path),
+                    label='Track')
+            ax.set_ylim(0, 1)
+            ax.set_xlim(0, 100)
+            if im < len(muscles) - 1:
+                ax.set_xticklabels([])
+            else:
+                ax.set_xlabel('time (% gait cycle)')
+            ax.set_title(muscle[1], fontsize=8)
+
+            ax.spines['right'].set_visible(False)
+            ax.spines['top'].set_visible(False)
+            ax.yaxis.set_ticks_position('left')
+            ax.xaxis.set_ticks_position('bottom')
+
+        fig.tight_layout(h_pad=0.05)
+
+        fig.savefig('motion_prediction_tracking_walking.eps')
+        fig.savefig('motion_prediction_tracking_walking.pdf')
+        fig.savefig('motion_prediction_tracking_walking.png', dpi=600)
+
 if __name__ == "__main__":
     import argparse
 

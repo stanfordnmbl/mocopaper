@@ -213,3 +213,4 @@ subject_walk_armless_for_cmc.osim
 /motion_tracking_walking_cmc_results/motion_tracking_walking_cmc_pErr.sto
 /motion_tracking_walking_cmc_results/motion_tracking_walking_cmc_states.sto
 /subject02_armless_for_cmc.osim
+/motion_prediction_tracking_solution_fullcycle.sto

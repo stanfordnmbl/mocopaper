@@ -483,9 +483,9 @@ class MotionPredictionAndAssistanceWalking(MocoPaperResult):
         # Solve problem.
         # ==============
         moco.printToXML("motion_prediction_tracking.omoco")
-        trackingSolution = moco.solve()
-        trackingSolutionFull = osim.createPeriodicTrajectory(trackingSolution)
-        trackingSolutionFull.write("motion_prediction_tracking_solution_fullcycle.sto")
+        # trackingSolution = moco.solve()
+        # trackingSolutionFull = osim.createPeriodicTrajectory(trackingSolution)
+        # trackingSolutionFull.write("motion_prediction_tracking_solution_fullcycle.sto")
 
         # moco.visualize(solution)
 
@@ -525,11 +525,48 @@ class MotionPredictionAndAssistanceWalking(MocoPaperResult):
         solver.set_optim_constraint_tolerance(1e-4)
         solver.set_optim_max_iterations(1000)
         # Use the solution from the tracking simulation as initial guess.
-        solver.setGuess(trackingSolution)
+        solver.setGuessFile("motion_prediction_tracking_solution_fullcycle.sto")
 
-        predictionSolution = moco.solve()
-        predictionSolutionFull = osim.createPeriodicTrajectory(predictionSolution)
-        predictionSolutionFull.write("motion_prediction_prediction_solution_fullcycle.sto");
+        # moco.printToXML("motion_prediction_prediction.omoco")
+        # predictionSolution = moco.solve()
+        # predictionSolutionFull = osim.createPeriodicTrajectory(predictionSolution)
+        # predictionSolutionFull.write("motion_prediction_prediction_solution_fullcycle.sto");
+
+
+        # Assisted
+        # ========
+        moco.setName("motion_prediction_assisted")
+        device_r = osim.CoordinateActuator('ankle_angle_r')
+        device_r.setName('device_r')
+        device_r.setMinControl(-1)
+        device_r.setMaxControl(1)
+        device_r.set_optimal_force(1000)
+        model.addComponent(device_r)
+
+        device_l = osim.CoordinateActuator('ankle_angle_l')
+        device_l.setName('device_l')
+        device_l.setMinControl(-1)
+        device_l.setMaxControl(1)
+        device_l.set_optimal_force(1000)
+        model.addComponent(device_l)
+
+        problem.setModelProcessor(osim.ModelProcessor(model))
+
+        symmetry = osim.MocoPeriodicityGoal.safeDownCast(problem.updGoal("symmetry"))
+        symmetry.addControlPair(osim.MocoPeriodicityGoalPair("/device_l", "/device_r"))
+
+        # TODO must set guess properly?
+        # guess = solver.createGuess()
+        # guess.insertStatesTrajectory(...)
+        # guess.insertControlsTrajectory(...)
+        solver.clearGuess()
+
+        moco.printToXML("motion_prediction_assisted.omoco")
+        assistedSolution = moco.solve()
+        assistedSolutionFull = osim.createPeriodicTrajectory(assistedSolution)
+        assistedSolutionFull.write("motion_prediction_assisted_solution_fullcycle.sto");
+
+
 
         # moco.visualize(full);
 
@@ -650,7 +687,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     results = [
-        MotionTrackingWalking(),
+        # MotionTrackingWalking(),
         MotionPredictionAndAssistanceWalking(),
         ]
     for result in results:

@@ -309,15 +309,15 @@ class MotionTrackingWalking(MocoPaperResult):
 
             y_cmc = coord[2] * np.rad2deg(
                 toarray(sol_cmc.getDependentColumn(f'{coord[0]}/value')),)
-            ax.plot(pgc_cmc, y_cmc, label='CMC')
+            ax.plot(pgc_cmc, y_cmc, label='CMC', color='gray')
 
             y_inverse = coord[2] * np.rad2deg(
                 sol_inverse.getStateMat(f'{coord[0]}/value'))
-            ax.plot(pgc_inverse, y_inverse, label='Inverse')
+            ax.plot(pgc_inverse, y_inverse, label='Inverse', color='k', linestyle='--')
 
             y_track = coord[2] * np.rad2deg(
                 sol_track.getStateMat(f'{coord[0]}/value'))
-            ax.plot(pgc_track, y_track, label='Track')
+            ax.plot(pgc_track, y_track, label='Track', color='blue', linestyle='--')
 
             ax.set_xlim(0, 100)
             if ic == 1:
@@ -349,11 +349,14 @@ class MotionTrackingWalking(MocoPaperResult):
         for im, muscle in enumerate(muscles):
             ax = plt.subplot(gs[im, 1])
             activation_path = f'/forceset/{muscle[0]}_{self.side}/activation'
-            ax.plot(pgc_cmc, toarray(sol_cmc.getDependentColumn(activation_path)))
+            ax.plot(pgc_cmc, toarray(sol_cmc.getDependentColumn(activation_path)),
+                    color='gray')
             ax.plot(pgc_inverse, sol_inverse.getStateMat(activation_path),
-                    label='Inverse')
+                    label='Inverse',
+                    color='k', linestyle='--')
             ax.plot(pgc_track, sol_track.getStateMat(activation_path),
-                    label='Track')
+                    label='Track',
+                    color='blue', linestyle='--')
             ax.set_ylim(0, 1)
             ax.set_xlim(0, 100)
             if im < len(muscles) - 1:
@@ -537,6 +540,11 @@ class MotionPredictionAndAssistanceWalking(MocoPaperResult):
         fig = plt.figure(figsize=(4, 5.5))
         gs = gridspec.GridSpec(9, 2)
 
+        exp_half = osim.MocoTrajectory("resources/Falisse2019/referenceCoordinates.sto")
+        exp = osim.createPeriodicTrajectory(exp_half)
+        time_exp = exp.getTimeMat()
+        pgc_exp = 100.0 * (time_exp - time_exp[0]) / (time_exp[-1] - time_exp[0])
+
         sol_track = osim.MocoTrajectory("motion_prediction_tracking_solution_fullcycle.sto")
         time_track = sol_track.getTimeMat()
         pgc_track = 100.0 * (time_track - time_track[0]) / (
@@ -564,15 +572,17 @@ class MotionPredictionAndAssistanceWalking(MocoPaperResult):
         for ic, coord in enumerate(coords):
             ax = plt.subplot(gs[(3 * ic):(3 * (ic + 1)), 0])
 
-            # TODO: Plot tracked kinematics.
+            y_exp = coord[2] * np.rad2deg(
+                exp.getStateMat(f'{coord[0]}/value'))
+            ax.plot(pgc_exp, y_exp, label='reference', color='gray')
 
             y_track = coord[2] * np.rad2deg(
                 sol_track.getStateMat(f'{coord[0]}/value'))
-            ax.plot(pgc_track, y_track, label='track')
+            ax.plot(pgc_track, y_track, label='track', color='k', linestyle='--')
 
             y_predict = coord[2] * np.rad2deg(
                 sol_predict.getStateMat(f'{coord[0]}/value'))
-            ax.plot(pgc_predict, y_predict, label='predict')
+            ax.plot(pgc_predict, y_predict, label='predict', color='blue', linestyle='--')
 
             ax.set_xlim(0, 100)
             if ic == 1:
@@ -605,9 +615,9 @@ class MotionPredictionAndAssistanceWalking(MocoPaperResult):
             ax = plt.subplot(gs[im, 1])
             activation_path = f'/{muscle[0]}_{self.side}/activation'
             ax.plot(pgc_track, sol_track.getStateMat(activation_path),
-                    label='track')
+                    label='track', color='k', linestyle='--')
             ax.plot(pgc_predict, sol_predict.getStateMat(activation_path),
-                    label='predict')
+                    label='predict', color='blue', linestyle='--')
             ax.set_ylim(0, 1)
             ax.set_xlim(0, 100)
             if im < len(muscles) - 1:
@@ -640,7 +650,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     results = [
-        # MotionTrackingWalking(),
+        MotionTrackingWalking(),
         MotionPredictionAndAssistanceWalking(),
         ]
     for result in results:

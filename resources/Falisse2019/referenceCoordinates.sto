@@ -1,7 +1,13 @@
 version=1										
 nRows=50										
-nColumns=11										
-inDegrees=no										
+nColumns=11
+num_controls=0
+num_derivatives=0
+num_multipliers=0
+num_parameters=0
+num_slacks=0
+num_states=10
+inDegrees=no
 endheader										
 time	/jointset/groundPelvis/pelvis_tilt/value	/jointset/groundPelvis/pelvis_tx/value	/jointset/groundPelvis/pelvis_ty/value	/jointset/hip_l/hip_flexion_l/value	/jointset/hip_r/hip_flexion_r/value	/jointset/knee_l/knee_angle_l/value	/jointset/knee_r/knee_angle_r/value	/jointset/ankle_l/ankle_angle_l/value	/jointset/ankle_r/ankle_angle_r/value	/jointset/lumbar/lumbar/value
 0	-0.263901172	0	0.88365423	0.016469227	0.664226832	-0.283287738	-0.184426289	0.100897108	0.241505399	0.167890235

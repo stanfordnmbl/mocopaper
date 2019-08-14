@@ -215,3 +215,11 @@ subject_walk_armless_for_cmc.osim
 /subject02_armless_for_cmc.osim
 /motion_prediction_tracking_solution_fullcycle.sto
 /motion_prediction_prediction_solution_fullcycle.sto
+/MocoPaper.synctex.gz
+/MocoPaper.log
+/MocoPaper.out
+/MocoPaper.aux
+/MocoPaper.bbl
+/MocoPaper.blg
+/results
+!/results/README.txt

@@ -171,8 +171,8 @@ class MotionTrackingWalking(MocoPaperResult):
     def __init__(self):
         self.initial_time = 0.73
         self.final_time = 1.795
-        self.mocotrack_solution_file = 'motion_tracking_walking_track_solution.sto'
-        self.mocoinverse_solution_file = 'motion_tracking_walking_inverse_solution.sto'
+        self.mocotrack_solution_file = 'results/motion_tracking_walking_track_solution.sto'
+        self.mocoinverse_solution_file = 'results/motion_tracking_walking_inverse_solution.sto'
         self.side = 'r'
 
     def generate_results(self):
@@ -231,6 +231,7 @@ class MotionTrackingWalking(MocoPaperResult):
         track.set_mesh_interval(0.01)
 
         moco = track.initialize()
+        moco.set_write_solution("results/")
 
         problem = moco.updProblem()
         effort = osim.MocoControlGoal.safeDownCast(
@@ -297,7 +298,7 @@ class MotionTrackingWalking(MocoPaperResult):
         pgc_inverse = 100.0 * (time_inverse - time_inverse[0]) / (
                     time_inverse[-1] - time_inverse[0])
 
-        sol_cmc = osim.TimeSeriesTable('motion_tracking_walking_cmc_results/'
+        sol_cmc = osim.TimeSeriesTable('results/motion_tracking_walking_cmc_results/'
                                        'motion_tracking_walking_cmc_states.sto')
         time_cmc = np.array(sol_cmc.getIndependentColumn())
         pgc_cmc = 100.0 * (time_cmc - time_cmc[0]) / (time_cmc[-1] - time_cmc[0])
@@ -463,6 +464,7 @@ class MotionPredictionAndAssistanceWalking(MocoPaperResult):
         track.set_initial_time(0.0)
         track.set_final_time(0.47008941)
         moco = track.initialize()
+        moco.set_write_solution("results/")
         problem = moco.updProblem()
 
         model = modelProcessor.process()
@@ -490,7 +492,7 @@ class MotionPredictionAndAssistanceWalking(MocoPaperResult):
         moco.printToXML("motion_prediction_tracking.omoco")
         trackingSolution = moco.solve()
         trackingSolutionFull = osim.createPeriodicTrajectory(trackingSolution)
-        trackingSolutionFull.write("motion_prediction_tracking_solution_fullcycle.sto")
+        trackingSolutionFull.write("results/motion_prediction_tracking_solution_fullcycle.sto")
 
         # moco.visualize(solution)
 
@@ -499,6 +501,7 @@ class MotionPredictionAndAssistanceWalking(MocoPaperResult):
         # ==========
         moco = osim.MocoStudy()
         moco.setName("motion_prediction_prediction")
+        moco.set_write_solution("results/")
 
         problem = moco.updProblem()
         modelProcessor = osim.ModelProcessor("resources/Falisse2019/2D_gait.osim")
@@ -534,9 +537,9 @@ class MotionPredictionAndAssistanceWalking(MocoPaperResult):
         # solver.setGuessFile("motion_prediction_tracking_solution_fullcycle.sto")
 
         moco.printToXML("motion_prediction_prediction.omoco")
-        # predictionSolution = moco.solve()
-        # predictionSolutionFull = osim.createPeriodicTrajectory(predictionSolution)
-        # predictionSolutionFull.write("motion_prediction_prediction_solution_fullcycle.sto");
+        predictionSolution = moco.solve()
+        predictionSolutionFull = osim.createPeriodicTrajectory(predictionSolution)
+        predictionSolutionFull.write("motion_prediction_prediction_solution_fullcycle.sto");
 
 
         # Assisted
@@ -567,16 +570,11 @@ class MotionPredictionAndAssistanceWalking(MocoPaperResult):
         # guess.insertControlsTrajectory(...)
         solver.clearGuess()
 
-        moco.printToXML("motion_prediction_assisted.omoco")
-        assistedSolution = moco.solve()
-        assistedSolutionFull = osim.createPeriodicTrajectory(assistedSolution)
-        assistedSolutionFull.write("motion_prediction_assisted_solution_fullcycle.sto");
-
-
-
+        # moco.printToXML("motion_prediction_assisted.omoco")
+        # assistedSolution = moco.solve()
+        # assistedSolutionFull = osim.createPeriodicTrajectory(assistedSolution)
+        # assistedSolutionFull.write("results/motion_prediction_assisted_solution_fullcycle.sto");
         # moco.visualize(full);
-
-        # TODO: Add assistive device.
 
 
     def report_results(self):
@@ -588,12 +586,12 @@ class MotionPredictionAndAssistanceWalking(MocoPaperResult):
         time_exp = exp.getTimeMat()
         pgc_exp = 100.0 * (time_exp - time_exp[0]) / (time_exp[-1] - time_exp[0])
 
-        sol_track = osim.MocoTrajectory("motion_prediction_tracking_solution_fullcycle.sto")
+        sol_track = osim.MocoTrajectory("results/motion_prediction_tracking_solution_fullcycle.sto")
         time_track = sol_track.getTimeMat()
         pgc_track = 100.0 * (time_track - time_track[0]) / (
                 time_track[-1] - time_track[0])
 
-        sol_predict = osim.MocoTrajectory("motion_prediction_prediction_solution_fullcycle.sto")
+        sol_predict = osim.MocoTrajectory("results/motion_prediction_prediction_solution_fullcycle.sto")
         time_predict = sol_predict.getTimeMat()
         pgc_predict = 100.0 * (time_predict - time_predict[0]) / (
                 time_predict[-1] - time_predict[0])
@@ -687,8 +685,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     results = [
-        # MotionTrackingWalking(),
-        MotionPredictionAndAssistanceWalking(),
+        MotionTrackingWalking(),
+        # MotionPredictionAndAssistanceWalking(),
         ]
     for result in results:
         if args.generate:

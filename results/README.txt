@@ -1,0 +1,1 @@
+Results from optimizations are saved to this directory.

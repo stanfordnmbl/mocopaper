@@ -1,11 +1,22 @@
 from abc import ABC, abstractmethod
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import pylab as pl
 
 import opensim as osim
 
+mpl.rcParams.update({'font.size': 8,
+                     'axes.titlesize': 8,
+                     'axes.labelsize': 8,
+                     'font.sans-serif': ['Arial']})
+
+def publication_spines(axes):
+    axes.spines['right'].set_visible(False)
+    axes.yaxis.set_ticks_position('left')
+    axes.spines['top'].set_visible(False)
+    axes.xaxis.set_ticks_position('bottom')
 
 class MocoPaperResult(ABC):
     @abstractmethod
@@ -236,8 +247,8 @@ class MotionTrackingWalking(MocoPaperResult):
         # Solve and visualize.
         moco.printToXML('motion_tracking_walking.omoco')
         # 45 minutes
-        # solution = moco.solve()
-        # solution.write(self.mocotrack_solution_file)
+        solution = moco.solve()
+        solution.write(self.mocotrack_solution_file)
         # moco.visualize(solution)
 
         # tasks = osim.CMC_TaskSet()
@@ -271,11 +282,11 @@ class MotionTrackingWalking(MocoPaperResult):
         inverse.set_mesh_interval(0.01)
         inverse.set_kinematics_allow_extra_columns(True)
         # 2 minutes
-        # solution = inverse.solve()
-        # solution.getMocoSolution().write(self.mocoinverse_solution_file)
+        solution = inverse.solve()
+        solution.getMocoSolution().write(self.mocoinverse_solution_file)
 
     def report_results(self):
-        fig = plt.figure(figsize=(4, 5.5))
+        fig = plt.figure(figsize=(5.5, 5.5))
         gs = gridspec.GridSpec(9, 2)
         sol_track = osim.MocoTrajectory(self.mocotrack_solution_file)
         time_track = sol_track.getTimeMat()
@@ -328,11 +339,8 @@ class MotionTrackingWalking(MocoPaperResult):
                 ax.set_xlabel('time (% gait cycle)')
             ax.set_ylabel(f'{coord[1]} (degrees)')
 
-            ax.spines['right'].set_visible(False)
-            ax.spines['top'].set_visible(False)
             ax.spines['bottom'].set_position('zero')
-            ax.yaxis.set_ticks_position('left')
-            ax.xaxis.set_ticks_position('bottom')
+            publication_spines(ax)
 
         # TODO: Compare to EMG.
         muscles = [
@@ -365,16 +373,13 @@ class MotionTrackingWalking(MocoPaperResult):
                 ax.set_xlabel('time (% gait cycle)')
             ax.set_title(muscle[1], fontsize=8)
 
-            ax.spines['right'].set_visible(False)
-            ax.spines['top'].set_visible(False)
-            ax.yaxis.set_ticks_position('left')
-            ax.xaxis.set_ticks_position('bottom')
+            publication_spines(ax)
 
         fig.tight_layout(h_pad=0.05)
 
-        fig.savefig('motion_tracking_walking.eps')
-        fig.savefig('motion_tracking_walking.pdf')
-        fig.savefig('motion_tracking_walking.png', dpi=600)
+        fig.savefig('figures/motion_tracking_walking.eps')
+        fig.savefig('figures/motion_tracking_walking.pdf')
+        fig.savefig('figures/motion_tracking_walking.png', dpi=600)
 
 class MotionPredictionAndAssistanceWalking(MocoPaperResult):
     def __init__(self):
@@ -483,9 +488,9 @@ class MotionPredictionAndAssistanceWalking(MocoPaperResult):
         # Solve problem.
         # ==============
         moco.printToXML("motion_prediction_tracking.omoco")
-        # trackingSolution = moco.solve()
-        # trackingSolutionFull = osim.createPeriodicTrajectory(trackingSolution)
-        # trackingSolutionFull.write("motion_prediction_tracking_solution_fullcycle.sto")
+        trackingSolution = moco.solve()
+        trackingSolutionFull = osim.createPeriodicTrajectory(trackingSolution)
+        trackingSolutionFull.write("motion_prediction_tracking_solution_fullcycle.sto")
 
         # moco.visualize(solution)
 
@@ -525,9 +530,10 @@ class MotionPredictionAndAssistanceWalking(MocoPaperResult):
         solver.set_optim_constraint_tolerance(1e-4)
         solver.set_optim_max_iterations(1000)
         # Use the solution from the tracking simulation as initial guess.
-        solver.setGuessFile("motion_prediction_tracking_solution_fullcycle.sto")
+        solver.setGuess(trackingSolution)
+        # solver.setGuessFile("motion_prediction_tracking_solution_fullcycle.sto")
 
-        # moco.printToXML("motion_prediction_prediction.omoco")
+        moco.printToXML("motion_prediction_prediction.omoco")
         # predictionSolution = moco.solve()
         # predictionSolutionFull = osim.createPeriodicTrajectory(predictionSolution)
         # predictionSolutionFull.write("motion_prediction_prediction_solution_fullcycle.sto");
@@ -574,7 +580,7 @@ class MotionPredictionAndAssistanceWalking(MocoPaperResult):
 
 
     def report_results(self):
-        fig = plt.figure(figsize=(4, 5.5))
+        fig = plt.figure(figsize=(5.5, 5.5))
         gs = gridspec.GridSpec(9, 2)
 
         exp_half = osim.MocoTrajectory("resources/Falisse2019/referenceCoordinates.sto")
@@ -630,11 +636,8 @@ class MotionPredictionAndAssistanceWalking(MocoPaperResult):
                 ax.set_xlabel('time (% gait cycle)')
             ax.set_ylabel(f'{coord[1]} (degrees)')
 
-            ax.spines['right'].set_visible(False)
-            ax.spines['top'].set_visible(False)
             ax.spines['bottom'].set_position('zero')
-            ax.yaxis.set_ticks_position('left')
-            ax.xaxis.set_ticks_position('bottom')
+            publication_spines(ax)
 
         # TODO: Compare to EMG.
         muscles = [
@@ -663,16 +666,13 @@ class MotionPredictionAndAssistanceWalking(MocoPaperResult):
                 ax.set_xlabel('time (% gait cycle)')
             ax.set_title(muscle[1], fontsize=8)
 
-            ax.spines['right'].set_visible(False)
-            ax.spines['top'].set_visible(False)
-            ax.yaxis.set_ticks_position('left')
-            ax.xaxis.set_ticks_position('bottom')
+            publication_spines(ax)
 
         fig.tight_layout(h_pad=0.05)
 
-        fig.savefig('motion_prediction_tracking_walking.eps')
-        fig.savefig('motion_prediction_tracking_walking.pdf')
-        fig.savefig('motion_prediction_tracking_walking.png', dpi=600)
+        fig.savefig('figures/motion_prediction_walking.eps')
+        fig.savefig('figures/motion_prediction_walking.pdf')
+        fig.savefig('figures/motion_prediction_walking.png', dpi=600)
 
         # TODO: Plot model-generated GRFs.
 

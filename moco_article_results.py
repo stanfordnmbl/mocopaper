@@ -198,15 +198,10 @@ class MotionTrackingWalking(MocoPaperResult):
         track.setModel(modelProcessor)
 
         # TODO:
-        #  - more mesh points,
         #  - avoid removing muscle passive forces
-        #  - move example to Python Examples rather than Article folder.
         #  - play with weights between tracking and effort.
-        #  - add plot of muscle activity for 9 muscles.
         #  - look for the script that plots muscle activity for the
         #    sit-to-stand example
-        #  - simulate an entire gait cycle.
-        #  - for the preprint, use gait10dof18musc.
         #  - simulate many gait cycles? show that the code works fine on a suite
         #    of subjects (5 subjects?). **create a separate git repository.
         #  - report duration to solve the problem.
@@ -217,7 +212,7 @@ class MotionTrackingWalking(MocoPaperResult):
             "resources/ArnoldSubject02Walk3/subject02_walk3_ik_solution.mot")
         coordinates.append(osim.TabOpLowPassFilter(6))
         track.setStatesReference(coordinates)
-        track.set_states_global_tracking_weight(10)
+        # track.set_states_global_tracking_weight(10)
 
         # This setting allows extra data columns contained in the states
         # reference that don't correspond to model coordinates.
@@ -244,6 +239,9 @@ class MotionTrackingWalking(MocoPaperResult):
             forcePath = forceSet.get(i).getAbsolutePathString()
             if 'pelvis' in str(forcePath):
                 effort.setWeightForControl(forcePath, 10)
+
+        solver = osim.MocoCasADiSolver.safeDownCast(moco.updSolver())
+        solver.set_optim_convergence_tolerance(1e-4)
 
         # Solve and visualize.
         moco.printToXML('motion_tracking_walking.omoco')
@@ -345,7 +343,7 @@ class MotionTrackingWalking(MocoPaperResult):
 
         # TODO: Compare to EMG.
         muscles = [
-            ('glut_max2', 'glutes'),
+            ('glut_max2', 'gluteus maximus'),
             ('psoas', 'iliopsoas'),
             ('semimem', 'hamstrings'),
             ('rect_fem', 'rectus femoris'),
@@ -539,7 +537,7 @@ class MotionPredictionAndAssistanceWalking(MocoPaperResult):
         moco.printToXML("motion_prediction_prediction.omoco")
         predictionSolution = moco.solve()
         predictionSolutionFull = osim.createPeriodicTrajectory(predictionSolution)
-        predictionSolutionFull.write("motion_prediction_prediction_solution_fullcycle.sto");
+        predictionSolutionFull.write("results/motion_prediction_prediction_solution_fullcycle.sto");
 
 
         # Assisted

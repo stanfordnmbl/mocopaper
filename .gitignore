@@ -224,3 +224,5 @@ subject_walk_armless_for_cmc.osim
 /results
 !/results/README.txt
 /archive
+/subject_armless_for_cmc.osim
+/muscle_outputs.sto

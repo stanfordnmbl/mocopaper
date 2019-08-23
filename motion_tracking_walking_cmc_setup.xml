@@ -2,7 +2,7 @@
 <OpenSimDocument Version="40000">
 	<CMCTool name="motion_tracking_walking_cmc">
 		<!--Name of the .osim file used to construct a model.-->
-		<model_file>subject02_armless_for_cmc.osim</model_file>
+		<model_file>subject_armless_for_cmc.osim</model_file>
 		<!--Replace the model's force set with sets specified in <force_set_files>? If false, the force set is appended to.-->
 		<replace_force_set>false</replace_force_set>
 		<!--List of xml files used to construct a force set for the model.-->
@@ -12,9 +12,9 @@
 		<!--Output precision.  It is 8 by default.-->
 		<output_precision>8</output_precision>
 		<!--Initial time for the simulation.-->
-		<initial_time>0.73</initial_time>
+		<initial_time>0.450</initial_time>
 		<!--Final time for the simulation.-->
-		<final_time>1.795</final_time>
+		<final_time>1.565</final_time>
 		<!--Flag indicating whether or not to compute equilibrium values for states other than the coordinates or speeds.  For example, equilibrium muscle fiber lengths or muscle forces.-->
 		<solve_for_equilibrium_for_auxiliary_states>true</solve_for_equilibrium_for_auxiliary_states>
 		<!--Maximum number of integrator steps.-->
@@ -36,13 +36,13 @@
 			<groups />
 		</ControllerSet>
 		<!--XML file (.xml) containing the forces applied to the model as ExternalLoads.-->
-		<external_loads_file>resources/ArnoldSubject02Walk3/external_loads.xml</external_loads_file>
+		<external_loads_file>resources/Rajagopal2016/grf_walk.xml</external_loads_file>
 		<!--List of individual Actuators by individual or user-defined group name  to be excluded from CMC's control.-->
 		<actuators_to_exclude />
 		<!--Motion (.mot) or storage (.sto) file containing the desired point trajectories.-->
 		<desired_points_file />
 		<!--Motion (.mot) or storage (.sto) file containing the desired kinematic trajectories.-->
-		<desired_kinematics_file>resources/ArnoldSubject02Walk3/subject02_walk3_ik_solution.mot</desired_kinematics_file>
+		<desired_kinematics_file>resources/Rajagopal2016/coordinates.sto</desired_kinematics_file>
 		<!--File containing the tracking tasks. Which coordinates are tracked and with what weights are specified here.-->
 		<task_set_file>motion_tracking_walking_cmc_tasks.xml</task_set_file>
 		<!--File containing the constraints on the controls.-->

@@ -715,6 +715,8 @@ class MotionTrackingWalking(MocoPaperResult):
         # 1 minute
         cmc.run()
 
+        # TODO: why is recfem used instead of vasint?
+
         # TODO compare to MocoInverse.
         inverse = osim.MocoInverse()
         inverse.setModel(modelProcessor)
@@ -723,10 +725,13 @@ class MotionTrackingWalking(MocoPaperResult):
         inverse.set_final_time(self.final_time)
         inverse.set_mesh_interval(0.01)
         inverse.set_kinematics_allow_extra_columns(True)
-        inverse.set_tolerance(1e-5)
+        inverse.set_tolerance(1e-3)
+        inverse.append_output_paths('.*vasint_r.*')
         # 2 minutes
         solution = inverse.solve()
         solution.getMocoSolution().write(self.mocoinverse_solution_file)
+        solution.getOutputs().write(
+            'motion_tracking_walking_inverse_outputs.sto')
 
         # TODO: Minimize joint reaction load!
     def plot(self, ax, time, y, *args, **kwargs):
@@ -776,7 +781,7 @@ class MotionTrackingWalking(MocoPaperResult):
                                     #  '/forceset/med_gas_r',
                                     #  '/forceset/soleus_r',
                                     #  '/forceset/tib_ant_r'])
-        fig.savefig('joint_moment_breakdown')
+        fig.savefig('joint_moment_breakdown.png', dpi=600)
         # fig.show()
 
         fig = plt.figure(figsize=(5.5, 5.5))

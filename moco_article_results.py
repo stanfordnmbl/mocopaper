@@ -715,7 +715,7 @@ class MotionTrackingWalking(MocoPaperResult):
         # cmc.printToXML('motion_tracking_walking_cmc_setup.xml')
         cmc = osim.CMCTool('motion_tracking_walking_cmc_setup.xml')
         # 1 minute
-        cmc.run()
+        # cmc.run()
 
         # TODO: why is recfem used instead of vasint?
 
@@ -730,18 +730,21 @@ class MotionTrackingWalking(MocoPaperResult):
         inverse.set_tolerance(1e-3)
         inverse.append_output_paths('.*vasint_r.*')
         # 2 minutes
-        solution = inverse.solve()
-        solution.getMocoSolution().write(self.mocoinverse_solution_file)
-        osim.STOFileAdapter.write(solution.getOutputs(),
-            'motion_tracking_walking_inverse_outputs.sto')
+        # solution = inverse.solve()
+        # solution.getMocoSolution().write(self.mocoinverse_solution_file)
+        # osim.STOFileAdapter.write(solution.getOutputs(),
+        #     'motion_tracking_walking_inverse_outputs.sto')
 
         study = inverse.initialize()
         reaction_r = osim.MocoJointReactionGoal('reaction_r', 1.0)
         reaction_r.setJointPath('/jointset/walker_knee_r')
+        reaction_r.setReactionMeasures(['force-x', 'force-y'])
         reaction_l = osim.MocoJointReactionGoal('reaction_l', 1.0)
         reaction_l.setJointPath('/jointset/walker_knee_l')
-        study.addGoal(reaction_r)
-        study.addGoal(reaction_l)
+        reaction_l.setReactionMeasures(['force-x', 'force-y'])
+        problem = study.updProblem()
+        problem.addGoal(reaction_r)
+        problem.addGoal(reaction_l)
 
         solution_reaction = study.solve()
         solution_reaction.write(self.mocoinverse_jointreaction_solution_file)
@@ -756,8 +759,13 @@ class MotionTrackingWalking(MocoPaperResult):
     def report_results(self):
         sol_track = osim.MocoTrajectory(self.mocotrack_solution_file)
         time_track = sol_track.getTimeMat()
+
         sol_inverse = osim.MocoTrajectory(self.mocoinverse_solution_file)
         time_inverse = sol_inverse.getTimeMat()
+
+        sol_inverse_jointreaction = \
+            osim.MocoTrajectory(self.mocoinverse_jointreaction_solution_file)
+        time_inverse_jointreaction = sol_inverse_jointreaction.getTimeMat()
 
         modelProcessor = self.create_model_processor()
         model = modelProcessor.process()
@@ -774,6 +782,8 @@ class MotionTrackingWalking(MocoPaperResult):
 
         fig = plot_joint_moment_breakdown(model, sol_inverse,
                                     ['/jointset/hip_r/hip_flexion_r',
+                                     '/jointset/hip_r/hip_adduction_r',
+                                     '/jointset/hip_r/hip_rotation_r',
                                      '/jointset/walker_knee_r/knee_angle_r',
                                      '/jointset/ankle_r/ankle_angle_r'],
                                     ['/forceset/glmax2_r',
@@ -822,6 +832,12 @@ class MotionTrackingWalking(MocoPaperResult):
             self.plot(ax, time_inverse, y_inverse, label='MocoInverse',
                       color='k', linestyle='--')
 
+            # y_inverse_jr = coord[2] * np.rad2deg(
+            #     sol_inverse_jointreaction.getStateMat(f'{coord[0]}/value'))
+            # self.plot(ax, time_inverse_jointreaction, y_inverse_jr,
+            #           label='MocoInverse JR',
+            #           color='k', linestyle='--')
+
             # y_track = coord[2] * np.rad2deg(
             #     sol_track.getStateMat(f'{coord[0]}/value'))
             # self.plot(ax, time_track, y_track, label='MocoTrack', color='blue', linestyle='--')
@@ -864,11 +880,16 @@ class MotionTrackingWalking(MocoPaperResult):
         for im, muscle in enumerate(muscles):
             ax = plt.subplot(gs[im, 1])
             activation_path = f'/forceset/{muscle[0]}_{self.side}/activation'
-            self.plot(ax, time_cmc, toarray(sol_cmc.getDependentColumn(activation_path)),
+            self.plot(ax, time_cmc,
+                      toarray(sol_cmc.getDependentColumn(activation_path)),
                     color='gray')
             self.plot(ax, time_inverse, sol_inverse.getStateMat(activation_path),
                     label='Inverse',
                     color='k', linestyle='--')
+            self.plot(ax, time_inverse_jointreaction,
+                      sol_inverse_jointreaction.getStateMat(activation_path),
+                      label='Inverse JR',
+                      color='blue', linestyle='--')
             # self.plot(ax, time_track, sol_track.getStateMat(activation_path),
             #         label='Track',
             #         color='blue', linestyle='--')
@@ -953,16 +974,6 @@ class CrouchToStand(MocoPaperResult):
 
         solution = moco.solve()
         solution.write(self.predict_solution_file)
-
-        # TODO: Why does TA turn on?
-        # TODO: Make sure we have a global optimum. Use random initial guesses.
-        # TODO: Sweep through final times and see which gives the minimum cost.
-        # TODO: Does not track well!
-        # timeStepSolution = osim.simulateIterateWithTimeStepping(
-        #     predictSolution, problem.getPhase(0).getModel(),
-        #     1e-8)
-        # timeStepSolution.write('timeStepSolution.sto')
-        # moco.visualize(timeStepSolution)
 
         return solution
 

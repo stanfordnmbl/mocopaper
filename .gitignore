@@ -226,3 +226,4 @@ subject_walk_armless_for_cmc.osim
 /archive
 /subject_armless_for_cmc.osim
 /muscle_outputs.sto
+/motion_tracking_walking_inverse_outputs.sto

@@ -583,6 +583,8 @@ class MotionTrackingWalking(MocoPaperResult):
             'results/motion_tracking_walking_track_solution.sto'
         self.mocoinverse_solution_file = \
             'results/motion_tracking_walking_inverse_solution.sto'
+        self.mocoinverse_jointreaction_solution_file = \
+            'results/motion_tracking_walking_inverse_jointreaction_solution.sto'
         self.side = 'r'
 
     def shift(self, time, y):
@@ -730,8 +732,19 @@ class MotionTrackingWalking(MocoPaperResult):
         # 2 minutes
         solution = inverse.solve()
         solution.getMocoSolution().write(self.mocoinverse_solution_file)
-        solution.getOutputs().write(
+        osim.STOFileAdapter.write(solution.getOutputs(),
             'motion_tracking_walking_inverse_outputs.sto')
+
+        study = inverse.initialize()
+        reaction_r = osim.MocoJointReactionGoal('reaction_r', 1.0)
+        reaction_r.setJointPath('/jointset/walker_knee_r')
+        reaction_l = osim.MocoJointReactionGoal('reaction_l', 1.0)
+        reaction_l.setJointPath('/jointset/walker_knee_l')
+        study.addGoal(reaction_r)
+        study.addGoal(reaction_l)
+
+        solution_reaction = study.solve()
+        solution_reaction.write(self.mocoinverse_jointreaction_solution_file)
 
         # TODO: Minimize joint reaction load!
     def plot(self, ax, time, y, *args, **kwargs):

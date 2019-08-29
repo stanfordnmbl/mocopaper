@@ -176,6 +176,10 @@ class SuspendedMass(MocoPaperResult):
         ax.plot(track_p_solution.getStateMat('/jointset/tx/tx/value'),
                 track_p_solution.getStateMat('/jointset/ty/ty/value'),
                 linestyle=':')
+        plt.annotate('start', (-0.03, -self.width),
+                     xytext=(-0.03, -self.width + 0.002))
+        plt.annotate('end', (0.03, -self.width + 0.05),
+                     xytext=(0.03 - 0.007, -self.width + 0.05))
         scalebar = AnchoredSizeBar(ax.transData, 0.01, label='1 cm',
                                    # loc=(0, 0.3),
                                    loc='center left',
@@ -394,12 +398,9 @@ class MotionTrackingWalking(MocoPaperResult):
         inverse.set_mesh_interval(0.01)
         inverse.set_kinematics_allow_extra_columns(True)
         inverse.set_tolerance(1e-3)
-        inverse.append_output_paths('.*vasint_r.*')
         # 2 minutes
         solution = inverse.solve()
         solution.getMocoSolution().write(self.mocoinverse_solution_file)
-        # osim.STOFileAdapter.write(solution.getOutputs(),
-        #     'motion_tracking_walking_inverse_outputs.sto')
 
         study = inverse.initialize()
         reaction_r = osim.MocoJointReactionGoal('reaction_r', 0.1)
@@ -568,6 +569,8 @@ class MotionTrackingWalking(MocoPaperResult):
             else:
                 ax.set_xlabel('time (% gait cycle)')
                 ax.get_xaxis().set_label_coords(0.5, 0)
+                # The '0' would intersect with the y-axis, so remove it.
+                ax.set_xticklabels(['', '20', '40', '60', '80', '100'])
             ax.set_ylabel(f'{coord[1]} (degrees)')
             ax.get_yaxis().set_label_coords(-0.15, 0.5)
 
@@ -835,8 +838,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     results = [
-        SuspendedMass(),
-        # MotionTrackingWalking(),
+        # SuspendedMass(),
+        MotionTrackingWalking(),
         # MotionPredictionAndAssistanceWalking(),
         # CrouchToStand(),
         ]

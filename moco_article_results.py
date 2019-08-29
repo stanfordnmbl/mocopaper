@@ -10,6 +10,9 @@ import pylab as pl
 import opensim as osim
 
 # TODO: show icons of different muscles next to the activation plots.
+# TODO: report reserve and residual forces.
+# TODO: create a docker container for these results and generating the preprint.
+# TODO fix shift
 
 mpl.rcParams.update({'font.size': 8,
                      'axes.titlesize': 8,
@@ -18,7 +21,6 @@ mpl.rcParams.update({'font.size': 8,
                      'image.cmap': 'Tab10'})
 
 import utilities
-
 
 class MocoPaperResult(ABC):
     @abstractmethod
@@ -78,6 +80,7 @@ class SuspendedMass(MocoPaperResult):
         model.addForce(actuR)
 
         model.finalizeConnections()
+
         return model
 
     def create_study(self):
@@ -186,7 +189,10 @@ class SuspendedMass(MocoPaperResult):
         ax.set_xticks([])
         ax.set_yticks([])
         ax.set_aspect('equal', 'box')
-        ax.legend(['prediction', 'time stepping', 'tracking', 'tracking p=5'],
+        ax.legend(['prediction p=2',
+                   'time stepping',
+                   'tracking p=2',
+                   'tracking p=5'],
                   frameon=False,
                   handlelength=1.9)
         utilities.publication_spines(ax)
@@ -278,34 +284,6 @@ class MotionTrackingWalking(MocoPaperResult):
     def shift(self, time, y):
         return utilities.shift_data_to_cycle(self.initial_time, self.final_time,
                                    self.footstrike, time, y, cut_off=False)
-        # time = copy.deepcopy(time)
-        # y = copy.deepcopy(y)
-        # # pgc = np.linspace(0, 100, 401)
-        # index_before_strike = np.arange(len(time))[time < self.footstrike][-1]
-        # index_after_strike = index_before_strike + 1
-        # assert index_after_strike < len(time) - 1
-        #
-        # # TODO: want the greatest index less than self.footstrike.
-        # y[index_after_strike] = np.interp(self.footstrike, time, y)
-        # time[index_after_strike] = self.footstrike
-        #
-        # first_portion_of_new_time = time[index_after_strike::] - self.footstrike
-        # gap_before_footstrike = self.footstrike - time[index_before_strike]
-        # second_portion_of_new_time = (time[0:index_after_strike]
-        #                               - time[0] + first_portion_of_new_time[-1]
-        #                               + gap_before_footstrike)
-        # # print('DEBUG', first_portion_of_new_time, second_portion_of_new_time)
-        # shifted_time = np.concatenate(first_portion_of_new_time,
-        #                               second_portion_of_new_time)
-        # shifted_y = np.concatenate(y[index_after_strike::],
-        #                            y[0:index_after_strike])
-        # # TODO: final_time - initial_time?
-        # assert shifted_time[-1] == time[-1] - time[0]
-        # assert len(shifted_time) == len(time)
-        # assert len(shifted_y) == len(y)
-        # return shifted_time, shifted_y
-
-
 
     def create_model_processor(self):
         modelProcessor = osim.ModelProcessor(
@@ -341,11 +319,10 @@ class MotionTrackingWalking(MocoPaperResult):
         #  - plot joint moment breakdown.
 
         coordinates = osim.TableProcessor(
-            # "resources/ArnoldSubject02Walk3/subject02_walk3_ik_solution.mot")
             "resources/Rajagopal2016/coordinates.sto")
         coordinates.append(osim.TabOpLowPassFilter(6))
         track.setStatesReference(coordinates)
-        # track.set_states_global_tracking_weight(10)
+        track.set_states_global_tracking_weight(0.1)
 
         # This setting allows extra data columns contained in the states
         # reference that don't correspond to model coordinates.
@@ -374,13 +351,13 @@ class MotionTrackingWalking(MocoPaperResult):
                 effort.setWeightForControl(forcePath, 10)
 
         solver = osim.MocoCasADiSolver.safeDownCast(moco.updSolver())
-        solver.set_optim_convergence_tolerance(1e-4)
+        # solver.set_optim_convergence_tolerance(1e-4)
 
         # Solve and visualize.
         moco.printToXML('motion_tracking_walking.omoco')
         # 45 minutes
-        # solution = moco.solve()
-        # solution.write(self.mocotrack_solution_file)
+        solution = moco.solve()
+        solution.write(self.mocotrack_solution_file)
         # moco.visualize(solution)
 
         # tasks = osim.CMC_TaskSet()
@@ -403,7 +380,7 @@ class MotionTrackingWalking(MocoPaperResult):
         # cmc.printToXML('motion_tracking_walking_cmc_setup.xml')
         cmc = osim.CMCTool('motion_tracking_walking_cmc_setup.xml')
         # 1 minute
-        # cmc.run()
+        cmc.run()
 
         # TODO: why is recfem used instead of vaslat? recfem counters the hip
         # extension moment in early stance.
@@ -419,16 +396,16 @@ class MotionTrackingWalking(MocoPaperResult):
         inverse.set_tolerance(1e-3)
         inverse.append_output_paths('.*vasint_r.*')
         # 2 minutes
-        # solution = inverse.solve()
-        # solution.getMocoSolution().write(self.mocoinverse_solution_file)
+        solution = inverse.solve()
+        solution.getMocoSolution().write(self.mocoinverse_solution_file)
         # osim.STOFileAdapter.write(solution.getOutputs(),
         #     'motion_tracking_walking_inverse_outputs.sto')
 
         study = inverse.initialize()
-        reaction_r = osim.MocoJointReactionGoal('reaction_r', 1.0)
+        reaction_r = osim.MocoJointReactionGoal('reaction_r', 0.1)
         reaction_r.setJointPath('/jointset/walker_knee_r')
         reaction_r.setReactionMeasures(['force-x', 'force-y'])
-        reaction_l = osim.MocoJointReactionGoal('reaction_l', 1.0)
+        reaction_l = osim.MocoJointReactionGoal('reaction_l', 0.1)
         reaction_l.setJointPath('/jointset/walker_knee_l')
         reaction_l.setReactionMeasures(['force-x', 'force-y'])
         problem = study.updProblem()
@@ -439,14 +416,42 @@ class MotionTrackingWalking(MocoPaperResult):
         effort = osim.MocoControlGoal.safeDownCast(
             problem.updGoal('excitation_effort'))
         effort.setWeightForControl(
+            '/forceset/reserve_jointset_ankle_r_ankle_angle_r',
+            50.0)
+        effort.setWeightForControl(
+            '/forceset/reserve_jointset_ankle_l_ankle_angle_l',
+            50.0)
+        effort.setWeightForControl(
             '/forceset/reserve_jointset_walker_knee_r_knee_angle_r',
-                         100.0)
+            50.0)
         effort.setWeightForControl(
             '/forceset/reserve_jointset_walker_knee_l_knee_angle_l',
-                         100.0)
+            50.0)
+        effort.setWeightForControl(
+            '/forceset/reserve_jointset_hip_r_hip_flexion_r',
+            50.0)
+        effort.setWeightForControl(
+            '/forceset/reserve_jointset_hip_l_hip_flexion_l',
+            50.0)
+        effort.setWeightForControl(
+            '/forceset/reserve_jointset_hip_r_hip_adduction_r',
+            50.0)
+        effort.setWeightForControl(
+            '/forceset/reserve_jointset_hip_l_hip_adduction_l',
+            50.0)
+        effort.setWeightForControl(
+            '/forceset/reserve_jointset_hip_r_hip_rotation_r',
+            50.0)
+        effort.setWeightForControl(
+            '/forceset/reserve_jointset_hip_l_hip_rotation_l',
+            50.0)
 
-        solution_reaction = study.solve()
-        solution_reaction.write(self.mocoinverse_jointreaction_solution_file)
+        solver = osim.MocoCasADiSolver.safeDownCast(study.updSolver())
+        # TODO: try 1e-2 for MocoInverse without JR minimization.
+        solver.set_optim_convergence_tolerance(1e-2)
+
+        # solution_reaction = study.solve()
+        # solution_reaction.write(self.mocoinverse_jointreaction_solution_file)
 
         # TODO: Minimize joint reaction load!
     def plot(self, ax, time, y, *args, **kwargs):
@@ -476,6 +481,10 @@ class MotionTrackingWalking(MocoPaperResult):
 
         modelProcessor = self.create_model_processor()
         model = modelProcessor.process()
+
+        report = osim.report.Report(model, self.mocotrack_solution_file)
+        report.generate()
+
         report = osim.report.Report(model, self.mocoinverse_solution_file)
         report.generate()
 
@@ -493,25 +502,7 @@ class MotionTrackingWalking(MocoPaperResult):
                                      '/jointset/hip_l/hip_rotation_l',
                                      '/jointset/walker_knee_l/knee_angle_l',
                                      '/jointset/ankle_l/ankle_angle_l'],
-                                    # ['/forceset/glmax2_l',
-                                    #  '/forceset/psoas_l',
-                                    #  '/forceset/semimem_l',
-                                    #  '/forceset/recfem_l',
-                                    #  '/forceset/bfsh_l',
-                                    #  '/forceset/vasint_l',
-                                    #  '/forceset/gasmed_l',
-                                    #  '/forceset/soleus_l',
-                                    #  '/forceset/tibant_l']
                                           )
-                                    # ['/forceset/glut_max2_r',
-                                    #  '/forceset/psoas_r',
-                                    #  '/forceset/semimem_r',
-                                    #  '/forceset/rect_fem_r',
-                                    #  '/forceset/bifemsh_r',
-                                    #  '/forceset/vas_int_r',
-                                    #  '/forceset/med_gas_r',
-                                    #  '/forceset/soleus_r',
-                                    #  '/forceset/tib_ant_r'])
         fig.savefig('results/motion_tracking_walking_inverse_'
                     'joint_moment_breakdown.png',
                     dpi=600)
@@ -525,15 +516,6 @@ class MotionTrackingWalking(MocoPaperResult):
                                            '/jointset/hip_l/hip_rotation_l',
                                            '/jointset/walker_knee_l/knee_angle_l',
                                            '/jointset/ankle_l/ankle_angle_l'],
-                                          # ['/forceset/glmax2_l',
-                                          #  '/forceset/psoas_l',
-                                          #  '/forceset/semimem_l',
-                                          #  '/forceset/recfem_l',
-                                          #  '/forceset/bfsh_l',
-                                          #  '/forceset/vasint_l',
-                                          #  '/forceset/gasmed_l',
-                                          #  '/forceset/soleus_l',
-                                          #  '/forceset/tibant_l']
                                           )
         fig.savefig('results/motion_tracking_walking_inverse_'
                     'jointreaction_joint_moment_breakdown.png',
@@ -560,30 +542,27 @@ class MotionTrackingWalking(MocoPaperResult):
                 toarray(sol_cmc.getDependentColumn(f'{coord[0]}/value')),)
             self.plot(ax, time_cmc, y_cmc, label='CMC', color='gray')
 
+            y_track = coord[2] * np.rad2deg(
+                sol_track.getStateMat(f'{coord[0]}/value'))
+            self.plot(ax, time_track, y_track, label='MocoTrack',
+                      color='k',
+                      linestyle='--')
+
             y_inverse = coord[2] * np.rad2deg(
                 sol_inverse.getStateMat(f'{coord[0]}/value'))
             self.plot(ax, time_inverse, y_inverse, label='MocoInverse',
-                      color='k', linestyle='--')
+                      linestyle='--')
 
             # y_inverse_jr = coord[2] * np.rad2deg(
             #     sol_inverse_jointreaction.getStateMat(f'{coord[0]}/value'))
             # self.plot(ax, time_inverse_jointreaction, y_inverse_jr,
             #           label='MocoInverse-knee',
             #           linestyle='--')
-
-            # y_track = coord[2] * np.rad2deg(
-            #     sol_track.getStateMat(f'{coord[0]}/value'))
-            # self.plot(ax, time_track, y_track, label='MocoTrack', color='blue', linestyle='--')
+            ax.plot([0], [0], label='MocoInverse-knee', linestyle='--')
 
             ax.set_xlim(0, 100)
             if ic == 1:
-                legend_handles = [
-                    Line2D([0], [0], label='CMC', color='k'),
-                    Line2D([0], [0], label='MocoInverse', color='k', linestyle='--'),
-                    Line2D([0], [0], label='MocoInverse-knee', linestyle='--'),
-                ]
-                ax.legend(handles=legend_handles,
-                          frameon=False, handlelength=1.9)
+                ax.legend(frameon=False, handlelength=1.9)
             if ic < len(coords) - 1:
                 ax.set_xticklabels([])
             else:
@@ -606,15 +585,6 @@ class MotionTrackingWalking(MocoPaperResult):
             ('gasmed', 'medial gastrocnemius'),
             ('soleus', 'soleus'),
             ('tibant', 'tibialis anterior'),
-            # ('glut_max2', 'gluteus maximus'),
-            # ('psoas', 'iliopsoas'),
-            # ('semimem', 'hamstrings'),
-            # ('rect_fem', 'rectus femoris'),
-            # ('bifemsh', 'biceps femoris short head'),
-            # ('vas_int', 'vasti'),
-            # ('med_gas', 'gastrocnemius'),
-            # ('soleus', 'soleus'),
-            # ('tib_ant', 'tibialis anterior'),
         ]
         for im, muscle in enumerate(muscles):
             ax = plt.subplot(gs[im, 1])
@@ -622,16 +592,17 @@ class MotionTrackingWalking(MocoPaperResult):
             self.plot(ax, time_cmc,
                       toarray(sol_cmc.getDependentColumn(activation_path)),
                     color='gray')
-            self.plot(ax, time_inverse, sol_inverse.getStateMat(activation_path),
-                    label='Inverse',
+            self.plot(ax, time_track, sol_track.getStateMat(activation_path),
+                    label='Track',
                     color='k', linestyle='--')
+            self.plot(ax, time_inverse,
+                      sol_inverse.getStateMat(activation_path),
+                      label='Inverse',
+                      linestyle='--')
             self.plot(ax, time_inverse_jointreaction,
                       sol_inverse_jointreaction.getStateMat(activation_path),
                       label='Inverse JR',
                       linestyle='--')
-            # self.plot(ax, time_track, sol_track.getStateMat(activation_path),
-            #         label='Track',
-            #         color='blue', linestyle='--')
             ax.set_ylim(0, 1)
             ax.set_xlim(0, 100)
             if im < len(muscles) - 1:
@@ -661,7 +632,6 @@ class CrouchToStand(MocoPaperResult):
         moco.set_write_solution("results/")
         solver = moco.initCasADiSolver()
         solver.set_dynamics_mode('implicit')
-        # TODO: More mesh points.
         solver.set_num_mesh_points(50)
         solver.set_optim_convergence_tolerance(1e-3)
         solver.set_optim_constraint_tolerance(1e-3)
@@ -705,7 +675,6 @@ class CrouchToStand(MocoPaperResult):
         problem = moco.updProblem()
         problem.addGoal(osim.MocoControlGoal('effort'))
         problem.addGoal(osim.MocoInitialActivationGoal('init_activation'))
-        # TODO: Weird goal to have:
         problem.addGoal(osim.MocoFinalTimeGoal('time', 0.1))
 
         solver = osim.MocoCasADiSolver.safeDownCast(moco.updSolver())
@@ -814,7 +783,7 @@ class CrouchToStand(MocoPaperResult):
                         sol.getStateMat(coordvalue)))
                     ax.plot(time, y, linestyle=linestyle, color=color,
                             label=use_label, clip_on=False)
-                    # ax.set_xlim(time[0], time[-1])
+                    ax.autoscale(enable=True, axis='x', tight=True)
                 else:
                     if ic == 0:
                         ax.plot(0, 0, label=use_label)
@@ -824,7 +793,7 @@ class CrouchToStand(MocoPaperResult):
                         sol.getStateMat(
                             '/forceset/%s_r/activation' % muscle[0]),
                         linestyle=linestyle, color=color, clip_on=False)
-                # ax.set_xlim(time[0], time[-1])
+                ax.autoscale(enable=True, axis='x', tight=True)
 
 
         predict_solution = osim.MocoTrajectory(self.predict_solution_file)
@@ -866,8 +835,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     results = [
-        # SuspendedMass(),
-        MotionTrackingWalking(),
+        SuspendedMass(),
+        # MotionTrackingWalking(),
         # MotionPredictionAndAssistanceWalking(),
         # CrouchToStand(),
         ]

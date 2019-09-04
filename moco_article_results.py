@@ -852,69 +852,33 @@ class CrouchToStand(MocoPaperResult):
 if __name__ == "__main__":
     import argparse
 
+    results = {
+        'suspended-mass': SuspendedMass(),
+        'tracking-walking': MotionTrackingWalking(),
+        # 'predicting-walking': MotionPredictionAndAssistanceWalking(),
+        'crouch-to-stand': CrouchToStand(),
+    }
+
     parser = argparse.ArgumentParser(description="Generate results for the"
                                                  "OpenSim Moco publication.")
     parser.add_argument('--no-generate', dest='generate', action='store_false',
                         help='Skip generating the results; only report.')
+    results_help = 'Names of results to generate or report ('
+    for i, result_name in enumerate(results.keys()):
+        results_help += result_name
+        if i < len(results) - 1:
+            results_help += ', '
+        results_help += ').'
+
+    parser.add_argument('--results', type=str, nargs='+', help=results_help)
     parser.set_defaults(generate=True)
     args = parser.parse_args()
 
-    results = [
-        # SuspendedMass(),
-        # MotionTrackingWalking(),
-        # MotionPredictionAndAssistanceWalking(),
-        CrouchToStand(),
-        ]
-    for result in results:
-        if args.generate:
-            result.generate_results()
-        result.report_results()
+    for result_name, result_object in results.items():
+        if args.results is None or result_name in args.results:
+            if args.generate:
+                print(f'Generating {result_name} results.')
+                result_object.generate_results()
+            print(f'Reporting {result_name} results.')
+            result_object.report_results()
 
-    # motion_prediction_walking()
-    # assisted_walking()
-# TODO linear tangent steering has analytical solution Example 4.1 Betts, and Example 4.5
-
-
-# 2 dof 3 muscles, predict, time-stepping, and track. add noise!!!
-
-"""
-Results
-We show:
-Verification
-Types of problems:
-Prediction
-Tracking
-Muscle redundancy
-Parameter optimization
-Modeling features:
-Kinematic constraints
-Minimizing joint loading
-For Aim 1: Verification
-Solve a problem with a known analytical solution.
-Effect of mesh size on accuracy of solution and duration to solve.
-Trapezoidal
-Hermite-Simpson
-Kinematic constraints
-Implementing the method to solve this problem requires careful consideration, and so we present verification so that users are confident we handle this type of problem correctly.
-Double pendulum with point on line:
-Start from intermediate pose and minimize a certain component of the reaction: ensure the model goes to the correct pose.
-Compute what the joint reaction should be (analytically) and check that that’s what it is in the simulation (the cost function).
-For Aim 1 (verification) and Aim 2 (science)
-Lifting from crouch
-Describe model
-The model contains a kinematic constraint to move the patella, improving the accuracy of the moment arms for quadriceps muscles. 
-Predict
-Forward simulation gives same results as direct collocation.
-Track
-Track the predicted motion to recover muscle activity.
-Muscle redundancy (using MocoInverse)
-Compare inverse solution to CMC activations.
-Compare runtime to CMC.
-How much faster than tracking?
-Add an assistive device for sit-to-stand (predictive simulation).
-Optimize a device parameter.
-Do kinematics change?
-Shoulder flexion prediction
-TODO
-We have shown verification, as is necessary for any software, and validation for specific examples. However, users may still obtain invalid results on their own problems. It is essential that researchers always perform their own validation.
-"""

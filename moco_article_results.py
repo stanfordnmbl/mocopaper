@@ -354,6 +354,8 @@ class MotionTrackingWalking(MocoPaperResult):
             if 'pelvis' in str(forcePath):
                 effort.setWeightForControl(forcePath, 10)
 
+        problem.addGoal(osim.MocoInitialActivationGoal('init_activation'))
+
         solver = osim.MocoCasADiSolver.safeDownCast(moco.updSolver())
         # solver.set_optim_convergence_tolerance(1e-4)
 

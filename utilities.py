@@ -214,7 +214,8 @@ def shift_data_to_cycle(
     return shifted_time, shifted_ordinate
 
 def plot_joint_moment_breakdown(model, moco_traj,
-                                coord_paths, muscle_paths=None):
+                                coord_paths, muscle_paths=None,
+                                coordact_paths=[]):
     model.initSystem()
 
     num_coords = len(coord_paths)
@@ -225,6 +226,7 @@ def plot_joint_moment_breakdown(model, moco_traj,
             muscle_paths.append(muscle.getAbsolutePathString())
     num_muscles = len(muscle_paths)
 
+    num_coordact = len(coordact_paths)
 
 
     net_joint_moments = None
@@ -271,6 +273,16 @@ def plot_joint_moment_breakdown(model, moco_traj,
             model.realizeDynamics(state)
             tendon_forces[itime, imusc] = muscle.getTendonForce(state)
 
+
+    coordact_moments = np.empty((len(time), num_coordact))
+    for ica, coordact_paths in enumerate(coordact_paths):
+        coordact = model.getComponent(coordact_paths)
+        for itime in range(len(time)):
+            state = states_traj.get(itime)
+            model.realizeDynamics(state)
+            coordact_moments[itime, ica] = coordact.getActuation(state)
+
+
     for icoord, coord_path in enumerate(coord_paths):
         coord = model.getComponent(coord_path)
 
@@ -296,6 +308,11 @@ def plot_joint_moment_breakdown(model, moco_traj,
                     ax.plot(time, this_moment, label=muscle_path)
 
                     sum_actuators_shown += this_moment
+
+        for ica, coordact_path in enumerate(coordact_paths):
+            this_moment = coordact_moments[:, ica]
+            ax.plot(time, this_moment, label=coordact_path)
+            sum_actuators_shown += this_moment
 
         ax.plot(time, sum_actuators_shown,
                 label='sum actuators shown', color='gray', linewidth=2)

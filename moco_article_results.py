@@ -13,6 +13,16 @@ import opensim as osim
 # TODO: report reserve and residual forces.
 # TODO: create a docker container for these results and generating the preprint.
 # TODO fix shift
+# TODO: report difference in knee joint loading between MocoInverse and
+#  MocoInverse-knee.
+# TODO: Put a gap in the plots for walking at 60pgc.
+# TODO: Add a periodicity cost to walking.
+# TODO: Use a lighter gray color for CMC. Generally fix the overlap of colors.
+# TODO: Use MocoTrack in verification section.
+# TODO: Verification: add a prediction for p=5.
+# TODO: Add analytic problem to this file.
+# TODO: crouch to stand: plot assistive torque?
+# TODO: add diagram of motion.
 
 mpl.rcParams.update({'font.size': 8,
                      'axes.titlesize': 8,
@@ -717,7 +727,7 @@ class CrouchToStand(MocoPaperResult):
 
         problem.addParameter(
            osim.MocoParameter('stiffness', '/forceset/spring',
-                              'stiffness', osim.MocoBounds(0, 80)))
+                              'stiffness', osim.MocoBounds(0, 100)))
 
         solver = osim.MocoCasADiSolver.safeDownCast(moco.updSolver())
         solver.resetProblem(problem)
@@ -825,10 +835,30 @@ class CrouchToStand(MocoPaperResult):
 
         predict_assisted_solution = osim.MocoTrajectory(
             self.predict_assisted_solution_file)
+        stiffness = predict_assisted_solution.getParameter('stiffness')
+
+        # states = predict_assisted_solution.exportToStatesTrajectory(
+        #     self.muscle_driven_model())
+
+        print(f'Stiffness: {stiffness}')
+        with open('results/crouch_to_stand_stiffness.txt', 'w') as f:
+            f.write(f'{stiffness}')
         plot_solution(predict_solution, 'prediction', '-', 'k')
         plot_solution(predict_assisted_solution, 'prediction with assistance',
-                      '--')
+                      linestyle='--')
+
         coord_axes[0].legend(frameon=False, handlelength=1.9)
+
+        # knee_angle = predict_assisted_solution.getStateMat(
+        #     '/jointset/knee_r/knee_angle_r/value')
+        # axright = coord_axes[1].twinx()
+        # axright.plot(predict_assisted_solution.getTimeMat(),
+        #              -stiffness * knee_angle)
+        # axright.set_ylabel('knee extension moment (N-m)')
+        # axright.set_yticks([0, 100, 200])
+        # axright.spines['top'].set_visible(False)
+        # axright.spines['bottom'].set_visible(False)
+
         fig.tight_layout(h_pad=0.4)
         fig.savefig('figures/crouch_to_stand.png', dpi=600)
 
@@ -837,17 +867,18 @@ class CrouchToStand(MocoPaperResult):
         #                                   predict_solution,
         #                             ['/jointset/hip_r/hip_flexion_r',
         #                              '/jointset/knee_r/knee_angle_r',
+        #                              '/jointset/ankle_r/ankle_angle_r'])
+        # fig.savefig('figures/crouch_to_stand_joint_moment_contribution.png',
+        #             dpi=600)
+        # fig = utilities.plot_joint_moment_breakdown(self.muscle_driven_model(),
+        #                             predict_assisted_solution,
+        #                             ['/jointset/hip_r/hip_flexion_r',
+        #                              '/jointset/knee_r/knee_angle_r',
         #                              '/jointset/ankle_r/ankle_angle_r'],
-        #                             ['/forceset/glut_max2_r',
-        #                              '/forceset/psoas_r',
-        #                              '/forceset/semimem_r',
-        #                              '/forceset/rect_fem_r',
-        #                              '/forceset/bifemsh_r',
-        #                              '/forceset/vas_int_r',
-        #                              '/forceset/med_gas_r',
-        #                              '/forceset/soleus_r',
-        #                              '/forceset/tib_ant_r'])
-        # fig.show()
+        #                             )
+        # fig.savefig('figures/crouch_to_stand_assisted_'
+        #             'joint_moment_contribution.png',
+        #             dpi=600)
 
 if __name__ == "__main__":
     import argparse

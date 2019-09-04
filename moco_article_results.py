@@ -386,7 +386,7 @@ class MotionTrackingWalking(MocoPaperResult):
         # cmc.printToXML('motion_tracking_walking_cmc_setup.xml')
         cmc = osim.CMCTool('motion_tracking_walking_cmc_setup.xml')
         # 1 minute
-        cmc.run()
+        # cmc.run()
 
         # TODO: why is recfem used instead of vaslat? recfem counters the hip
         # extension moment in early stance.
@@ -499,30 +499,35 @@ class MotionTrackingWalking(MocoPaperResult):
         # sol_inverse.setStatesTrajectory(sol_cmc)
         time_cmc = np.array(sol_cmc.getIndependentColumn())
 
-        fig = utilities.plot_joint_moment_breakdown(model, sol_inverse,
-                                    ['/jointset/hip_l/hip_flexion_l',
-                                     '/jointset/hip_l/hip_adduction_l',
-                                     '/jointset/hip_l/hip_rotation_l',
-                                     '/jointset/walker_knee_l/knee_angle_l',
-                                     '/jointset/ankle_l/ankle_angle_l'],
-                                          )
-        fig.savefig('results/motion_tracking_walking_inverse_'
-                    'joint_moment_breakdown.png',
-                    dpi=600)
+        plot_breakdown = False
+
+        if plot_breakdown:
+            fig = utilities.plot_joint_moment_breakdown(model, sol_inverse,
+                                        ['/jointset/hip_l/hip_flexion_l',
+                                         '/jointset/hip_l/hip_adduction_l',
+                                         '/jointset/hip_l/hip_rotation_l',
+                                         '/jointset/walker_knee_l/knee_angle_l',
+                                         '/jointset/ankle_l/ankle_angle_l'],
+                                              )
+            fig.savefig('results/motion_tracking_walking_inverse_'
+                        'joint_moment_breakdown.png',
+                        dpi=600)
 
         report = osim.report.Report(model, mocoinverse_jr_solution_file)
         report.generate()
 
-        fig = utilities.plot_joint_moment_breakdown(model, sol_inverse_jointreaction,
-                                          ['/jointset/hip_l/hip_flexion_l',
-                                           '/jointset/hip_l/hip_adduction_l',
-                                           '/jointset/hip_l/hip_rotation_l',
-                                           '/jointset/walker_knee_l/knee_angle_l',
-                                           '/jointset/ankle_l/ankle_angle_l'],
-                                          )
-        fig.savefig('results/motion_tracking_walking_inverse_'
-                    'jointreaction_joint_moment_breakdown.png',
-                    dpi=600)
+        if plot_breakdown:
+            fig = utilities.plot_joint_moment_breakdown(model,
+                                                        sol_inverse_jointreaction,
+                                              ['/jointset/hip_l/hip_flexion_l',
+                                               '/jointset/hip_l/hip_adduction_l',
+                                               '/jointset/hip_l/hip_rotation_l',
+                                               '/jointset/walker_knee_l/knee_angle_l',
+                                               '/jointset/ankle_l/ankle_angle_l'],
+                                              )
+            fig.savefig('results/motion_tracking_walking_inverse_'
+                        'jointreaction_joint_moment_breakdown.png',
+                        dpi=600)
 
         fig = plt.figure(figsize=(5.5, 5.5))
         gs = gridspec.GridSpec(9, 2)
@@ -614,11 +619,18 @@ class MotionTrackingWalking(MocoPaperResult):
                 ax.set_xticklabels([])
             else:
                 ax.set_xlabel('time (% gait cycle)')
-            ax.set_title(f'{muscle[1]} activation')
+
+            title = f'  {muscle[1]}'
+            if im == 0:
+                title += ' activation'
+            plt.text(0, 1, title,
+                     horizontalalignment='left',
+                     verticalalignment='top')
+            ax.set_yticks([0, 1])
 
             utilities.publication_spines(ax)
 
-        fig.tight_layout(h_pad=0.05)
+        fig.tight_layout(h_pad=0.42)
 
         fig.savefig('figures/motion_tracking_walking.eps')
         fig.savefig('figures/motion_tracking_walking.pdf')
@@ -720,7 +732,7 @@ class CrouchToStand(MocoPaperResult):
         self.predict_assisted()
 
     def report_results(self):
-        fig = plt.figure(figsize=(5.5, 5.5))
+        fig = plt.figure(figsize=(5.5, 4.5))
         values = [
             '/jointset/hip_r/hip_flexion_r/value',
             '/jointset/knee_r/knee_angle_r/value',
@@ -740,21 +752,21 @@ class CrouchToStand(MocoPaperResult):
         muscles = [
             ('glut_max2', 'gluteus maximus'),
             ('psoas', 'iliopsoas'),
-            ('semimem', 'hamstrings'),
+            # ('semimem', 'hamstrings'),
             ('rect_fem', 'rectus femoris'),
-            ('bifemsh', 'biceps femoris short head'),
+            # ('bifemsh', 'biceps femoris short head'),
             ('vas_int', 'vasti'),
             ('med_gas', 'gastrocnemius'),
-            ('soleus', 'soleus'),
+            # ('soleus', 'soleus'),
             ('tib_ant', 'tibialis anterior'),
         ]
         # grid = plt.GridSpec(9, 2, hspace=0.7,
         #                     left=0.1, right=0.98, bottom=0.07, top=0.96,
         #                     )
-        grid = gridspec.GridSpec(9, 2)
+        grid = gridspec.GridSpec(6, 2)
         coord_axes = []
         for ic, coordvalue in enumerate(values):
-            ax = fig.add_subplot(grid[3 * ic: 3 * (ic + 1), 0])
+            ax = fig.add_subplot(grid[2 * ic: 2 * (ic + 1), 0])
             ax.set_ylabel('%s (degrees)' % coord_names[coordvalue])
             ax.get_yaxis().set_label_coords(-0.15, 0.5)
             if ic == len(values) - 1:
@@ -767,7 +779,15 @@ class CrouchToStand(MocoPaperResult):
         muscle_axes = []
         for im, muscle in enumerate(muscles):
             ax = fig.add_subplot(grid[im, 1])
-            ax.set_title('%s activation' % muscle[1])
+            # ax.set_title('%s activation' % muscle[1])
+            title = f'  {muscle[1]}'
+            if im == 0:
+                title += ' activation'
+            plt.text(0.5, 0.9, title,
+                     horizontalalignment='center',
+                     transform=ax.transAxes
+                     )
+            ax.set_yticks([0, 1])
             ax.set_ylim([0, 1])
             if im == len(muscles) - 1:
                 ax.set_xlabel('time (s)')
@@ -809,7 +829,7 @@ class CrouchToStand(MocoPaperResult):
         plot_solution(predict_assisted_solution, 'prediction with assistance',
                       '--')
         coord_axes[0].legend(frameon=False, handlelength=1.9)
-        fig.tight_layout(h_pad=0.05)
+        fig.tight_layout(h_pad=0.4)
         fig.savefig('figures/crouch_to_stand.png', dpi=600)
 
 
@@ -841,9 +861,9 @@ if __name__ == "__main__":
 
     results = [
         # SuspendedMass(),
-        MotionTrackingWalking(),
+        # MotionTrackingWalking(),
         # MotionPredictionAndAssistanceWalking(),
-        # CrouchToStand(),
+        CrouchToStand(),
         ]
     for result in results:
         if args.generate:

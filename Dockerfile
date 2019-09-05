@@ -74,4 +74,15 @@ RUN cd / \
 
 COPY . /mocopaper
 
+RUN apt-get update && apt-get install -y python3-opencv
+
+# Matplotlib's default backend requires a DISPLAY / Xserver.
+RUN echo 'backend : Agg' >> /mocopaper/matplotlibrc && \
+    echo 'font.sans-serif : Arial, Helvetica, sans-serif' >> /mocopaper/matplotlibrc
+
+WORKDIR /mocopaper
+
 ENTRYPOINT ["python3", "moco_article_results.py"]
+
+# TODO: How do we get the output of the container back onto the host machine?
+# https://stackoverflow.com/questions/31448821/how-to-write-data-to-host-file-system-from-docker-container

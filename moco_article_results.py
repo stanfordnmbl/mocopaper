@@ -9,15 +9,14 @@ import pylab as pl
 
 import opensim as osim
 
-# TODO: show icons of different muscles next to the activation plots.
 # TODO: report reserve and residual forces.
-# TODO: create a docker container for these results and generating the preprint.
-# TODO fix shift
+# TODO: report runtimes from different methods.
 # TODO: report difference in knee joint loading between MocoInverse and
 #  MocoInverse-knee.
-# TODO: Put a gap in the plots for walking at 60pgc.
+# TODO: create a docker container for these results and generating the preprint.
+# TODO: plot inverse kinematics and EMG.
+# TODO fix shift
 # TODO: Add a periodicity cost to walking.
-# TODO: Use a lighter gray color for CMC. Generally fix the overlap of colors.
 # TODO: Use MocoTrack in verification section.
 # TODO: Verification: add a prediction for p=5.
 # TODO: Add analytic problem to this file.
@@ -297,7 +296,7 @@ class MotionTrackingWalking(MocoPaperResult):
 
     def shift(self, time, y):
         return utilities.shift_data_to_cycle(self.initial_time, self.final_time,
-                                   self.footstrike, time, y, cut_off=False)
+                                   self.footstrike, time, y, cut_off=True)
 
     def create_model_processor(self):
         modelProcessor = osim.ModelProcessor(
@@ -558,13 +557,7 @@ class MotionTrackingWalking(MocoPaperResult):
 
             y_cmc = coord[2] * np.rad2deg(
                 toarray(sol_cmc.getDependentColumn(f'{coord[0]}/value')),)
-            self.plot(ax, time_cmc, y_cmc, label='CMC', color='gray')
-
-            y_track = coord[2] * np.rad2deg(
-                sol_track.getStateMat(f'{coord[0]}/value'))
-            self.plot(ax, time_track, y_track, label='MocoTrack',
-                      color='k',
-                      linestyle='--')
+            self.plot(ax, time_cmc, y_cmc, label='CMC', color='k')
 
             y_inverse = coord[2] * np.rad2deg(
                 sol_inverse.getStateMat(f'{coord[0]}/value'))
@@ -577,6 +570,11 @@ class MotionTrackingWalking(MocoPaperResult):
             #           label='MocoInverse-knee',
             #           linestyle='--')
             ax.plot([0], [0], label='MocoInverse-knee', linestyle='--')
+
+            y_track = coord[2] * np.rad2deg(
+                sol_track.getStateMat(f'{coord[0]}/value'))
+            self.plot(ax, time_track, y_track, label='MocoTrack',
+                      linestyle='--')
 
             ax.set_xlim(0, 100)
             if ic == 1:
@@ -611,10 +609,8 @@ class MotionTrackingWalking(MocoPaperResult):
             activation_path = f'/forceset/{muscle[0]}_{self.side}/activation'
             self.plot(ax, time_cmc,
                       toarray(sol_cmc.getDependentColumn(activation_path)),
-                    color='gray')
-            self.plot(ax, time_track, sol_track.getStateMat(activation_path),
-                    label='Track',
-                    color='k', linestyle='--')
+                      color='k'
+                    )
             self.plot(ax, time_inverse,
                       sol_inverse.getStateMat(activation_path),
                       label='Inverse',
@@ -622,6 +618,9 @@ class MotionTrackingWalking(MocoPaperResult):
             self.plot(ax, time_inverse_jointreaction,
                       sol_inverse_jointreaction.getStateMat(activation_path),
                       label='Inverse JR',
+                      linestyle='--')
+            self.plot(ax, time_track, sol_track.getStateMat(activation_path),
+                      label='Track',
                       linestyle='--')
             ax.set_ylim(0, 1)
             ax.set_xlim(0, 100)

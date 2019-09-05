@@ -28,7 +28,7 @@ mpl.rcParams.update({'font.size': 8,
                      'axes.titlesize': 8,
                      'axes.labelsize': 8,
                      'font.sans-serif': ['Arial'],
-                     'image.cmap': 'Tab10'})
+                     'image.cmap': 'tab10'})
 
 import utilities
 
@@ -648,11 +648,10 @@ class MotionTrackingWalking(MocoPaperResult):
 
 class CrouchToStand(MocoPaperResult):
     def __init__(self):
-        self.predict_solution_file = 'predict_solution.sto'
-        self.predict_assisted_solution_file = 'predict_assisted_solution.sto'
-        self.track_solution_file = 'track_solution.sto'
-        self.inverse_solution_file = 'inverse_solution.sto'
-        self.inverse_assisted_solution_file = 'inverse_assisted_solution.sto'
+        self.predict_solution_file = \
+            'results/crouch_to_stand_predict_solution.sto'
+        self.predict_assisted_solution_file = \
+            'results/crouch_to_stand_predict_assisted_solution.sto'
 
     def create_study(self, model):
         moco = osim.MocoStudy()
@@ -734,7 +733,7 @@ class CrouchToStand(MocoPaperResult):
 
         solver.set_parameters_require_initsystem(False)
         solution = moco.solve()
-        moco.visualize(solution)
+        # moco.visualize(solution)
         solution.write(self.predict_assisted_solution_file)
 
     def generate_results(self):
@@ -773,11 +772,23 @@ class CrouchToStand(MocoPaperResult):
         # grid = plt.GridSpec(9, 2, hspace=0.7,
         #                     left=0.1, right=0.98, bottom=0.07, top=0.96,
         #                     )
-        grid = gridspec.GridSpec(6, 2)
+        grid = gridspec.GridSpec(12, 2)
+
+        ax = fig.add_subplot(grid[9: 12, 0])
+        import cv2
+        # Convert BGR color ordering to RGB.
+        image = cv2.imread('crouch_to_stand_visualization/'
+                           'crouch_to_stand_visualization.png')[...,::-1]
+        ax.imshow(image, zorder=0)
+        plt.axis('off')
+
         coord_axes = []
         for ic, coordvalue in enumerate(values):
-            ax = fig.add_subplot(grid[2 * ic: 2 * (ic + 1), 0])
-            ax.set_ylabel('%s (degrees)' % coord_names[coordvalue])
+            ax = fig.add_subplot(grid[3 * ic: 3 * (ic + 1), 0])
+            ax.set_ylabel('%s\n(degrees)' % coord_names[coordvalue])
+            # ax.text(0.5, 1, '%s (degrees)' % coord_names[coordvalue],
+            #         horizontalalignment='center',
+            #         transform=ax.transAxes)
             ax.get_yaxis().set_label_coords(-0.15, 0.5)
             if ic == len(values) - 1:
                 ax.set_xlabel('time (s)')
@@ -788,7 +799,7 @@ class CrouchToStand(MocoPaperResult):
             coord_axes += [ax]
         muscle_axes = []
         for im, muscle in enumerate(muscles):
-            ax = fig.add_subplot(grid[im, 1])
+            ax = fig.add_subplot(grid[2 * im: 2 * (im + 1), 1])
             # ax.set_title('%s activation' % muscle[1])
             title = f'  {muscle[1]}'
             if im == 0:
@@ -800,7 +811,7 @@ class CrouchToStand(MocoPaperResult):
             ax.set_yticks([0, 1])
             ax.set_ylim([0, 1])
             if im == len(muscles) - 1:
-                ax.set_xlabel('time (s)')
+                ax.set_xlabel('time (s)', zorder=10)
             else:
                 ax.set_xticklabels([])
             utilities.publication_spines(ax)
@@ -859,7 +870,7 @@ class CrouchToStand(MocoPaperResult):
         # axright.spines['top'].set_visible(False)
         # axright.spines['bottom'].set_visible(False)
 
-        fig.tight_layout(h_pad=0.4)
+        fig.tight_layout(h_pad=-0.5)
         fig.savefig('figures/crouch_to_stand.png', dpi=600)
 
 

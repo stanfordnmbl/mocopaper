@@ -227,3 +227,4 @@ subject_walk_armless_for_cmc.osim
 /subject_armless_for_cmc.osim
 /muscle_outputs.sto
 /motion_tracking_walking_inverse_outputs.sto
+!/crouch_to_stand_visualization/crouch_to_stand_visualization.png

@@ -220,23 +220,28 @@ class SuspendedMass(MocoPaperResult):
         # ax = fig.add_subplot(grid[0, 0:2])
         ax = fig.add_subplot(grid[:, 0:2])
         ax.plot([-self.width, self.xinit],
-                [0, self.yinit], color='tab:red', alpha=0.3)
+                [0, self.yinit], color='tab:red', alpha=0.3,
+                linewidth=3)
         ax.plot([0, self.xinit],
-                [0, self.yinit], color='tab:red', alpha=0.3)
+                [0, self.yinit], color='tab:red', alpha=0.3,
+                linewidth=3)
         ax.plot([self.width, self.xinit],
-                [0, self.yinit], color='tab:red', alpha=0.3)
-        ax.plot([-1.1 * self.width, 1.1 * self.width], [0, 0], color='k')
+                [0, self.yinit], color='tab:red', alpha=0.3,
+                linewidth=3)
 
         # ax = fig.add_subplot(grid[2, 1])
         # ax.set_title('final')
         ax.plot([-self.width, self.xfinal],
-                [0, self.yfinal], color='tab:red')
+                [0, self.yfinal], color='tab:red',
+                linewidth=3)
         ax.plot([0, self.xfinal],
-                [0, self.yfinal], color='tab:red')
+                [0, self.yfinal], color='tab:red',
+                linewidth=3)
         ax.plot([self.width, self.xfinal],
-                [0, self.yfinal], color='tab:red')
-        ax.plot([-1.1 * self.width, 1.1 * self.width], [0, 0], color='k',
-                linewidth=2)
+                [0, self.yfinal], color='tab:red',
+                linewidth=3)
+        ax.plot([-1.1 * self.width, 1.1 * self.width], [0.005, 0.005], color='k',
+                linewidth=3)
 
         ax.annotate('', xy=(0, -0.85 * self.width), xycoords='data',
                     xytext=(0, -0.7 * self.width),

@@ -5,7 +5,7 @@ MAINTAINER Christopher Dembia
 # opensim-moco is a private repository on GitHub, so we need permission to
 # access the repository within the Docker container. Create a Personal Access
 # Token on the GitHub website:
-# 1. Click user icon in the upper right hand corner.
+# 1. Click user icon in the upper right corner.
 # 2. Click Settings.
 # 3. Click Developer settings.
 # 4. Click Personal access tokens.
@@ -72,3 +72,6 @@ RUN cd / \
         && cd /opensim-moco-install/sdk/Python && python3 setup.py install \
         && rm -r /build
 
+COPY . /mocopaper
+
+ENTRYPOINT ["python3", "moco_article_results.py"]

@@ -203,21 +203,31 @@ class SuspendedMass(MocoPaperResult):
             'results/suspended_mass_time_stepping.sto')
         track_solution = osim.MocoTrajectory(
             'results/suspended_mass_track_solution.sto')
-        # predict_p_solution = osim.MocoTrajectory(
-        #     'results/suspended_mass_prediction_p_solution.sto')
         track_p_solution = osim.MocoTrajectory(
             'results/suspended_mass_track_p_solution.sto')
 
-        time_stepping_rms = time_stepping.compareContinuousVariablesRMS(predict_solution)
+        time_stepping_rms = time_stepping.compareContinuousVariablesRMSPattern(
+            predict_solution,
+            'states', '/jointset.*value$')
         print(f'time-stepping rms: {time_stepping_rms}')
+        with open('results/suspended_mass_'
+                  'time_stepping_coord_rms.txt', 'w') as f:
+            f.write(f'{time_stepping_rms:.4f}')
 
-        # rms = predict_solution.compareContinuousVariablesRMS(track_solution,
-        #                                                      '/jointset.*value$')
-        # print(f'rms: {rms}')
+        track_rms = track_solution.compareContinuousVariablesRMSPattern(
+            predict_solution, 'states', '/forceset.*activation$')
+        print(f'track rms: {track_rms}')
+        with open('results/suspended_mass_'
+                  'track_activation_rms.txt', 'w') as f:
+            f.write(f'{track_rms:.4f}')
 
+        track_p_rms = track_p_solution.compareContinuousVariablesRMSPattern(
+            predict_solution, 'states', '/forceset.*activation$')
+        print(f'track p=4 rms: {track_p_rms}')
+        with open('results/suspended_mass_'
+                  'track_p_activation_rms.txt', 'w') as f:
+            f.write(f'{track_p_rms:.3f}')
 
-
-        # ax = fig.add_subplot(grid[0, 0:2])
         ax = fig.add_subplot(grid[:, 0:2])
         ax.plot([-self.width, self.xinit],
                 [0, self.yinit], color='tab:red', alpha=0.3,
@@ -229,8 +239,6 @@ class SuspendedMass(MocoPaperResult):
                 [0, self.yinit], color='tab:red', alpha=0.3,
                 linewidth=3)
 
-        # ax = fig.add_subplot(grid[2, 1])
-        # ax.set_title('final')
         ax.plot([-self.width, self.xfinal],
                 [0, self.yfinal], color='tab:red',
                 linewidth=3)
@@ -277,7 +285,6 @@ class SuspendedMass(MocoPaperResult):
                 linestyle='')
         ax.plot([0], [0.5 * self.width])
         scalebar = AnchoredSizeBar(ax.transData, 0.05, label='5 cm',
-                                   # loc=(0, 0.3),
                                    loc='lower center',
                                    pad=0.5, frameon=False)
         ax.add_artist(scalebar)

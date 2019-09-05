@@ -336,7 +336,7 @@ class MotionTrackingWalking(MocoPaperResult):
             "resources/Rajagopal2016/coordinates.sto")
         coordinates.append(osim.TabOpLowPassFilter(6))
         track.setStatesReference(coordinates)
-        track.set_states_global_tracking_weight(0.1)
+        track.set_states_global_tracking_weight(0.05)
 
         # This setting allows extra data columns contained in the states
         # reference that don't correspond to model coordinates.

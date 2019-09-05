@@ -18,7 +18,6 @@ import opensim as osim
 # TODO fix shift
 # TODO: Add a periodicity cost to walking.
 # TODO: Use MocoTrack in verification section.
-# TODO: Verification: add a prediction for p=5.
 # TODO: Add analytic problem to this file.
 # TODO: crouch to stand: plot assistive torque?
 # TODO: add diagram of motion.
@@ -55,6 +54,11 @@ class SuspendedMass(MocoPaperResult):
         body = model.updBodySet().get("body")
         model.updForceSet().clearAndDestroy()
         model.finalizeFromProperties()
+
+        model.updCoordinateSet().get('tx').setRangeMin(-self.width)
+        model.updCoordinateSet().get('tx').setRangeMax(self.width)
+        model.updCoordinateSet().get('ty').setRangeMin(-2 * self.width)
+        model.updCoordinateSet().get('ty').setRangeMax(0)
 
         actuL = osim.DeGrooteFregly2016Muscle()
         actuL.setName("left")
@@ -143,20 +147,38 @@ class SuspendedMass(MocoPaperResult):
 
     def track(self, prediction_solution, exponent=2):
 
-        study = self.create_study()
-        problem = study.updProblem()
-        problem.setTimeBounds(0, [prediction_solution.getInitialTime(),
-                                  prediction_solution.getFinalTime()])
-
-        tracking = osim.MocoStateTrackingGoal("tracking", 1000.0)
-        tracking.setReference(
+        track = osim.MocoTrack()
+        track.setName('suspended_mass_tracking')
+        track.setModel(osim.ModelProcessor(self.build_model()))
+        track.setStatesReference(
             osim.TableProcessor(prediction_solution.exportToStatesTable()))
-        tracking.setPattern('.*value$')
-        tracking.setAllowUnusedReferences(True)
-        problem.addGoal(tracking)
-        effort = osim.MocoControlGoal("effort")
+        track.set_states_global_tracking_weight(10.0)
+        track.set_allow_unused_references(True)
+        # track.set_control_effort_weight(1.0)
+        track.set_mesh_interval(0.003)
+
+        study = track.initialize()
+        problem = study.updProblem()
+        problem.setStateInfo("/jointset/tx/tx/value", [-self.width, self.width],
+                             self.xinit)
+        problem.setStateInfo("/jointset/ty/ty/value", [-2 * self.width, 0],
+                             self.yinit)
+        problem.setStateInfo("/forceset/left/activation", [0, 1], 0)
+        problem.setStateInfo("/forceset/middle/activation", [0, 1], 0)
+        problem.setStateInfo("/forceset/right/activation", [0, 1], 0)
+        problem.updPhase().setDefaultSpeedBounds(osim.MocoBounds(-15, 15))
+        tracking = osim.MocoStateTrackingGoal.safeDownCast(
+            problem.updGoal('state_tracking'))
+        tracking.setPattern('.*(value|speed)$')
+
+        effort = osim.MocoControlGoal.safeDownCast(
+            problem.updGoal('control_effort'))
         effort.setExponent(exponent)
-        problem.addGoal(effort)
+
+        solver = osim.MocoCasADiSolver.safeDownCast(
+            study.updSolver())
+        solver.set_optim_convergence_tolerance(-1)
+        solver.set_optim_constraint_tolerance(-1)
 
         solution = study.solve()
 
@@ -166,8 +188,6 @@ class SuspendedMass(MocoPaperResult):
         predict_solution, time_stepping = self.predict(True)
         predict_solution.write('results/suspended_mass_prediction_solution.sto')
         time_stepping.write('results/suspended_mass_time_stepping.sto')
-        # predict_solution_p, _ = self.predict(False, 4)
-        # predict_solution_p.write('results/suspended_mass_prediction_p_solution.sto')
         track_solution = self.track(predict_solution)
         track_solution.write('results/suspended_mass_track_solution.sto')
         track_solution_p = self.track(predict_solution, 4)
@@ -188,11 +208,14 @@ class SuspendedMass(MocoPaperResult):
         track_p_solution = osim.MocoTrajectory(
             'results/suspended_mass_track_p_solution.sto')
 
-        # vars = osim.StdMapStringVectorString()
-        # vars['states'] = ['/forceset/left/activation/']
+        time_stepping_rms = time_stepping.compareContinuousVariablesRMS(predict_solution)
+        print(f'time-stepping rms: {time_stepping_rms}')
+
         # rms = predict_solution.compareContinuousVariablesRMS(track_solution,
-        #                                                      {'states': []})
+        #                                                      '/jointset.*value$')
         # print(f'rms: {rms}')
+
+
 
         # ax = fig.add_subplot(grid[0, 0:2])
         ax = fig.add_subplot(grid[:, 0:2])
@@ -214,6 +237,13 @@ class SuspendedMass(MocoPaperResult):
                 [0, self.yfinal], color='tab:red')
         ax.plot([-1.1 * self.width, 1.1 * self.width], [0, 0], color='k',
                 linewidth=2)
+
+        ax.annotate('', xy=(0, -0.85 * self.width), xycoords='data',
+                    xytext=(0, -0.7 * self.width),
+                    arrowprops=dict(width=0.2, headwidth=2, headlength=1.5,
+                                    facecolor='black'),
+                    )
+        ax.text(0, -0.78 * self.width, ' g')
 
         a = ax.plot(predict_solution.getStateMat('/jointset/tx/tx/value'),
                 predict_solution.getStateMat('/jointset/ty/ty/value'),
@@ -333,11 +363,7 @@ class SuspendedMass(MocoPaperResult):
         fig.tight_layout()
 
         pl.savefig('figures/suspended_mass.png', dpi=600)
-        # pl.savefig('figures/suspended_mass.eps')
         pl.savefig('figures/suspended_mass.pdf')
-
-    # TODO surround the point with muscles and maximize distance traveled.
-
 
 class MotionTrackingWalking(MocoPaperResult):
     def __init__(self):
@@ -367,7 +393,6 @@ class MotionTrackingWalking(MocoPaperResult):
         # modelProcessor.append(osim.ModOpScaleActiveFiberForceCurveWidthDGF(1.5))
         modelProcessor.append(osim.ModOpAddReserves(1))
         modelProcessor.process().printToXML("subject_armless_for_cmc.osim")
-        # ext_loads_xml = "resources/ArnoldSubject02Walk3/external_loads.xml"
         ext_loads_xml = "resources/Rajagopal2016/grf_walk.xml"
         modelProcessor.append(osim.ModOpAddExternalLoads(ext_loads_xml))
         return modelProcessor

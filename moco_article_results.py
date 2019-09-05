@@ -46,7 +46,7 @@ class SuspendedMass(MocoPaperResult):
     xinit = -0.7 * width
     xfinal = 0.7 * width
     yinit = -width
-    yfinal = -width + 0.07
+    yfinal = -width + 0.05
 
     def __init__(self):
         pass
@@ -128,7 +128,7 @@ class SuspendedMass(MocoPaperResult):
         effort.setExponent(exponent)
         problem.addGoal(effort)
 
-        problem.addGoal(osim.MocoFinalTimeGoal("time", 0.1))
+        problem.addGoal(osim.MocoFinalTimeGoal("time", 0.01))
 
         solution = study.solve()
 
@@ -212,7 +212,8 @@ class SuspendedMass(MocoPaperResult):
                 [0, self.yfinal], color='tab:red')
         ax.plot([self.width, self.xfinal],
                 [0, self.yfinal], color='tab:red')
-        ax.plot([-1.1 * self.width, 1.1 * self.width], [0, 0], color='k')
+        ax.plot([-1.1 * self.width, 1.1 * self.width], [0, 0], color='k',
+                linewidth=2)
 
         a = ax.plot(predict_solution.getStateMat('/jointset/tx/tx/value'),
                 predict_solution.getStateMat('/jointset/ty/ty/value'),
@@ -223,7 +224,7 @@ class SuspendedMass(MocoPaperResult):
                 linewidth=3.5,
                     label='time-stepping',
                     )
-        c= ax.plot(track_solution.getStateMat('/jointset/tx/tx/value'),
+        c = ax.plot(track_solution.getStateMat('/jointset/tx/tx/value'),
                 track_solution.getStateMat('/jointset/ty/ty/value'),
                 linewidth=1.5,
                    label='tracking, $x^2$')
@@ -278,7 +279,7 @@ class SuspendedMass(MocoPaperResult):
         ax.set_yticks([0, 1])
         ax.set_xticklabels([])
         ax.set_ylim(0, 1)
-        # ax.set_xlim(0, 0.5)
+        ax.autoscale(enable=True, axis='x', tight=True)
         utilities.publication_spines(ax)
 
         ax = fig.add_subplot(grid[1, 2:4])
@@ -302,7 +303,7 @@ class SuspendedMass(MocoPaperResult):
         ax.set_yticks([0, 1])
         ax.set_xticklabels([])
         ax.set_ylim(0, 1)
-        # ax.set_xlim(0, 0.5)
+        ax.autoscale(enable=True, axis='x', tight=True)
         utilities.publication_spines(ax)
 
         ax = fig.add_subplot(grid[2, 2:4])
@@ -325,7 +326,7 @@ class SuspendedMass(MocoPaperResult):
         ax.set_yticks([0.5], minor=True)
         ax.set_yticks([0, 1])
         ax.set_ylim(0, 1)
-        # ax.set_xlim(0, 0.5)
+        ax.autoscale(enable=True, axis='x', tight=True)
         ax.set_xlabel('time (s)')
         utilities.publication_spines(ax)
 

@@ -43,8 +43,8 @@ class MocoPaperResult(ABC):
 
 class SuspendedMass(MocoPaperResult):
     width = 0.2
-    xinit = -0.5 * width
-    xfinal = 0.5 * width
+    xinit = -0.7 * width
+    xfinal = 0.7 * width
     yinit = -width
     yfinal = -width + 0.07
 
@@ -100,7 +100,6 @@ class SuspendedMass(MocoPaperResult):
         study = osim.MocoStudy()
         problem = study.updProblem()
         problem.setModel(self.build_model())
-        problem.setTimeBounds(0, 0.5)
         problem.setStateInfo("/jointset/tx/tx/value", [-self.width, self.width],
                              self.xinit, self.xfinal)
         problem.setStateInfo("/jointset/ty/ty/value", [-2 * self.width, 0],
@@ -123,10 +122,14 @@ class SuspendedMass(MocoPaperResult):
 
         study = self.create_study()
         problem = study.updProblem()
+        problem.setTimeBounds(0, [0.4, 0.8])
 
         effort = osim.MocoControlGoal("effort")
         effort.setExponent(exponent)
         problem.addGoal(effort)
+
+        problem.addGoal(osim.MocoFinalTimeGoal("time", 0.1))
+
         solution = study.solve()
 
         # study.visualize(solution)
@@ -142,6 +145,8 @@ class SuspendedMass(MocoPaperResult):
 
         study = self.create_study()
         problem = study.updProblem()
+        problem.setTimeBounds(0, [prediction_solution.getInitialTime(),
+                                  prediction_solution.getFinalTime()])
 
         tracking = osim.MocoStateTrackingGoal("tracking", 1000.0)
         tracking.setReference(
@@ -171,7 +176,7 @@ class SuspendedMass(MocoPaperResult):
     def report_results(self):
         pl.figure()
         fig = plt.figure(figsize=(5.5, 3))
-        grid = gridspec.GridSpec(3, 2)
+        grid = gridspec.GridSpec(3, 4)
         predict_solution = osim.MocoTrajectory(
             'results/suspended_mass_prediction_solution.sto')
         time_stepping = osim.MocoTrajectory(
@@ -189,28 +194,53 @@ class SuspendedMass(MocoPaperResult):
         #                                                      {'states': []})
         # print(f'rms: {rms}')
 
-        ax = fig.add_subplot(grid[0:3, 0])
-        ax.plot(predict_solution.getStateMat('/jointset/tx/tx/value'),
+        # ax = fig.add_subplot(grid[0, 0:2])
+        ax = fig.add_subplot(grid[:, 0:2])
+        ax.plot([-self.width, self.xinit],
+                [0, self.yinit], color='tab:red', alpha=0.3)
+        ax.plot([0, self.xinit],
+                [0, self.yinit], color='tab:red', alpha=0.3)
+        ax.plot([self.width, self.xinit],
+                [0, self.yinit], color='tab:red', alpha=0.3)
+        ax.plot([-1.1 * self.width, 1.1 * self.width], [0, 0], color='k')
+
+        # ax = fig.add_subplot(grid[2, 1])
+        # ax.set_title('final')
+        ax.plot([-self.width, self.xfinal],
+                [0, self.yfinal], color='tab:red')
+        ax.plot([0, self.xfinal],
+                [0, self.yfinal], color='tab:red')
+        ax.plot([self.width, self.xfinal],
+                [0, self.yfinal], color='tab:red')
+        ax.plot([-1.1 * self.width, 1.1 * self.width], [0, 0], color='k')
+
+        a = ax.plot(predict_solution.getStateMat('/jointset/tx/tx/value'),
                 predict_solution.getStateMat('/jointset/ty/ty/value'),
-                color='lightgray', linewidth=6)
-        ax.plot(time_stepping.getStateMat('/jointset/tx/tx/value'),
+                color='lightgray', linewidth=6,
+                    label='prediction, $x^2$')
+        b = ax.plot(time_stepping.getStateMat('/jointset/tx/tx/value'),
                 time_stepping.getStateMat('/jointset/ty/ty/value'),
-                linewidth=3.5)
-        ax.plot(track_solution.getStateMat('/jointset/tx/tx/value'),
+                linewidth=3.5,
+                    label='time-stepping',
+                    )
+        c= ax.plot(track_solution.getStateMat('/jointset/tx/tx/value'),
                 track_solution.getStateMat('/jointset/ty/ty/value'),
-                linewidth=1.5)
-        ax.plot(track_p_solution.getStateMat('/jointset/tx/tx/value'),
+                linewidth=1.5,
+                   label='tracking, $x^2$')
+        d = ax.plot(track_p_solution.getStateMat('/jointset/tx/tx/value'),
                 track_p_solution.getStateMat('/jointset/ty/ty/value'),
-                linestyle='-', linewidth=1)
-        plt.annotate('start', (self.xinit, self.yinit),
-                     xytext=(self.xinit, self.yinit + 0.007))
-        plt.annotate('end', (self.xfinal, self.yfinal),
-                     xytext=(self.xfinal - 0.008, self.yfinal + 0.007))
+                linestyle='-', linewidth=1,
+                    label='tracking, $x^4$')
+        plt.annotate('initial', (self.xinit, self.yinit),
+                     xytext=(self.xinit - 0.02, self.yinit - 0.03))
+        plt.annotate('final', (self.xfinal, self.yfinal),
+                     xytext=(self.xfinal + 0.008, self.yfinal - 0.03))
         ax.plot([self.xinit, self.xfinal],
                 [self.yinit, self.yfinal],
                 color='k', marker='o',
                 linestyle='')
-        scalebar = AnchoredSizeBar(ax.transData, 0.03, label='3 cm',
+        ax.plot([0], [0.5 * self.width])
+        scalebar = AnchoredSizeBar(ax.transData, 0.05, label='5 cm',
                                    # loc=(0, 0.3),
                                    loc='lower center',
                                    pad=0.5, frameon=False)
@@ -219,31 +249,28 @@ class SuspendedMass(MocoPaperResult):
         ax.set_xticks([])
         ax.set_yticks([])
         ax.set_aspect('equal', 'datalim')
-        ax.legend(['prediction p=2',
-                   'time-stepping',
-                   'tracking p=2',
-                   'tracking p=4'],
-                  frameon=False,
+        ax.legend(frameon=False,
                   handlelength=1.9,
                   loc='upper center')
         utilities.publication_spines(ax)
         ax.spines['left'].set_visible(False)
         ax.spines['bottom'].set_visible(False)
 
-        ax = fig.add_subplot(grid[0, 1])
+
+        ax = fig.add_subplot(grid[0, 2:4])
         ax.plot(predict_solution.getTimeMat(),
                 predict_solution.getStateMat('/forceset/left/activation'),
-                color='lightgray', linewidth=6)
+                color='lightgray', linewidth=6, clip_on=False)
         ax.plot(time_stepping.getTimeMat(),
                 time_stepping.getStateMat('/forceset/left/activation'),
-                linewidth=3.5)
+                linewidth=3.5, clip_on=False)
         ax.plot(track_solution.getTimeMat(),
                 track_solution.getStateMat('/forceset/left/activation'),
-                linewidth=1.5)
+                linewidth=1.5, clip_on=False)
         ax.plot(track_p_solution.getTimeMat(),
                 track_p_solution.getStateMat('/forceset/left/activation'),
-                linestyle='-', linewidth=1)
-        plt.text(0.5, 1.05, 'left activation',
+                linestyle='-', linewidth=1, clip_on=False)
+        plt.text(0.5, 1.08, 'left activation',
                  horizontalalignment='center',
                  transform=ax.transAxes)
         plt.grid(which='both', axis='y', clip_on=False)
@@ -251,23 +278,23 @@ class SuspendedMass(MocoPaperResult):
         ax.set_yticks([0, 1])
         ax.set_xticklabels([])
         ax.set_ylim(0, 1)
-        ax.set_xlim(0, 0.5)
+        # ax.set_xlim(0, 0.5)
         utilities.publication_spines(ax)
 
-        ax = fig.add_subplot(grid[1, 1])
+        ax = fig.add_subplot(grid[1, 2:4])
         ax.plot(predict_solution.getTimeMat(),
                 predict_solution.getStateMat('/forceset/middle/activation'),
-                color='lightgray', linewidth=6)
+                color='lightgray', linewidth=6, clip_on=False)
         ax.plot(time_stepping.getTimeMat(),
                 time_stepping.getStateMat('/forceset/middle/activation'),
-                linewidth=3.5)
+                linewidth=3.5, clip_on=False)
         ax.plot(track_solution.getTimeMat(),
                 track_solution.getStateMat('/forceset/middle/activation'),
-                linewidth=1.5)
+                linewidth=1.5, clip_on=False)
         ax.plot(track_p_solution.getTimeMat(),
                 track_p_solution.getStateMat('/forceset/middle/activation'),
-                linewidth=1)
-        plt.text(0.5, 1.05, 'middle activation',
+                linewidth=1, clip_on=False)
+        plt.text(0.5, 1.08, 'middle activation',
                  horizontalalignment='center',
                  transform=ax.transAxes)
         plt.grid(which='both', axis='y', clip_on=False)
@@ -275,40 +302,37 @@ class SuspendedMass(MocoPaperResult):
         ax.set_yticks([0, 1])
         ax.set_xticklabels([])
         ax.set_ylim(0, 1)
-        ax.set_xlim(0, 0.5)
+        # ax.set_xlim(0, 0.5)
         utilities.publication_spines(ax)
 
-        ax = fig.add_subplot(grid[2, 1])
+        ax = fig.add_subplot(grid[2, 2:4])
         ax.plot(predict_solution.getTimeMat(),
                 predict_solution.getStateMat('/forceset/right/activation'),
-                color='lightgray', linewidth=6)
+                color='lightgray', linewidth=6, clip_on=False)
         ax.plot(time_stepping.getTimeMat(),
                 time_stepping.getStateMat('/forceset/right/activation'),
-                linewidth=3.5)
+                linewidth=3.5, clip_on=False)
         ax.plot(track_solution.getTimeMat(),
                 track_solution.getStateMat('/forceset/right/activation'),
-                linewidth=1.5)
-        # ax.plot(predict_p_solution.getTimeMat(),
-        #         predict_p_solution.getStateMat('/forceset/right/activation'),
-        #         linewidth=4)
+                linewidth=1.5, clip_on=False)
         ax.plot(track_p_solution.getTimeMat(),
                 track_p_solution.getStateMat('/forceset/right/activation'),
-                linewidth=1)
-        plt.text(0.5, 1.05, 'right activation',
+                linewidth=1, clip_on=False)
+        plt.text(0.5, 1.08, 'right activation',
                  horizontalalignment='center',
                  transform=ax.transAxes)
         plt.grid(which='both', axis='y', clip_on=False)
         ax.set_yticks([0.5], minor=True)
         ax.set_yticks([0, 1])
         ax.set_ylim(0, 1)
-        ax.set_xlim(0, 0.5)
+        # ax.set_xlim(0, 0.5)
         ax.set_xlabel('time (s)')
         utilities.publication_spines(ax)
 
         fig.tight_layout()
 
         pl.savefig('figures/suspended_mass.png', dpi=600)
-        pl.savefig('figures/suspended_mass.eps')
+        # pl.savefig('figures/suspended_mass.eps')
         pl.savefig('figures/suspended_mass.pdf')
 
     # TODO surround the point with muscles and maximize distance traveled.

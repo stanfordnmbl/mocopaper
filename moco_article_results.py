@@ -565,8 +565,9 @@ class MotionTrackingWalking(MocoPaperResult):
         shifted_time, shifted_y = self.shift(time, y)
         # TODO is this correct?
         duration = self.final_time - self.initial_time
-        ax.plot(100.0 * shifted_time / duration, shifted_y, *args,
+        return ax.plot(100.0 * shifted_time / duration, shifted_y, *args,
                 clip_on=False, **kwargs)
+
 
     def report_results(self):
         sol_track = osim.MocoTrajectory(self.mocotrack_solution_file)
@@ -589,11 +590,11 @@ class MotionTrackingWalking(MocoPaperResult):
         modelProcessor = self.create_model_processor()
         model = modelProcessor.process()
 
-        report = osim.report.Report(model, self.mocotrack_solution_file)
-        report.generate()
-
-        report = osim.report.Report(model, self.mocoinverse_solution_file)
-        report.generate()
+        # report = osim.report.Report(model, self.mocotrack_solution_file)
+        # report.generate()
+        #
+        # report = osim.report.Report(model, self.mocoinverse_solution_file)
+        # report.generate()
 
         # TODO: slight shift in CMC solution might be due to how we treat
         # percent gait cycle and the fact that CMC is missing 0.02 seconds.
@@ -617,8 +618,8 @@ class MotionTrackingWalking(MocoPaperResult):
                         'joint_moment_breakdown.png',
                         dpi=600)
 
-        report = osim.report.Report(model, mocoinverse_jr_solution_file)
-        report.generate()
+        # report = osim.report.Report(model, mocoinverse_jr_solution_file)
+        # report.generate()
 
         if plot_breakdown:
             fig = utilities.plot_joint_moment_breakdown(model,
@@ -633,8 +634,8 @@ class MotionTrackingWalking(MocoPaperResult):
                         'jointreaction_joint_moment_breakdown.png',
                         dpi=600)
 
-        fig = plt.figure(figsize=(5.5, 5.5))
-        gs = gridspec.GridSpec(9, 2)
+        fig = plt.figure(figsize=(5.5, 3.5))
+        gs = gridspec.GridSpec(3, 3)
 
 
         coords = [
@@ -647,86 +648,91 @@ class MotionTrackingWalking(MocoPaperResult):
              'ankle plantarflexion', 1.0),
         ]
         from utilities import toarray
-        for ic, coord in enumerate(coords):
-            ax = plt.subplot(gs[(3 * ic):(3 * (ic + 1)), 0])
-
-            y_cmc = coord[2] * np.rad2deg(
-                toarray(sol_cmc.getDependentColumn(f'{coord[0]}/value')),)
-            self.plot(ax, time_cmc, y_cmc, label='CMC', color='k')
-
-            y_inverse = coord[2] * np.rad2deg(
-                sol_inverse.getStateMat(f'{coord[0]}/value'))
-            self.plot(ax, time_inverse, y_inverse, label='MocoInverse',
-                      linestyle='--')
-
-            # y_inverse_jr = coord[2] * np.rad2deg(
-            #     sol_inverse_jointreaction.getStateMat(f'{coord[0]}/value'))
-            # self.plot(ax, time_inverse_jointreaction, y_inverse_jr,
-            #           label='MocoInverse-knee',
-            #           linestyle='--')
-            ax.plot([0], [0], label='MocoInverse-knee', linestyle='--')
-
-            y_track = coord[2] * np.rad2deg(
-                sol_track.getStateMat(f'{coord[0]}/value'))
-            self.plot(ax, time_track, y_track, label='MocoTrack',
-                      linestyle='--')
-
-            ax.set_xlim(0, 100)
-            if ic == 1:
-                ax.legend(frameon=False, handlelength=1.9)
-            if ic < len(coords) - 1:
-                ax.set_xticklabels([])
-            else:
-                ax.set_xlabel('time (% gait cycle)')
-                ax.get_xaxis().set_label_coords(0.5, 0)
-                # The '0' would intersect with the y-axis, so remove it.
-                ax.set_xticklabels(['', '20', '40', '60', '80', '100'])
-            ax.set_ylabel(f'{coord[1]} (degrees)')
-            ax.get_yaxis().set_label_coords(-0.15, 0.5)
-
-            ax.spines['bottom'].set_position('zero')
-            utilities.publication_spines(ax)
+        # for ic, coord in enumerate(coords):
+        #     ax = plt.subplot(gs[(3 * ic):(3 * (ic + 1)), 0])
+        #
+        #     y_cmc = coord[2] * np.rad2deg(
+        #         toarray(sol_cmc.getDependentColumn(f'{coord[0]}/value')),)
+        #     self.plot(ax, time_cmc, y_cmc, label='CMC', color='k',
+        #               linewidth=3)
+        #
+        #     y_inverse = coord[2] * np.rad2deg(
+        #         sol_inverse.getStateMat(f'{coord[0]}/value'))
+        #     self.plot(ax, time_inverse, y_inverse, label='MocoInverse',
+        #               linewidth=2)
+        #
+        #     ax.plot([0], [0], label='MocoInverse-knee', linewidth=2)
+        #
+        #     y_track = coord[2] * np.rad2deg(
+        #         sol_track.getStateMat(f'{coord[0]}/value'))
+        #     self.plot(ax, time_track, y_track, label='MocoTrack',
+        #               linewidth=1)
+        #
+        #     ax.set_xlim(0, 100)
+        #     if ic == 1:
+        #         ax.legend(frameon=False, handlelength=1.9)
+        #     if ic < len(coords) - 1:
+        #         ax.set_xticklabels([])
+        #     else:
+        #         ax.set_xlabel('time (% gait cycle)')
+        #         ax.get_xaxis().set_label_coords(0.5, 0)
+        #         # The '0' would intersect with the y-axis, so remove it.
+        #         ax.set_xticklabels(['', '20', '40', '60', '80', '100'])
+        #     ax.set_ylabel(f'{coord[1]} (degrees)')
+        #     ax.get_yaxis().set_label_coords(-0.15, 0.5)
+        #
+        #     ax.spines['bottom'].set_position('zero')
+        #     utilities.publication_spines(ax)
 
         # TODO: Compare to EMG.
         muscles = [
-            ('glmax2', 'gluteus maximus'),
-            ('psoas', 'psoas'),
-            ('semimem', 'semimembranosus'),
-            ('recfem', 'rectus femoris'),
-            ('bfsh', 'biceps femoris short head'),
-            ('vaslat', 'vastus lateralis'),
-            ('gasmed', 'medial gastrocnemius'),
-            ('soleus', 'soleus'),
-            ('tibant', 'tibialis anterior'),
+            ((0, 0), 'glmax2', 'gluteus maximus'),
+            ((0, 1), 'psoas', 'psoas'),
+            ((1, 0), 'semimem', 'semimembranosus'),
+            ((0, 2), 'recfem', 'rectus femoris'),
+            ((1, 1), 'bfsh', 'biceps femoris\n  short head'),
+            ((1, 2), 'vaslat', 'vastus lateralis'),
+            ((2, 0), 'gasmed', 'medial gastrocnemius'),
+            ((2, 1), 'soleus', 'soleus'),
+            ((2, 2), 'tibant', 'tibialis anterior'),
         ]
         for im, muscle in enumerate(muscles):
-            ax = plt.subplot(gs[im, 1])
-            activation_path = f'/forceset/{muscle[0]}_{self.side}/activation'
-            self.plot(ax, time_cmc,
+            ax = plt.subplot(gs[muscle[0][0], muscle[0][1]])
+            activation_path = f'/forceset/{muscle[1]}_{self.side}/activation'
+            a, = self.plot(ax, time_cmc,
                       toarray(sol_cmc.getDependentColumn(activation_path)),
-                      color='k'
+                      linewidth=3,
+                          label='CMC',
                     )
-            self.plot(ax, time_inverse,
+            b, = self.plot(ax, time_track, sol_track.getStateMat(activation_path),
+                          label='Track',
+                          linewidth=2)
+            c, = self.plot(ax, time_inverse,
                       sol_inverse.getStateMat(activation_path),
                       label='Inverse',
-                      linestyle='--')
-            self.plot(ax, time_inverse_jointreaction,
+                      linewidth=1)
+            d, = self.plot(ax, time_inverse_jointreaction,
                       sol_inverse_jointreaction.getStateMat(activation_path),
-                      label='Inverse JR',
-                      linestyle='--')
-            self.plot(ax, time_track, sol_track.getStateMat(activation_path),
-                      label='Track',
-                      linestyle='--')
-            ax.set_ylim(0, 1)
+                      label='Inverse, knee',
+                      linewidth=1)
+            if muscle[0][0] == 0 and muscle[0][1] == 0:
+                ax.legend(handles=[a, b],
+                          frameon=False, handlelength=1.,
+                          loc='center')
+            if muscle[0][0] == 1 and muscle[0][1] == 0:
+                ax.legend(handles=[c, d],
+                          frameon=False, handlelength=1.,
+                          loc='center')
+            ax.set_ylim(-0.05, 1)
             ax.set_xlim(0, 100)
-            if im < len(muscles) - 1:
+            if muscle[0][0] < 2:
                 ax.set_xticklabels([])
             else:
                 ax.set_xlabel('time (% gait cycle)')
+            if muscle[0][1] == 0:
+                ax.set_ylabel('activation')
 
-            title = f'  {muscle[1]}'
-            if im == 0:
-                title += ' activation'
+            title = f'  {muscle[2]}'
             plt.text(0, 1, title,
                      horizontalalignment='left',
                      verticalalignment='top')

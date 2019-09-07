@@ -21,6 +21,7 @@ import opensim as osim
 # TODO: Add analytic problem to this file.
 # TODO: crouch to stand: plot assistive torque?
 # TODO: add diagram of motion.
+# TODO: figure width 5.2 inches or 7.5.
 
 mpl.rcParams.update({'font.size': 8,
                      'axes.titlesize': 8,
@@ -195,7 +196,7 @@ class SuspendedMass(MocoPaperResult):
 
     def report_results(self):
         pl.figure()
-        fig = plt.figure(figsize=(5.5, 3))
+        fig = plt.figure(figsize=(5.2, 2.7))
         grid = gridspec.GridSpec(3, 4)
         predict_solution = osim.MocoTrajectory(
             'results/suspended_mass_prediction_solution.sto')
@@ -283,10 +284,11 @@ class SuspendedMass(MocoPaperResult):
                 [self.yinit, self.yfinal],
                 color='k', marker='o',
                 linestyle='')
-        ax.plot([0], [0.5 * self.width])
+        ax.plot([0], [0.8 * self.width])
         scalebar = AnchoredSizeBar(ax.transData, 0.05, label='5 cm',
                                    loc='lower center',
-                                   pad=0.5, frameon=False)
+                                   pad=-2.0,
+                                   frameon=False)
         ax.add_artist(scalebar)
         ax.set_title('trajectory of point mass')
         ax.set_xticks([])
@@ -634,7 +636,7 @@ class MotionTrackingWalking(MocoPaperResult):
                         'jointreaction_joint_moment_breakdown.png',
                         dpi=600)
 
-        fig = plt.figure(figsize=(5.5, 3.5))
+        fig = plt.figure(figsize=(7.5, 3.5))
         gs = gridspec.GridSpec(3, 3)
 
 
@@ -690,7 +692,7 @@ class MotionTrackingWalking(MocoPaperResult):
             ((0, 1), 'psoas', 'psoas'),
             ((1, 0), 'semimem', 'semimembranosus'),
             ((0, 2), 'recfem', 'rectus femoris'),
-            ((1, 1), 'bfsh', 'biceps femoris\n  short head'),
+            ((1, 1), 'bfsh', 'biceps femoris short head'),
             ((1, 2), 'vaslat', 'vastus lateralis'),
             ((2, 0), 'gasmed', 'medial gastrocnemius'),
             ((2, 1), 'soleus', 'soleus'),
@@ -716,13 +718,15 @@ class MotionTrackingWalking(MocoPaperResult):
                       label='Inverse, knee',
                       linewidth=1)
             if muscle[0][0] == 0 and muscle[0][1] == 0:
-                ax.legend(handles=[a, b],
+                ax.legend(#handles=[a, b],
                           frameon=False, handlelength=1.,
-                          loc='center')
-            if muscle[0][0] == 1 and muscle[0][1] == 0:
-                ax.legend(handles=[c, d],
-                          frameon=False, handlelength=1.,
-                          loc='center')
+                          ncol=2,
+                          # loc='center'
+                )
+            # if muscle[0][0] == 1 and muscle[0][1] == 0:
+            #     ax.legend(handles=[c, d],
+            #               frameon=False, handlelength=1.,
+            #               loc='center')
             ax.set_ylim(-0.05, 1)
             ax.set_xlim(0, 100)
             if muscle[0][0] < 2:
@@ -733,14 +737,15 @@ class MotionTrackingWalking(MocoPaperResult):
                 ax.set_ylabel('activation')
 
             title = f'  {muscle[2]}'
-            plt.text(0, 1, title,
-                     horizontalalignment='left',
-                     verticalalignment='top')
+            plt.text(0.5, 1.20, title,
+                     horizontalalignment='center',
+                     verticalalignment='top',
+                     transform=ax.transAxes)
             ax.set_yticks([0, 1])
 
             utilities.publication_spines(ax)
 
-        fig.tight_layout(h_pad=0.42)
+        fig.tight_layout(h_pad=1)
 
         fig.savefig('figures/motion_tracking_walking.eps')
         fig.savefig('figures/motion_tracking_walking.pdf')
@@ -841,7 +846,7 @@ class CrouchToStand(MocoPaperResult):
         self.predict_assisted()
 
     def report_results(self):
-        fig = plt.figure(figsize=(5.5, 4.5))
+        fig = plt.figure(figsize=(7.5, 3))
         values = [
             '/jointset/hip_r/hip_flexion_r/value',
             '/jointset/knee_r/knee_angle_r/value',
@@ -859,37 +864,37 @@ class CrouchToStand(MocoPaperResult):
         }
 
         muscles = [
-            ('glut_max2', 'gluteus maximus'),
-            ('psoas', 'iliopsoas'),
+            ((0, 3), 'glut_max2', 'gluteus maximus'),
+            ((0, 2), 'psoas', 'iliopsoas'),
             # ('semimem', 'hamstrings'),
-            ('rect_fem', 'rectus femoris'),
+            ((1, 3), 'rect_fem', 'rectus femoris'),
             # ('bifemsh', 'biceps femoris short head'),
-            ('vas_int', 'vasti'),
-            ('med_gas', 'gastrocnemius'),
+            ((1, 2), 'vas_int', 'vasti'),
+            ((2, 2), 'med_gas', 'gastrocnemius'),
             # ('soleus', 'soleus'),
-            ('tib_ant', 'tibialis anterior'),
+            ((2, 3), 'tib_ant', 'tibialis anterior'),
         ]
         # grid = plt.GridSpec(9, 2, hspace=0.7,
         #                     left=0.1, right=0.98, bottom=0.07, top=0.96,
         #                     )
-        grid = gridspec.GridSpec(12, 2)
+        grid = gridspec.GridSpec(3, 4)
 
-        ax = fig.add_subplot(grid[9: 12, 0])
+        ax = fig.add_subplot(grid[0, 0])
         import cv2
         # Convert BGR color ordering to RGB.
         image = cv2.imread('crouch_to_stand_visualization/'
                            'crouch_to_stand_visualization.png')[...,::-1]
-        ax.imshow(image, zorder=0)
+        ax.imshow(image)
         plt.axis('off')
 
         coord_axes = []
         for ic, coordvalue in enumerate(values):
-            ax = fig.add_subplot(grid[3 * ic: 3 * (ic + 1), 0])
-            ax.set_ylabel('%s\n(degrees)' % coord_names[coordvalue])
+            ax = fig.add_subplot(grid[ic, 1])
+            ax.set_ylabel('%s\n(deg.)' % coord_names[coordvalue])
             # ax.text(0.5, 1, '%s (degrees)' % coord_names[coordvalue],
             #         horizontalalignment='center',
             #         transform=ax.transAxes)
-            ax.get_yaxis().set_label_coords(-0.15, 0.5)
+            ax.get_yaxis().set_label_coords(-0.20, 0.5)
             if ic == len(values) - 1:
                 ax.set_xlabel('time (s)')
             else:
@@ -899,28 +904,28 @@ class CrouchToStand(MocoPaperResult):
             coord_axes += [ax]
         muscle_axes = []
         for im, muscle in enumerate(muscles):
-            ax = fig.add_subplot(grid[2 * im: 2 * (im + 1), 1])
+            ax = fig.add_subplot(grid[muscle[0][0], muscle[0][1]])
             # ax.set_title('%s activation' % muscle[1])
-            title = f'  {muscle[1]}'
-            if im == 0:
-                title += ' activation'
+            title = f'  {muscle[2]}'
             plt.text(0.5, 0.9, title,
                      horizontalalignment='center',
                      transform=ax.transAxes
                      )
             ax.set_yticks([0, 1])
             ax.set_ylim([0, 1])
-            if im == len(muscles) - 1:
-                ax.set_xlabel('time (s)', zorder=10)
+            if muscle[0][0] == 2:
+                ax.set_xlabel('time (s)')
             else:
                 ax.set_xticklabels([])
+            if muscle[0][1] == 2:
+                ax.set_ylabel('activation')
             utilities.publication_spines(ax)
             muscle_axes += [ax]
         def plot_solution(sol, label, linestyle='-', color=None):
             time = sol.getTimeMat()
             for ic, coordvalue in enumerate(values):
                 ax = coord_axes[ic]
-                if ic == 0:
+                if ic == 1:
                     use_label = label
                 else:
                     use_label = None
@@ -937,7 +942,7 @@ class CrouchToStand(MocoPaperResult):
                 ax = muscle_axes[im]
                 ax.plot(time,
                         sol.getStateMat(
-                            '/forceset/%s_r/activation' % muscle[0]),
+                            '/forceset/%s_r/activation' % muscle[1]),
                         linestyle=linestyle, color=color, clip_on=False)
                 ax.autoscale(enable=True, axis='x', tight=True)
 
@@ -954,11 +959,15 @@ class CrouchToStand(MocoPaperResult):
         print(f'Stiffness: {stiffness}')
         with open('results/crouch_to_stand_stiffness.txt', 'w') as f:
             f.write(f'{stiffness}')
-        plot_solution(predict_solution, 'prediction', '-', 'k')
-        plot_solution(predict_assisted_solution, 'prediction with assistance',
-                      linestyle='--')
+        plot_solution(predict_solution, 'prediction', color='k')
+        plot_solution(predict_assisted_solution, 'prediction, assisted')
 
-        coord_axes[0].legend(frameon=False, handlelength=1.9)
+        fig.tight_layout() # w_pad=0.2)
+
+        coord_axes[1].legend(frameon=False, handlelength=1,
+                             bbox_to_anchor=(-0.9, 0.5),
+                             loc='center',
+                             )
 
         # knee_angle = predict_assisted_solution.getStateMat(
         #     '/jointset/knee_r/knee_angle_r/value')
@@ -970,7 +979,6 @@ class CrouchToStand(MocoPaperResult):
         # axright.spines['top'].set_visible(False)
         # axright.spines['bottom'].set_visible(False)
 
-        fig.tight_layout(h_pad=-0.5)
         fig.savefig('figures/crouch_to_stand.png', dpi=600)
 
 

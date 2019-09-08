@@ -40,6 +40,75 @@ class MocoPaperResult(ABC):
     def report_results(self):
         pass
 
+class Analytic(MocoPaperResult):
+    def __init__(self):
+        self.solution_file = 'results/analytic_solution.sto'
+    def generate_results(self):
+        model = osim.Model()
+        body = osim.Body("b", 1, osim.Vec3(0), osim.Inertia(0))
+        model.addBody(body)
+
+        joint = osim.SliderJoint("j", model.getGround(), body)
+        joint.updCoordinate().setName("coord")
+        model.addJoint(joint)
+
+        damper = osim.SpringGeneralizedForce("coord")
+        damper.setViscosity(-1.0)
+        model.addForce(damper)
+
+        actu = osim.CoordinateActuator("coord")
+        model.addForce(actu)
+        model.finalizeConnections()
+
+        moco = osim.MocoStudy()
+        problem = moco.updProblem()
+
+        problem.setModel(model)
+        problem.setTimeBounds(0, 2)
+        problem.setStateInfo("/jointset/j/coord/value", [-10, 10], 0, 5)
+        problem.setStateInfo("/jointset/j/coord/speed", [-10, 10], 0, 2)
+        problem.setControlInfo("/forceset/coordinateactuator", [-50, 50])
+
+        problem.addGoal(osim.MocoControlGoal("effort", 0.5))
+
+        solver = moco.initCasADiSolver()
+        solver.set_num_mesh_points(51)
+        solution = moco.solve()
+        solution.write(self.solution_file)
+
+    def report_results(self):
+        solution = osim.MocoTrajectory(self.solution_file)
+        time = solution.getTimeMat()
+
+        exp = np.exp
+        A = np.array([[-2 - 0.5 * exp(-2) + 0.5 * exp(2),
+                       1 - 0.5 * exp(-2) - 0.5 * exp(2)],
+                      [-1 + 0.5 * exp(-2) + 0.5 * exp(2),
+                       0.5 * exp(-2) - 0.5 * exp(2)]])
+        b = np.array([5, 2])
+        c = np.linalg.solve(A, b)
+        c2 = c[0]
+        c3 = c[1]
+        def x0_func(t):
+            return (c2 * (-t - 0.5 * exp(-t) + 0.5 * exp(t)) +
+                    c3 * (1 - 0.5 * exp(-t) - 0.5 * exp(t)))
+        def x1_func(t):
+            return (c2 * (-1 + 0.5 * exp(-t) + 0.5 * exp(t)) +
+                    c3 * (0.5 * exp(-t) - 0.5 * exp(t)))
+        expected_states = np.empty((len(time), 2))
+        for itime in range(len(time)):
+            expected_states[itime, 0] = x0_func(time[itime])
+            expected_states[itime, 1] = x1_func(time[itime])
+
+        states = solution.getStatesTrajectoryMat()
+        square = np.sum((states - expected_states)**2, axis=1)
+        mean = np.trapz(square, x=time) / (time[-1] - time[0])
+        root = np.sqrt(mean)
+        rms = root
+        print(f'root-mean-square error in states: {rms}')
+        with open('results/analytic_rms.txt', 'w') as f:
+            f.write(f'{rms:.4f}')
+
 
 class SuspendedMass(MocoPaperResult):
     width = 0.2
@@ -572,6 +641,32 @@ class MotionTrackingWalking(MocoPaperResult):
 
 
     def report_results(self):
+
+        sol_track_table = osim.TimeSeriesTable(self.mocotrack_solution_file)
+        track_duration = sol_track_table.getTableMetaDataString('solver_duration')
+        track_duration = float(track_duration) / 60.0 / 60.0
+        print('track duration ', track_duration)
+        with open('results/'
+                  'motion_tracking_walking_track_duration.txt', 'w') as f:
+            f.write(f'{track_duration:.1f}')
+
+        sol_inverse_table = osim.TimeSeriesTable(self.mocoinverse_solution_file)
+        inverse_duration = sol_inverse_table.getTableMetaDataString('solver_duration')
+        inverse_duration = float(inverse_duration) / 60.0
+        print('inverse duration ', inverse_duration)
+        with open('results/'
+                  'motion_tracking_walking_inverse_duration.txt', 'w') as f:
+            f.write(f'{inverse_duration:.1f}')
+
+        sol_inverse_jr_table = osim.TimeSeriesTable(self.mocoinverse_jointreaction_solution_file)
+        inverse_jr_duration = sol_inverse_jr_table.getTableMetaDataString('solver_duration')
+        inverse_jr_duration = float(inverse_jr_duration) / 60.0
+        print('inverse joint reaction duration ', inverse_jr_duration)
+        with open('results/'
+                  'motion_tracking_walking_inverse_jr_duration.txt', 'w') as f:
+            f.write(f'{inverse_jr_duration:.0f}')
+
+
         sol_track = osim.MocoTrajectory(self.mocotrack_solution_file)
         time_track = sol_track.getTimeMat()
 
@@ -958,7 +1053,7 @@ class CrouchToStand(MocoPaperResult):
 
         print(f'Stiffness: {stiffness}')
         with open('results/crouch_to_stand_stiffness.txt', 'w') as f:
-            f.write(f'{stiffness}')
+            f.write(f'{stiffness:.0f}')
         plot_solution(predict_solution, 'prediction', color='k')
         plot_solution(predict_assisted_solution, 'prediction, assisted')
 
@@ -1003,6 +1098,7 @@ if __name__ == "__main__":
     import argparse
 
     results = {
+        'analytic': Analytic(),
         'suspended-mass': SuspendedMass(),
         'tracking-walking': MotionTrackingWalking(),
         # 'predicting-walking': MotionPredictionAndAssistanceWalking(),

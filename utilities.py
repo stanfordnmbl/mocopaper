@@ -2,6 +2,7 @@ import os
 import copy
 import numpy as np
 import pylab as pl
+from scipy.signal import butter, filtfilt
 
 import opensim as osim
 
@@ -329,3 +330,238 @@ def plot_joint_moment_breakdown(model, moco_traj,
 
     fig.tight_layout()
     return fig
+
+class ANCFile(object):
+    """A plain-text file format for storing analog data from Motion Analysis
+    Realtime. They have a file extension '.anc'. The file extension '.anb' is
+    for binary files.
+    The metadata for the file is stored in attributes of this object.
+    This class is based off of similar code written by Amy Silder.
+    """
+    def __init__(self, fpath):
+        """
+        Parameters
+        ----------
+        fpath : str
+            Valid file path to an ANC (.anc) file.
+        """
+        with open(fpath) as f:
+            line1 = f.readline()
+            line1list = line1.split('\t')
+            self.file_type = line1list[1].strip()
+            self.generation = line1list[3].strip()
+
+            line2 = f.readline()
+            line2list = line2.split('\t')
+            self.board_type = line2list[1].strip()
+            self.polarity = line2list[3].strip()
+
+            line3 = f.readline()
+            line3list = line3.split('\t')
+            self.trial_name = line3list[1]
+            self.trial_num = int(line3list[3])
+            self.duration = float(line3list[5])
+            self.num_channels = int(line3list[7])
+
+            line4 = f.readline()
+            line4list = line4.split('\t')
+            self.bit_depth = int(line4list[1])
+            self.precise_rate = float(line4list[3])
+
+            line = f.readline()
+            iline = 5
+            while line.strip() == '':
+                # There will most likely be a few empty lines.
+                line = f.readline()
+                iline += 1
+
+            # Metadata for each column.
+            header_row = line
+            self.names = header_row.split()[1:]
+            rate_row = f.readline()
+            iline += 1
+            self.rates = {self.names[i]: float(v) for i, v in
+                    enumerate(rate_row.split()[1:])}
+            range_row = f.readline()
+            iline += 1
+            self.ranges = {self.names[i]: float(v) for i, v in
+                    enumerate(range_row.split()[1:])}
+
+        dtype = {'names': ['time'] + self.names,
+                'formats': (len(self.names) + 1) * ['float64']}
+        self.data = np.loadtxt(fpath, delimiter='\t', skiprows=iline,
+                    dtype=dtype)
+        self.time = self.data['time']
+
+    def __getitem__(self, name):
+        """See `column()`.
+        """
+        return self.column(name)
+
+    def __setitem__(self, name, val):
+        """self.data[name] = val
+        """
+        self.data[name] = val
+
+    def column(self, name):
+        """
+        Parameters
+        ----------
+        name : str
+            Name of a column in the file (e.g., 'F1X'). For the 'time', column,
+            just get the 'time' attribute.
+        Returns
+        -------
+        col : np.array
+            The data you are looking for.
+        """
+        return self.data[name]
+
+def remove_fields_from_structured_ndarray(ndarray, fields, copy=True):
+    """Returns the ndarray but now without the fields specified.
+    Parameters
+    ----------
+    ndarray: numpy.ndarray
+        The structured ndarray from which to remove a field (and corresponding
+        data).
+    fields: list of str's, or a single str.
+        e.g., 'F2X'.
+    copy: bool, optional
+        NumPy doesn't like it if you tamper with the returned ndarray, since we
+        used array indexing to give it to you. It prefers we return a copy
+        of the array. This takes more time/memory, though. So if you are not
+        going to tamper with the returned value, you may want `copy` to be
+        False.
+    Returns
+    -------
+    new_ndarray: numpy.ndarray
+    """
+    names = list(ndarray.dtype.names)
+    if type(fields) != list:
+        fields = [fields]
+    for field in fields:
+        names.remove(field)
+    if copy:
+        return ndarray[names].copy()
+    else:
+        return ndarray[names]
+
+def filter_emg(raw_signal, sampling_rate, bandpass_order=6,
+        bandpass_lower_frequency=50, bandpass_upper_frequency=500,
+        lowpass_order=4,
+        lowpass_frequency=7.5,
+        cd_lowpass_frequency=15.0):
+    """Filters a raw EMG signal. The signal must have been sampled at a
+    constant rate. We perform the following steps:
+    1. Butterworth bandpass filter.
+    2. Butterworth lowpass filter.
+    3. Critically damped lowpass filter.
+    The signals are applied forward and backward (`filtfilt`), which should
+    prevent a time delay.
+    Parameters
+    ----------
+    raw_signal : array_like
+        Raw EMG signal.
+    sampling_rate : float
+        In Hertz.
+    bandpass_order : int, optional
+    bandpass_lower_frequency : float, optional
+        In the bandpass filter, what is the lower cutoff frequency? In Hertz.
+    bandpass_upper_frequency : float, optional
+        In the bandpass filter, what is the upper cutoff frequency? In Hertz.
+    lowpass_order : int, optional
+    lowpass_frequency : float, optional
+        In the lowpass filter, what is the cutoff frequency? In Hertz.
+    cd_lowpass_frequency : float, optional
+        In the Critically damped lowpass filter, what is the cutoff frequency?
+        In Hertz.
+    Returns
+    -------
+    filtered_signal : array_like
+    """
+    nyquist_frequency = 0.5 * sampling_rate
+
+    # Bandpass.
+    # ---------
+    normalized_bandpass_lower = bandpass_lower_frequency / nyquist_frequency
+    normalized_bandpass_upper = bandpass_upper_frequency / nyquist_frequency
+    bandpass_cutoffs = [normalized_bandpass_lower, normalized_bandpass_upper]
+    bandpass_b, bandpass_a = butter(bandpass_order, bandpass_cutoffs,
+            btype='bandpass')
+
+    bandpassed = filtfilt(bandpass_b, bandpass_a, raw_signal)
+
+    # Rectify.
+    # --------
+    rectified = np.abs(bandpassed)
+
+    # Lowpass.
+    # --------
+    lowpass_cutoff = lowpass_frequency / nyquist_frequency
+    lowpass_b, lowpass_a = butter(lowpass_order, lowpass_cutoff)
+
+    lowpassed = filtfilt(lowpass_b, lowpass_a, rectified)
+
+    # Critically damped filter.
+    # -------------------------
+    cd_order = 4
+    cdfed = filter_critically_damped(lowpassed, sampling_rate,
+            cd_lowpass_frequency, order=4)
+
+    return cdfed
+
+def filter_critically_damped(data, sampling_rate, lowpass_cutoff_frequency,
+        order=4):
+    """See Robertson, 2003. This code is transcribed from some MATLAB code that
+    Amy Silder gave me. This implementation is slightly different from that
+    appearing in Robertson, 2003. We only allow lowpass filtering.
+    Parameters
+    ----------
+    data : array_like
+        The signal to filter.
+    sampling_rate : float
+    lowpass_cutoff_frequency : float
+        In Hertz (not normalized).
+    order : int, optional
+        Number of filter passes.
+    Returns
+    -------
+    data : array_like
+        Filtered data.
+    """
+    # 3 dB cutoff correction.
+    Clp = (2.0 ** (1.0 / (2.0 * order)) - 1.0) ** (-0.5)
+
+    # Corrected cutoff frequency.
+    flp = Clp * lowpass_cutoff_frequency / sampling_rate
+
+    # Warp cutoff frequency from analog to digital domain.
+    wolp = np.tan(np.pi * flp)
+
+    # Filter coefficients, K1 and K2.
+    # lowpass: a0 = A0, a1 = A1, a2 = A2, b1 = B2, b2 = B2
+    K1lp = 2.0 * wolp
+    K2lp = wolp ** 2
+
+    # Filter coefficients.
+    a0lp = K2lp / (1.0 + K1lp + K2lp)
+    a1lp = 2.0 * a0lp
+    a2lp = a0lp
+    b1lp = 2.0 * a0lp  * (1.0 / K2lp - 1.0)
+    b2lp = 1.0 - (a0lp + a1lp + a2lp + b1lp)
+
+    num_rows = len(data)
+    temp_filtered = np.zeros(num_rows)
+    # For order = 4, we go forward, backward, forward, backward.
+    for n_pass in range(order):
+        for i in range(2, num_rows):
+            temp_filtered[i] = (a0lp * data[i] +
+                    a1lp * data[i - 1] +
+                    a2lp * data[i - 2] +
+                    b1lp * temp_filtered[i - 1] +
+                    b2lp * temp_filtered[i - 2])
+        # Perform the filter backwards.
+        data = np.flipud(temp_filtered)
+        temp_filtered = np.zeros(num_rows)
+
+    return data

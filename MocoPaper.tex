@@ -170,17 +170,16 @@
 \newcommand{\ipsum}{{\bf IPSUM}}
 \newcommand{\analytic}{
 \begin{equation}
-    \begin{alignat*}{2}
+    \begin{aligned}
         \mbox{minimize}
          \quad & \int_{t_0}^{t_f} \frac{1}{2}x^2~dt &&  \\
          \mbox{subject to}
          \quad & \dot{q} = u \\
          & \dot{u} = -u + x \\
-         & q_0 = 0 \\
-         & u_0 = 0 \\
-         & q_f = 5 \\
-         & u_f = 2
-    \end{alignat*}
+         & q_0 = 0 & q_f = 5 \\
+         & u_0 = 0 & u_f = 2\\
+         & t_0 = 0 & t_f = 2
+    \end{aligned}
 \end{equation}
 }
 

@@ -460,10 +460,19 @@ class MotionTrackingWalking(MocoPaperResult):
         self.mocoinverse_jointreaction_solution_file = \
             'results/motion_tracking_walking_inverse_jointreaction_solution.sto'
         self.side = 'l'
+        self.emg_sensor_names = [
+            'SOL', 'GAS', 'TA', 'MH', 'BF', 'VL', 'VM', 'RF', 'GMAX', 'GMED'
+        ]
 
-    def shift(self, time, y):
-        return utilities.shift_data_to_cycle(self.initial_time, self.final_time,
-                                   self.footstrike, time, y, cut_off=True)
+    def shift(self, time, y, initial_time=None, final_time=None, starting_time=None):
+        if not initial_time:
+            initial_time = self.initial_time
+        if not final_time:
+            final_time = self.final_time
+        if not starting_time:
+            starting_time = self.footstrike
+        return utilities.shift_data_to_cycle(initial_time, final_time,
+                                   starting_time, time, y, cut_off=True)
 
     def create_model_processor(self):
         modelProcessor = osim.ModelProcessor(
@@ -537,8 +546,8 @@ class MotionTrackingWalking(MocoPaperResult):
         # Solve and visualize.
         moco.printToXML('motion_tracking_walking.omoco')
         # 45 minutes
-        solution = moco.solve()
-        solution.write(self.mocotrack_solution_file)
+        # solution = moco.solve()
+        # solution.write(self.mocotrack_solution_file)
         # moco.visualize(solution)
 
         # tasks = osim.CMC_TaskSet()
@@ -561,7 +570,7 @@ class MotionTrackingWalking(MocoPaperResult):
         # cmc.printToXML('motion_tracking_walking_cmc_setup.xml')
         cmc = osim.CMCTool('motion_tracking_walking_cmc_setup.xml')
         # 1 minute
-        # cmc.run()
+        cmc.run()
 
         # TODO: why is recfem used instead of vaslat? recfem counters the hip
         # extension moment in early stance.
@@ -628,17 +637,63 @@ class MotionTrackingWalking(MocoPaperResult):
         # TODO: try 1e-2 for MocoInverse without JR minimization.
         solver.set_optim_convergence_tolerance(1e-2)
 
-        # solution_reaction = study.solve()
-        # solution_reaction.write(self.mocoinverse_jointreaction_solution_file)
+        solution_reaction = study.solve()
+        solution_reaction.write(self.mocoinverse_jointreaction_solution_file)
 
         # TODO: Minimize joint reaction load!
-    def plot(self, ax, time, y, *args, **kwargs):
-        shifted_time, shifted_y = self.shift(time, y)
+    def plot(self, ax, time, y, shift=True, fill=False, *args, **kwargs):
+        if shift:
+            shifted_time, shifted_y = self.shift(time, y)
+        else:
+            duration = self.final_time - self.initial_time
+            shifted_time, shifted_y = self.shift(time, y,
+                                                 # initial_time=self.initial_time + 0.5 * duration,
+                                                 # initial_time=self.final_time + 0.5 * duration,
+                                                 starting_time=self.footstrike + 0.5 * duration)
+
         # TODO is this correct?
         duration = self.final_time - self.initial_time
-        return ax.plot(100.0 * shifted_time / duration, shifted_y, *args,
+        if fill:
+            plt.fill_between(
+                100.0 * shifted_time / duration,
+                shifted_y,
+                np.zeros_like(shifted_y),
+                *args,
                 clip_on=False, **kwargs)
+        else:
+            return ax.plot(100.0 * shifted_time / duration, shifted_y, *args,
+                           clip_on=False, **kwargs)
 
+    def load_electromyography(self):
+        anc = utilities.ANCFile('resources/Rajagopal2016/emg_walk_raw.anc')
+        raw = anc.data
+        fields_to_remove = []
+        for name in anc.names:
+            if name != 'time' and name not in self.emg_sensor_names:
+                fields_to_remove.append(name)
+        del name
+
+        # We don't actually use the data that is initially in this object. We
+        # will overwrite all the data with the filtered data.
+        filtered_emg = utilities.remove_fields_from_structured_ndarray(raw,
+                fields_to_remove).copy()
+
+        # Debugging.
+        emg_fields = list(filtered_emg.dtype.names)
+        emg_fields.remove('time')
+        for expected_field in self.emg_sensor_names:
+            if expected_field not in emg_fields:
+                raise Exception("EMG field {} not found.".format(
+                    expected_field))
+
+        # Filter all columns.
+        for name in filtered_emg.dtype.names:
+            if name != 'time':
+                scaled_raw = anc.ranges[name] * 2 / 65536.0 * 0.001 * anc[name]
+                filtered_emg[name] = utilities.filter_emg(
+                    scaled_raw.copy(), anc.rates[name])
+                filtered_emg[name] /= np.max(filtered_emg[name])
+        return filtered_emg
 
     def report_results(self):
 
@@ -665,6 +720,8 @@ class MotionTrackingWalking(MocoPaperResult):
         with open('results/'
                   'motion_tracking_walking_inverse_jr_duration.txt', 'w') as f:
             f.write(f'{inverse_jr_duration:.0f}')
+
+        emg = self.load_electromyography()
 
 
         sol_track = osim.MocoTrajectory(self.mocotrack_solution_file)
@@ -783,45 +840,56 @@ class MotionTrackingWalking(MocoPaperResult):
 
         # TODO: Compare to EMG.
         muscles = [
-            ((0, 0), 'glmax2', 'gluteus maximus'),
-            ((0, 1), 'psoas', 'psoas'),
-            ((1, 0), 'semimem', 'semimembranosus'),
-            ((0, 2), 'recfem', 'rectus femoris'),
-            ((1, 1), 'bfsh', 'biceps femoris short head'),
-            ((1, 2), 'vaslat', 'vastus lateralis'),
-            ((2, 0), 'gasmed', 'medial gastrocnemius'),
-            ((2, 1), 'soleus', 'soleus'),
-            ((2, 2), 'tibant', 'tibialis anterior'),
+            ((0, 0), 'glmax2', 'gluteus maximus', 'GMAX'),
+            ((0, 1), 'psoas', 'psoas', ''),
+            ((1, 0), 'semimem', 'semimembranosus', 'MH'),
+            ((0, 2), 'recfem', 'rectus femoris', 'RF'),
+            ((1, 1), 'bfsh', 'biceps femoris short head', 'BF'),
+            ((1, 2), 'vaslat', 'vastus lateralis', 'VL'),
+            ((2, 0), 'gasmed', 'medial gastrocnemius', 'GAS'),
+            ((2, 1), 'soleus', 'soleus', 'SOL'),
+            ((2, 2), 'tibant', 'tibialis anterior', 'TA'),
         ]
         for im, muscle in enumerate(muscles):
             ax = plt.subplot(gs[muscle[0][0], muscle[0][1]])
             activation_path = f'/forceset/{muscle[1]}_{self.side}/activation'
-            a, = self.plot(ax, time_cmc,
-                      toarray(sol_cmc.getDependentColumn(activation_path)),
+            cmc_activ = toarray(sol_cmc.getDependentColumn(activation_path))
+            self.plot(ax, time_cmc,
+                      cmc_activ,
                       linewidth=3,
                           label='CMC',
                     )
-            b, = self.plot(ax, time_track, sol_track.getStateMat(activation_path),
-                          label='Track',
+            self.plot(ax, time_track, sol_track.getStateMat(activation_path),
+                          label='MocoTrack',
                           linewidth=2)
-            c, = self.plot(ax, time_inverse,
+            self.plot(ax, time_inverse,
                       sol_inverse.getStateMat(activation_path),
-                      label='Inverse',
+                      label='MocoInverse',
                       linewidth=1)
-            d, = self.plot(ax, time_inverse_jointreaction,
+            self.plot(ax, time_inverse_jointreaction,
                       sol_inverse_jointreaction.getStateMat(activation_path),
-                      label='Inverse, knee',
+                      label='MocoInverse, knee',
                       linewidth=1)
+            if len(muscle[3]) > 0:
+                self.plot(ax, emg['time'], emg[muscle[3]] * np.max(cmc_activ),
+                                      shift=False,
+                                      fill=True,
+                          color='lightgray')
             if muscle[0][0] == 0 and muscle[0][1] == 0:
-                ax.legend(#handles=[a, b],
+                ax.legend(
                           frameon=False, handlelength=1.,
+                    handletextpad=0.5,
                           ncol=2,
+                    columnspacing=0.5,
+                    loc='upper center',
                           # loc='center'
                 )
-            # if muscle[0][0] == 1 and muscle[0][1] == 0:
-            #     ax.legend(handles=[c, d],
-            #               frameon=False, handlelength=1.,
-            #               loc='center')
+            if muscle[0][0] == 1 and muscle[0][1] == 0:
+                from matplotlib.patches import Patch
+                ax.legend(handles=[Patch(facecolor='lightgray', label='EMG')],
+                          frameon=False, handlelength=1.5,
+                          handletextpad=0.5,
+                          loc='upper center')
             ax.set_ylim(-0.05, 1)
             ax.set_xlim(0, 100)
             if muscle[0][0] < 2:

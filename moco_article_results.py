@@ -502,7 +502,6 @@ class MotionTrackingWalking(MocoPaperResult):
         #  - play with weights between tracking and effort.
         #  - report duration to solve the problem.
         #  - figure could contain still frames of the model throughout the motion.
-        #  - make sure residuals and reserves are small (generate_report).
         #  - try using Millard muscle.
         #  - plot joint moment breakdown.
 
@@ -647,8 +646,6 @@ class MotionTrackingWalking(MocoPaperResult):
         else:
             duration = self.final_time - self.initial_time
             shifted_time, shifted_y = self.shift(time, y,
-                                                 # initial_time=self.initial_time + 0.5 * duration,
-                                                 # initial_time=self.final_time + 0.5 * duration,
                                                  starting_time=self.footstrike + 0.5 * duration)
 
         # TODO is this correct?
@@ -694,6 +691,12 @@ class MotionTrackingWalking(MocoPaperResult):
                     scaled_raw.copy(), anc.rates[name])
                 filtered_emg[name] /= np.max(filtered_emg[name])
         return filtered_emg
+
+    def calc_reserves(self, solution):
+        modelProcessor = self.create_model_processor()
+        model = modelProcessor.process()
+        output = osim.analyze(model, solution, ['.*reserve.*actuation'])
+        return output
 
     def report_results(self):
 
@@ -744,6 +747,7 @@ class MotionTrackingWalking(MocoPaperResult):
         modelProcessor = self.create_model_processor()
         model = modelProcessor.process()
 
+
         # report = osim.report.Report(model, self.mocotrack_solution_file)
         # report.generate()
         #
@@ -757,6 +761,59 @@ class MotionTrackingWalking(MocoPaperResult):
         # TODO uh oh overwriting the MocoInverse solution.
         # sol_inverse.setStatesTrajectory(sol_cmc)
         time_cmc = np.array(sol_cmc.getIndependentColumn())
+
+        mocosol_cmc = sol_inverse.clone()
+        mocosol_cmc.insertStatesTrajectory(sol_cmc, True)
+        inv_sol_rms = \
+            sol_inverse.compareContinuousVariablesRMSPattern(mocosol_cmc,
+                                                             'states',
+                                                             '.*activation')
+
+        print('CMC MocoInverse activation RMS: ', inv_sol_rms)
+        with open('results/motion_tracking_walking_'
+                  'inverse_cmc_rms.txt', 'w') as f:
+            f.write(f'{inv_sol_rms:.3f}')
+
+
+        res_track = self.calc_reserves(sol_track)
+        column_labels = res_track.getColumnLabels()
+        max_res_track = -np.inf
+        for icol in range(res_track.getNumColumns()):
+            column = utilities.toarray(
+                res_track.getDependentColumnAtIndex(icol))
+            max = np.max(np.abs(column))
+            max_res_track = np.max([max_res_track, max])
+            print(f'track max abs {column_labels[icol]}: {max}')
+        with open('results/motion_tracking_walking_'
+                  'track_max_reserve.txt', 'w') as f:
+            f.write(f'{max_res_track:.3f}')
+
+        res_inverse = self.calc_reserves(sol_inverse)
+        column_labels = res_inverse.getColumnLabels()
+        max_res_inverse = -np.inf
+        for icol in range(res_inverse.getNumColumns()):
+            column = utilities.toarray(
+                res_inverse.getDependentColumnAtIndex(icol))
+            max = np.max(np.abs(column))
+            max_res_inverse = np.max([max_res_inverse, max])
+            print(f'inverse max abs {column_labels[icol]}: {max}')
+        with open('results/motion_tracking_walking_'
+                  'inverse_max_reserve.txt', 'w') as f:
+            f.write(f'{max_res_inverse:.3f}')
+
+        res_inverse_jr = self.calc_reserves(sol_inverse_jointreaction)
+        column_labels = res_inverse_jr.getColumnLabels()
+        max_res_inverse_jr = -np.inf
+        for icol in range(res_inverse_jr.getNumColumns()):
+            column = utilities.toarray(
+                res_inverse_jr.getDependentColumnAtIndex(icol))
+            max = np.max(np.abs(column))
+            max_res_inverse_jr = np.max([max_res_inverse_jr, max])
+            print(f'inverse_jr max abs {column_labels[icol]}: {max}')
+        with open('results/motion_tracking_walking_'
+                  'inverse_jr_max_reserve.txt', 'w') as f:
+            f.write(f'{max_res_inverse_jr:.3f}')
+
 
         plot_breakdown = False
 

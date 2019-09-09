@@ -545,8 +545,8 @@ class MotionTrackingWalking(MocoPaperResult):
         # Solve and visualize.
         moco.printToXML('motion_tracking_walking.omoco')
         # 45 minutes
-        # solution = moco.solve()
-        # solution.write(self.mocotrack_solution_file)
+        solution = moco.solve()
+        solution.write(self.mocotrack_solution_file)
         # moco.visualize(solution)
 
         # tasks = osim.CMC_TaskSet()
@@ -698,6 +698,28 @@ class MotionTrackingWalking(MocoPaperResult):
         output = osim.analyze(model, solution, ['.*reserve.*actuation'])
         return output
 
+    def calc_max_knee_reaction_force(self, solution):
+        modelProcessor = self.create_model_processor()
+        model = modelProcessor.process()
+        jr = osim.analyzeSpatialVec(model, solution,
+                                    ['.*walker_knee.*reaction_on_parent.*'])
+        jr = jr.flatten(['_mx', '_my', '_mz', '_fx', '_fy', '_fz'])
+        max = -np.inf
+        # traj = np.empty(jr.getNumRows())
+        for itime in range(jr.getNumRows()):
+            for irxn in range(int(jr.getNumColumns() / 6)):
+                fx = jr.getDependentColumnAtIndex(6 * irxn + 3)[itime]
+                fy = jr.getDependentColumnAtIndex(6 * irxn + 4)[itime]
+                fz = jr.getDependentColumnAtIndex(6 * irxn + 5)[itime]
+                norm = np.sqrt(fx**2 + fy**2 + fz**2)
+                # traj[itime] = norm
+                max = np.max([norm, max])
+        g = np.abs(model.get_gravity()[1])
+        state = model.initSystem()
+        mass = model.getTotalMass(state)
+        weight = mass * g
+        return max / weight
+
     def report_results(self):
 
         sol_track_table = osim.TimeSeriesTable(self.mocotrack_solution_file)
@@ -746,7 +768,26 @@ class MotionTrackingWalking(MocoPaperResult):
 
         modelProcessor = self.create_model_processor()
         model = modelProcessor.process()
+        model.initSystem()
+        print(f'Degrees of freedom: {model.getCoordinateSet().getSize()}')
 
+        states = sol_inverse.exportToStatesTrajectory(model)
+        duration = sol_inverse.getFinalTime() - sol_inverse.getInitialTime()
+        avg_speed = (model.calcMassCenterPosition(states[states.getSize() - 1])[0] -
+                     model.calcMassCenterPosition(states[0])[0]) / duration
+        print(f'Average speed: {avg_speed}')
+
+
+
+        maxjr_inverse = self.calc_max_knee_reaction_force(sol_inverse)
+        maxjr_inverse_jr = self.calc_max_knee_reaction_force(sol_inverse_jointreaction)
+        print(f'Max joint reaction {maxjr_inverse} -> {maxjr_inverse_jr}')
+        with open('results/motion_tracking_walking_'
+                  'inverse_maxjr.txt', 'w') as f:
+            f.write(f'{maxjr_inverse:.1f}')
+        with open('results/motion_tracking_walking_'
+                  'inverse_jr_maxjr.txt', 'w') as f:
+            f.write(f'{maxjr_inverse_jr:.1f}')
 
         # report = osim.report.Report(model, self.mocotrack_solution_file)
         # report.generate()
@@ -1181,6 +1222,7 @@ class CrouchToStand(MocoPaperResult):
             f.write(f'{stiffness:.0f}')
         plot_solution(predict_solution, 'prediction', color='k')
         plot_solution(predict_assisted_solution, 'prediction, assisted')
+
 
         fig.tight_layout() # w_pad=0.2)
 

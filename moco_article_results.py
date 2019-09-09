@@ -12,12 +12,8 @@ import opensim as osim
 # TODO: create a docker container for these results and generating the preprint.
 # TODO fix shift
 # TODO: Add a periodicity cost to walking.
-
-mpl.rcParams.update({'font.size': 8,
-                     'axes.titlesize': 8,
-                     'axes.labelsize': 8,
-                     'font.sans-serif': ['Arial'],
-                     'image.cmap': 'tab10'})
+# TODO: Docker container gives very different result.
+#       for suspended mass.
 
 import utilities
 
@@ -330,11 +326,11 @@ class SuspendedMass(MocoPaperResult):
         c = ax.plot(track_solution.getStateMat('/jointset/tx/tx/value'),
                 track_solution.getStateMat('/jointset/ty/ty/value'),
                 linewidth=1.5,
-                   label='tracking, $x^2$')
+                   label='MocoTrack, $x^2$')
         d = ax.plot(track_p_solution.getStateMat('/jointset/tx/tx/value'),
                 track_p_solution.getStateMat('/jointset/ty/ty/value'),
                 linestyle='-', linewidth=1,
-                    label='tracking, $x^4$')
+                    label='MocoTrack, $x^4$')
         plt.annotate('initial', (self.xinit, self.yinit),
                      xytext=(self.xinit - 0.02, self.yinit - 0.03))
         plt.annotate('final', (self.xfinal, self.yfinal),

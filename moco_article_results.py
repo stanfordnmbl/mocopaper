@@ -9,19 +9,9 @@ import pylab as pl
 
 import opensim as osim
 
-# TODO: report reserve and residual forces.
-# TODO: report runtimes from different methods.
-# TODO: report difference in knee joint loading between MocoInverse and
-#  MocoInverse-knee.
 # TODO: create a docker container for these results and generating the preprint.
-# TODO: plot inverse kinematics and EMG.
 # TODO fix shift
 # TODO: Add a periodicity cost to walking.
-# TODO: Use MocoTrack in verification section.
-# TODO: Add analytic problem to this file.
-# TODO: crouch to stand: plot assistive torque?
-# TODO: add diagram of motion.
-# TODO: figure width 5.2 inches or 7.5.
 
 mpl.rcParams.update({'font.size': 8,
                      'axes.titlesize': 8,

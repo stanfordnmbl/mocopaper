@@ -485,11 +485,6 @@ class MotionTrackingWalking(MocoPaperResult):
 
         # TODO:
         #  - avoid removing muscle passive forces
-        #  - play with weights between tracking and effort.
-        #  - report duration to solve the problem.
-        #  - figure could contain still frames of the model throughout the motion.
-        #  - try using Millard muscle.
-        #  - plot joint moment breakdown.
 
         coordinates = osim.TableProcessor(
             "resources/Rajagopal2016/coordinates.sto")

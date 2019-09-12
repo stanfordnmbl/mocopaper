@@ -14,10 +14,21 @@ MAINTAINER Christopher Dembia
 # 7. Check the box next to "repo"
 # 8. Click Generate token.
 # 9. Copy the token to the clipboard.
-# 10. Run Docker build as follows:
+# 10. Run Docker build from this directory as follows:
 #
-#       docker build --build-arg GITHUBTOKEN=<paste> .
+#   docker build --build-arg GITHUBTOKEN=<paste> --tag <username>/opensim-moco:preprint .
 #
+#     Include the period at the end of your command.
+
+# Make sure Docker has access to at least 16 GB of RAM.
+# https://stackoverflow.com/questions/44533319/how-to-assign-more-memory-to-docker-container
+
+# To run the container, use:
+#
+#   docker run --volume <local-mocopaper-repo>:/mocopaper <username>/opensim-moco:preprint
+#
+# The results are saved to the results and figures folders of
+# <local-mocopaper-repo>.
 
 # TODO: Remove when opensim-moco is public.
 ARG GITHUBTOKEN
@@ -88,5 +99,3 @@ WORKDIR /mocopaper
 
 ENTRYPOINT ["python3", "moco_article_results.py"]
 
-# TODO: How do we get the output of the container back onto the host machine?
-# https://stackoverflow.com/questions/31448821/how-to-write-data-to-host-file-system-from-docker-container

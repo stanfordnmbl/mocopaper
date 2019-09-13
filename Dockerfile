@@ -14,18 +14,26 @@ MAINTAINER Christopher Dembia
 # 7. Check the box next to "repo"
 # 8. Click Generate token.
 # 9. Copy the token to the clipboard.
-# 10. Run Docker build as follows:
+# 10. Run Docker build from this directory as follows:
 #
-#       docker build --build-arg GITHUBTOKEN=<paste> .
+#   docker build --build-arg GITHUBTOKEN=<paste> --tag <username>/opensim-moco:preprint .
 #
+#     Include the period at the end of your command.
+
+# Make sure Docker has access to at least 16 GB of RAM.
+# https://stackoverflow.com/questions/44533319/how-to-assign-more-memory-to-docker-container
+
+# To run the container, use:
+#
+#   docker run --volume <local-mocopaper-repo>:/mocopaper <username>/opensim-moco:preprint
+#
+# The results are saved to the results and figures folders of
+# <local-mocopaper-repo>.
 
 # TODO: Remove when opensim-moco is public.
 ARG GITHUBTOKEN
 
 ARG MOCOBRANCH=preprint
-
-RUN echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula \
-        select true | debconf-set-selections
 
 # Set DEBIAN_FRONTEND to avoid interactive timezone prompt when installing
 # packages.
@@ -38,10 +46,8 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
         pkg-config \
         libopenblas-dev \
         liblapack-dev \
-        python3 python3-dev python3-numpy python3-matplotlib python3-opencv \
-        python3-setuptools \
-        ttf-mscorefonts-installer \
-        swig
+        swig \
+        python3 python3-dev python3-numpy python3-setuptools
 
 # Must be careful to not embed the GitHub token in the image.
 RUN git config --global url."https://$GITHUBTOKEN:@github.com/".insteadOf "https://github.com/" \
@@ -76,15 +82,20 @@ RUN cd / \
         && cd /opensim-moco-install/sdk/Python && python3 setup.py install \
         && rm -r /build
 
+RUN echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula \
+        select true | debconf-set-selections
+
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3-scipy python3-matplotlib python3-opencv \
+        ttf-mscorefonts-installer
+
 COPY . /mocopaper
 
 # Matplotlib's default backend requires a DISPLAY / Xserver.
-RUN echo 'backend : Agg' >> /mocopaper/matplotlibrc && \
-    echo 'font.sans-serif : Arial, Helvetica, sans-serif' >> /mocopaper/matplotlibrc
+# RUN echo 'backend : Agg' >> /mocopaper/matplotlibrc && \
+#     echo 'font.sans-serif : Arial, Helvetica, sans-serif' >> /mocopaper/matplotlibrc
 
 WORKDIR /mocopaper
 
 ENTRYPOINT ["python3", "moco_article_results.py"]
 
-# TODO: How do we get the output of the container back onto the host machine?
-# https://stackoverflow.com/questions/31448821/how-to-write-data-to-host-file-system-from-docker-container

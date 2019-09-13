@@ -9,25 +9,11 @@ import pylab as pl
 
 import opensim as osim
 
-# TODO: report reserve and residual forces.
-# TODO: report runtimes from different methods.
-# TODO: report difference in knee joint loading between MocoInverse and
-#  MocoInverse-knee.
 # TODO: create a docker container for these results and generating the preprint.
-# TODO: plot inverse kinematics and EMG.
 # TODO fix shift
 # TODO: Add a periodicity cost to walking.
-# TODO: Use MocoTrack in verification section.
-# TODO: Add analytic problem to this file.
-# TODO: crouch to stand: plot assistive torque?
-# TODO: add diagram of motion.
-# TODO: figure width 5.2 inches or 7.5.
-
-mpl.rcParams.update({'font.size': 8,
-                     'axes.titlesize': 8,
-                     'axes.labelsize': 8,
-                     'font.sans-serif': ['Arial'],
-                     'image.cmap': 'tab10'})
+# TODO: Docker container gives very different result.
+#       for suspended mass.
 
 import utilities
 
@@ -340,11 +326,11 @@ class SuspendedMass(MocoPaperResult):
         c = ax.plot(track_solution.getStateMat('/jointset/tx/tx/value'),
                 track_solution.getStateMat('/jointset/ty/ty/value'),
                 linewidth=1.5,
-                   label='tracking, $x^2$')
+                   label='MocoTrack, $x^2$')
         d = ax.plot(track_p_solution.getStateMat('/jointset/tx/tx/value'),
                 track_p_solution.getStateMat('/jointset/ty/ty/value'),
                 linestyle='-', linewidth=1,
-                    label='tracking, $x^4$')
+                    label='MocoTrack, $x^4$')
         plt.annotate('initial', (self.xinit, self.yinit),
                      xytext=(self.xinit - 0.02, self.yinit - 0.03))
         plt.annotate('final', (self.xfinal, self.yfinal),
@@ -499,11 +485,6 @@ class MotionTrackingWalking(MocoPaperResult):
 
         # TODO:
         #  - avoid removing muscle passive forces
-        #  - play with weights between tracking and effort.
-        #  - report duration to solve the problem.
-        #  - figure could contain still frames of the model throughout the motion.
-        #  - try using Millard muscle.
-        #  - plot joint moment breakdown.
 
         coordinates = osim.TableProcessor(
             "resources/Rajagopal2016/coordinates.sto")

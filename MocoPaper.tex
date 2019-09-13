@@ -76,7 +76,7 @@
 \usepackage[top=0.85in,left=2.75in,footskip=0.75in]{geometry}
 
 % amsmath and amssymb packages, useful for mathematical formulas and symbols
-\usepackage{amsmath,amssymb}
+\usepackage{amsmath,amssymb,mathtools}
 
 % Use adjustwidth environment to exceed column width (see example table in text)
 \usepackage{changepage}
@@ -168,6 +168,41 @@
 
 \newcommand{\lorem}{{\bf LOREM}}
 \newcommand{\ipsum}{{\bf IPSUM}}
+\newcommand{\ocp}{
+% \mathrlap causes the contents to not take up horizontal space, allowing
+% overlapping columns.
+\begin{align}
+    \begin{aligned}
+        \mbox{minimize}
+         \quad & \sum_j w_{j} J_{j}(t_0, t_f, y_0, y_f, x_{0}, x_{f}, \lambda_0, \lambda_f, p, S_{c,j}) & \textrm{costs} \\
+        & \quad\quad\quad S_{c,j} = \int_{t_0}^{t_f} s_{c,j}(t, y, x, \lambda, p)\,dt  \\
+        \mbox{subject to}
+         \quad & \dot{q} = u \\
+         & M(q, p)\dot{u} + G(q, p)^T \lambda = f_{\mathrm{app}}(t, y, x, p) - \mathrlap{f_{\mathrm{bias}}(q, u, p)}  & \textrm{multibody} \\
+         & \dot{z}(t) = f_{\mathrm{aux}}(t, y, x, \lambda, p) & \textrm{auxiliary} \\
+         & 0 = \phi(q, p) & \textrm{holonomic} \\
+         & 0 = \nu(q, u, p) & \textrm{non-holonomic} \\
+         & 0 = \alpha(q, u, \dot{u}, p) & \textrm{acceleration} \\
+         & g_{L} \leq g(t, y, x, \lambda, p) \leq g_{U} & \textrm{path} \\
+         & V_{L,k} \leq V_k(t_0, t_f, y_0, y_f, x_{0}, x_{f}, \lambda_0, \lambda_f, p, S_{e,k}) \,\mathrlap{\leq V_{U,k}} & \textrm{endpoint} \\
+         & \quad\quad\quad S_{e,k} = \int_{t_0}^{t_f} s_{e,k}(t, y, x, \lambda, p)\,dt \\
+         & \quad\quad\quad k = 1, \ldots, K \\
+         & y_{0,L} \leq y_0 \leq y_{0,U} & \textrm{initial states} \\
+         & x_{0,L} \leq x_0 \leq x_{0,U} & \textrm{initial controls} \\
+         & y_{f,L} \leq y_f \leq y_{f,U} & \textrm{final states} \\
+         & x_{f,L} \leq x_f \leq x_{f,U} & \textrm{final controls} \\
+         \mbox{with respect to} \quad
+         & y = (q, u, z) \in [y_{L}, y_{U}] & \textrm{states} \\
+         & x \in [x_{L}, x_{U}] & \textrm{controls} \\
+         & \lambda & \textrm{Lagrange multipliers} \\
+         & p \in [p_{L}, p_{U}] & \textrm{static parameters} \\
+         & t_0 \in [t_{0,L}, t_{0,U}] & \textrm{initial time} \\
+         & t_f \in [t_{f,L}, t_{f,U}] & \textrm{final time}
+    \end{aligned}
+\end{align}
+}
+
+
 \newcommand{\analytic}{
 \begin{equation}
     \begin{aligned}
@@ -185,6 +220,10 @@
 
 %% END MACROS SECTION
 
+% PREPRINT ONLY:
+%\usepackage[charter]{mathdesign}
+\usepackage{mathtools}
+
 
 \begin{document}
 \vspace*{0.2in}
@@ -192,7 +231,7 @@
 % Title must be 250 characters or less.
 \begin{flushleft}
 {\Large
-\textbf\newline{Title of submission to PLOS journals} % Please use "sentence case" for title and headings (capitalize only the first word in a title (or heading), the first word in a subtitle (or subheading), and any proper nouns).
+\textbf\newline{OpenSim Moco: Musculoskeletal optimal control} % Please use "sentence case" for title and headings (capitalize only the first word in a title (or heading), the first word in a subtitle (or subheading), and any proper nouns).
 }
 \newline
 % Insert author names, affiliations and corresponding author email (do not include titles, positions, or degrees).
@@ -257,20 +296,10 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur eget porta er
 % Use "Eq" instead of "Equation" for equation citations.
 \section*{Introduction}
 
-OpenSim Moco: musculoskeletal optimal control
-
-Journal: PLOS Computational Biology (Software Section; this journal gives special support for pre-prints on bioRxiv).
-
-https://journals.plos.org/ploscompbiol/s/presubmission-inquiries
 
 
-Nick’s 3D walking tracking w/contact and MocoInverse
-Your 2D prediction walking
-3D tracking with contact and contact parameter optiization?
-		-> difficult with a Simbody force. Possible but takes more work.
-w/ parameter opt for device
-Compare MocoInverse to CMC activations and runtime
-Mention that we use a different muscle model?
+
+\ocp
 
 
 Abstract
@@ -516,7 +545,7 @@ Nulla mi mi, venenatis sed ipsum varius, volutpat euismod diam. Proin rutrum vel
 \end{itemize}
 
 \section*{Discussion}
-Nulla mi mi, venenatis sed ipsum varius, Table~\ref{table1} volutpat euismod diam. Proin rutrum vel massa non gravida. Quisque tempor sem et dignissim rutrum. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi at justo vitae nulla elementum commodo eu id massa. In vitae diam ac augue semper tincidunt eu ut eros. Fusce fringilla erat porttitor lectus cursus, vel sagittis arcu lobortis. Aliquam in enim semper, aliquam massa id, cursus neque. Praesent faucibus semper libero~\cite{bib3}.
+Nulla mi mi, venenatis sed ipsum varius, Table~\ref{table1} volutpat euismod diam. Proin rutrum vel massa non gravida. Quisque tempor sem et dignissim rutrum. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi at justo vitae nulla elementum commodo eu id massa. In vitae diam ac augue semper tincidunt eu ut eros. Fusce fringilla erat porttitor lectus cursus, vel sagittis arcu lobortis. Aliquam in enim semper, aliquam massa id, cursus neque. Praesent faucibus semper libero.
 
 \section*{Conclusion}
 

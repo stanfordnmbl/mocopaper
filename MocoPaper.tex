@@ -5,21 +5,21 @@
 %
 % -- IMPORTANT NOTE
 %
-% This template contains comments intended 
-% to minimize problems and delays during our production 
+% This template contains comments intended
+% to minimize problems and delays during our production
 % process. Please follow the template instructions
 % whenever possible.
 %
-% % % % % % % % % % % % % % % % % % % % % % % 
+% % % % % % % % % % % % % % % % % % % % % % %
 %
-% Once your paper is accepted for publication, 
-% PLEASE REMOVE ALL TRACKED CHANGES in this file 
-% and leave only the final text of your manuscript. 
+% Once your paper is accepted for publication,
+% PLEASE REMOVE ALL TRACKED CHANGES in this file
+% and leave only the final text of your manuscript.
 % PLOS recommends the use of latexdiff to track changes during review, as this will help to maintain a clean tex file.
 % Visit https://www.ctan.org/pkg/latexdiff?lang=en for info or contact us at latex@plos.org.
 %
 %
-% There are no restrictions on package use within the LaTeX files except that 
+% There are no restrictions on package use within the LaTeX files except that
 % no packages listed in the template may be deleted.
 %
 % Please do not include colors or graphics in the text.
@@ -33,8 +33,8 @@
 % Please include tables/figure captions directly after the paragraph where they are first cited in the text.
 %
 % DO NOT INCLUDE GRAPHICS IN YOUR MANUSCRIPT
-% - Figures should be uploaded separately from your manuscript file. 
-% - Figures generated using LaTeX should be extracted and removed from the PDF before submission. 
+% - Figures should be uploaded separately from your manuscript file.
+% - Figures generated using LaTeX should be extracted and removed from the PDF before submission.
 % - Figures containing multiple panels/subfigures must be combined into one image file before submission.
 % For figure citations, please use "Fig" instead of "Figure".
 % See http://journals.plos.org/plosone/s/figures for PLOS figure guidelines.
@@ -58,15 +58,15 @@
 %
 % Do not include text that is not math in the math environment. For example, CO2 should be written as CO\textsubscript{2} instead of CO$_2$.
 %
-% Please add line breaks to long display equations when possible in order to fit size of the column. 
+% Please add line breaks to long display equations when possible in order to fit size of the column.
 %
 % For inline equations, please do not include punctuation (commas, etc) within the math environment unless this is part of the equation.
 %
-% When adding superscript or subscripts outside of brackets/braces, please group using {}.  For example, change "[U(D,E,\gamma)]^2" to "{[U(D,E,\gamma)]}^2". 
+% When adding superscript or subscripts outside of brackets/braces, please group using {}.  For example, change "[U(D,E,\gamma)]^2" to "{[U(D,E,\gamma)]}^2".
 %
 % Do not use \cal for caligraphic font.  Instead, use \mathcal{}
 %
-% % % % % % % % % % % % % % % % % % % % % % % % 
+% % % % % % % % % % % % % % % % % % % % % % % %
 %
 % Please contact latex@plos.org with any questions.
 %
@@ -127,13 +127,13 @@
 
 
 % Remove comment for double spacing
-%\usepackage{setspace} 
+%\usepackage{setspace}
 %\doublespacing
 
 % Text layout
 \raggedright
 \setlength{\parindent}{0.5cm}
-\textwidth 5.25in 
+\textwidth 5.25in
 \textheight 8.75in
 
 % Bold the 'Figure #' in the caption and separate it from the title/caption with a period
@@ -195,12 +195,12 @@
          & y_{f,L} \leq y_f \leq y_{f,U} & \textrm{final states} \\
          & x_{f,L} \leq x_f \leq x_{f,U} & \textrm{final controls} \\
          \mbox{with respect to} \quad
+         & t_0 \in [t_{0,L}, t_{0,U}] & \textrm{initial time} \\
+         & t_f \in [t_{f,L}, t_{f,U}] & \textrm{final time} \\
          & y = (q, u, z) \in [y_{L}, y_{U}] & \textrm{states} \\
          & x \in [x_{L}, x_{U}] & \textrm{controls} \\
-         & \lambda & \textrm{Lagrange multipliers} \\
-         & p \in [p_{L}, p_{U}] & \textrm{static parameters} \\
-         & t_0 \in [t_{0,L}, t_{0,U}] & \textrm{initial time} \\
-         & t_f \in [t_{f,L}, t_{f,U}] & \textrm{final time}
+         & \lambda & \textrm{multipliers} \\
+         & p \in [p_{L}, p_{U}] & \textrm{static parameters}
     \end{aligned}
 \end{align}
 }
@@ -234,11 +234,145 @@
 
 % TODO: Center the first equation.
 \newcommand{\traptau}{
+    \begin{gather}
+        0 = \tau_0 < \tau_1 < \tau_2 < \ldots < \tau_i < \ldots < \tau_{n - 1} < \tau_n = 1, \\
+        t_i = (t_f - t_0) \tau_i + t_0, \\
+        h_i = (t_f - t_0)(\tau_i - \tau_{i-1}).
+    \end{gather}
+}
+
+\newcommand{\trapfuncs}{
+\begin{align}
+    f_{\textrm{mb}}(t, y, x, \lambda, p) &=
+          M(q, p)^{-1}\big[(f_{\textrm{app}}(t, y, x, p) - f_{\textrm{bias}}(q, u, p) - G(q, p)^T \lambda\big], \\
+    \textrm{trap}_i(F(\eta, p)) &= \frac{1}{2} h_i (F(\eta_{i-1}, p) + F(\eta_i, p)),
+\end{align}
+}
+
+\newcommand{\trapnlp}{
 \begin{align}
     \begin{aligned}
-        0 &= \tau_0 < \tau_1 < \tau_2 < \ldots < \tau_i < \ldots < \tau_{n - 1} < \tau_n = 1 \\
-        t_i &= (t_f - t_0) \tau_i + t_0 \\
-        h_i &= (t_f - t_0)(\tau_i - \tau_{i-1})
+        \mbox{minimize} \quad
+         & \sum_j w_j J_{j}(t_0, t_f, y_0, y_n, x_{0}, x_{n}, \lambda_0, \mathrlap{\lambda_n, p, S_{c,j})
+          + w_{\lambda} \sum_{i=1}^{n} \textrm{trap}_i(\|\lambda\|_2^2)}  \\
+         & \quad\quad\quad S_{c,j} = \sum_{i=1}^{n} \textrm{trap}_i(s_{c,j}(t, y, x, \lambda, p)) \\
+        \mbox{subject to} \quad
+         & q_i = q_{i-1} + \textrm{trap}_i(u) && i = 1, \ldots, n \\
+         & u_i = u_{i-1} + \textrm{trap}_i(f_{\textrm{mb}}(t, y, x, \lambda, p))  && i = 1, \ldots, n \\
+         & z_i = z_{i-1} + \textrm{trap}_i(f_{\textrm{aux}}(t, y, x, \lambda, p)) && i = 1, \ldots, n \\
+         & 0 = \phi(q_i)  && i = 0, \ldots, n\\
+         & V_{L,k} \leq V_k(t_0, t_f, y_0, y_f, x_{0}, x_{f}, \lambda_0, \mathrlap{\lambda_f, p, S_{e,k}) \leq V_{U,k}} \\
+         & \quad\quad\quad S_{e,j} = \sum_{i=1}^{n} \textrm{trap}_i(s_{e,j}(t, y, x, \lambda, p)) \\
+         & \quad\quad\quad k = 1, \ldots, K \\
+         & g_{L} \leq g(t_i, y_i, x_{i}, p) \leq g_{U}  && i = 0, \ldots, n\\
+         \mbox{with respect to} \quad
+         & t_0 \in [t_{0,L}, t_{0,U}] \\
+         & t_n \in [t_{f,L}, t_{f,U}] \\
+         & y_0 \in [y_{0,L}, y_{0,U}] \\
+         & y_i \in [y_{L}, y_{U}] && i = 1, \ldots, n - 1\\
+         & y_n \in [y_{f,L}, y_{f,U}] \\
+         & x_0 \in [x_{0,L}, x_{0,U}] \\
+         & x_i \in [x_{L}, x_{U}] && i = 1, \ldots, n - 1\\
+         & x_n \in [x_{f,L}, x_{f,U}] \\
+         & \lambda_i \in [\lambda_L, \lambda_U] && i = 0, \ldots, n \\
+         & p \in [p_{L}, p_{U}].
+    \end{aligned}
+\end{align}
+}
+
+\newcommand{\trapimplicit}{
+\begin{align}
+    \begin{aligned}
+    \mbox{subject to} \quad
+         & u_i = u_{i-1} + \textrm{trap}_i(\zeta)  && i = 1, \ldots, n \\
+         & M(q_i, p)\zeta_i + G(q_i, p)^T \lambda_i =
+          f_{\textrm{app},i} - f_{\textrm{bias},i} && i = 0, \ldots, n \\
+    \mbox{with respect to} \quad
+         & \zeta_i \in [-\zeta_{B}, \zeta_{B}] && i = 0, \ldots, n.\\
+    \end{aligned}
+\end{align}
+}
+
+\newcommand{\hermitesimpsontau}{
+    \begin{gather}
+        0 = \tau_0 < \tau_1 < \tau_2 < \ldots < \tau_i < \ldots < \tau_{n - 1} < \tau_n = 1, \\
+        \bar{\tau}_i = 0.5 (\tau_{i-1} + \tau_i), \\
+        t_i = (t_f - t_0) \tau_i + t_0, \\
+        \bar{t}_i = (t_f - t_0) \bar{\tau}_i + t_0, \\
+        h_i = (t_f - t_0)(\tau_i - \tau_{i-1}).
+    \end{gather}
+}
+
+\newcommand{\hermitesimpsonfuncs}{
+\begin{align}
+    \textrm{hermite}_i(\eta, F(\eta, p)) &= \frac{1}{2} (\eta_{i-1} + \eta_i) + \frac{h_i}{8} (F(\eta_{i-1}, p) - F(\eta_i, p)), \\
+    \textrm{simpson}_i(F(\eta, p)) &= \frac{h_i}{6} (F(\eta_{i-1}, p) + 4 F(\bar{\eta}_i, p) + F(\eta_i, p)),
+\end{align}
+}
+
+\newcommand{\hermitesimpsonnlp}{
+\begin{align}
+    \begin{aligned}
+        \mbox{minimize} \quad
+         & \sum_j w_j J_{c,j}(t_0, t_f, y_0, y_n, x_{0}, x_{n}, \lambda_0, \mathrlap{\lambda_n, p, S_{c,j})
+         + w_{\lambda} \sum_{i=1}^{n} \textrm{simpson}_i(\|\lambda\|_2^2)}  \\
+         & \quad\quad\quad S_{c,j} = \sum_{i=1}^{n} \textrm{simpson}_i(s_{c,j}(t, y, x, \lambda, p)) \\
+        \mbox{subject to} \quad
+         & \bar{q}_i = \textrm{hermite}_i(q, u) + G(\bar{q}_i, p)^T \bar{\gamma}_i && i = 1, \ldots, n \\
+         & q_i = q_{i-1} + \textrm{simpson}_i(u) && i = 1, \ldots, n \\
+         & \bar{u}_i = \textrm{hermite}_i(u, f_{\textrm{mb}}(t, y, x, \lambda, p)) && i = 1, \ldots, n \\
+         & u_i = u_{i-1} + \textrm{simpson}_i(f_{\textrm{mb}}(t, y, x, \lambda, p))  && i = 1, \ldots, n \\
+         & \bar{z}_i = \textrm{hermite}_i(z, f_{\textrm{aux}}(t, y, x, \lambda, p)) && i = 1, \ldots, n \\
+         & z_i = z_{i-1} + \textrm{simpson}_i(f_{\textrm{aux}}(t, y, x, \lambda, p)) && i = 1, \ldots, n \\
+         & \bar{x}_i = (x_{i-1} + x_i)/2 && i = 1, \ldots, n \\
+         & 0 = \phi(q_i)  && i = 0, \ldots, n\\
+         & 0 = \dot{\phi}(q_i, u_i, p) && i = 0, \ldots, n\\
+         & 0 = \ddot{\phi}(t_i, y_i, x_i, \lambda_i, p) && i = 0, \ldots, n\\
+         & V_{L,k} \leq V_k(t_0, t_f, y_0, y_f, x_{0}, x_{f}, \lambda_0, \mathrlap{\lambda_f, p, S_{e,k}) \leq V_{U,k}} \\
+        & \quad\quad\quad S_{e,j} = \sum_{i=1}^{n} \textrm{simpson}_i(s_{e,j}(t, y, x, \lambda, p)) \\
+        & \quad\quad\quad k = 1, \ldots, K \\
+        & g_{L} \leq g(t_i, y_i, x_{i}, p) \leq g_{U}  && i = 0, \ldots, n\\
+         \mbox{with respect to} \quad
+         & t_0 \in [t_{0,L}, t_{0,U}] \\
+         & t_n \in [t_{f,L}, t_{f,U}] \\
+         & y_0 \in [y_{0,L}, y_{0,U}] \\
+         & y_i \in [y_{L}, y_{U}] && i = 1, \ldots, n - 1 \\
+         & \bar{y}_i \in [y_{L}, y_{U}] && i = 1, \ldots, n \\
+         & y_n \in [y_{f,L}, y_{f,U}] \\
+         & x_0 \in [x_{0,L}, x_{0,U}] \\
+         & x_i \in [x_{L}, x_{U}] && i = 1, \ldots, n - 1 \\
+         & \bar{x}_i \in [x_{L}, x_{U}] && i = 1, \ldots, n \\
+         & x_n \in [x_{f,L}, x_{f,U}] \\
+         & \lambda_i \in [\lambda_L, \lambda_U] && i = 0, \ldots, n \\
+         & \bar{\lambda}_i \in [\lambda_L, \lambda_U] && i = 1, \ldots, n \\
+         & \bar{\gamma}_i \in [\bar{\gamma}_L, \bar{\gamma}_U] && i = 1, \ldots, n \\
+         & p \in [p_{L}, p_{U}].
+    \end{aligned}
+\end{align}
+}
+
+\newcommand{\hermitesimpsonkincon}{
+    \begin{align}
+         0 &= \dot{\phi}(q, u, p) = G(q, p) u,\\
+         0 &= \ddot{\phi}(t, y, x, \lambda, p) = G(q, p) f_{\textrm{mb}}(t, y, x, \lambda, p) + \dot{G}(q, p) u. \\
+    \end{align}
+}
+
+\newcommand{\hermitesimpsonimplicit}{
+\begin{align}
+    \begin{aligned}
+    \mbox{subject to} \quad
+         & \bar{u}_i = \textrm{hermite}_i(u, \zeta) & i = 1, \ldots, n \\
+         & u_i = u_{i-1} + \textrm{simpson}_i(\zeta)  & i = 1, \ldots, n \\
+         & M(q_i, p)\zeta_i + G(q_i, p)^T \lambda_i =
+          f_{\textrm{app},i} -
+            f_{\textrm{bias},i} & i = 0, \ldots, n \\
+         & M(\bar{q}_i, p)\bar{\zeta}_i + G(\bar{q}_i, p)^T \bar{\lambda}_i =
+          \bar{f}_{\textrm{app},i} -
+            \bar{f}_{\textrm{bias},i} & i = 1, \ldots, n \\
+    \mbox{with respect to} \quad
+         & \zeta_i \in [-\zeta_{B}, \zeta_{B}] & i = 0, \ldots, n \\
+         & \bar{\zeta}_i \in [-\zeta_{B}, \zeta_{B}] & i = 1, \ldots, n.
     \end{aligned}
 \end{align}
 }
@@ -295,7 +429,7 @@ Scott L. Delp\textsuperscript{1,3,4}
 \bigskip
 
 % Insert additional author notes using the symbols described below. Insert symbol callouts after author names as necessary.
-% 
+%
 % Remove or comment out the author notes below if they aren't used.
 %
 % Primary Equal Contribution Note
@@ -307,7 +441,7 @@ Scott L. Delp\textsuperscript{1,3,4}
 
 % Current address notes
 %\textcurrency Current Address: Dept/Program/Center, Institution Name, City, State, Country % change symbol to "\textcurrency a" if more than one current address note
-% \textcurrency b Insert second current address 
+% \textcurrency b Insert second current address
 % \textcurrency c Insert third current address
 
 % Deceased author note
@@ -332,8 +466,8 @@ We designed Moco to be easy to use, flexible, extensible, and community-oriented
 
 
 % Please keep the Author Summary between 150 and 200 words
-% Use first person. PLOS ONE authors please skip this step. 
-% Author Summary not valid for PLOS ONE submissions.   
+% Use first person. PLOS ONE authors please skip this step.
+% Author Summary not valid for PLOS ONE submissions.
 % \section*{Author summary}
 
 \linenumbers
@@ -343,13 +477,13 @@ We designed Moco to be easy to use, flexible, extensible, and community-oriented
 
 Musculoskeletal simulations have shed light on disorders that limit mobility by discovering ways to walk that reduce knee pain~\cite{Fregly:2009}, revealing that children with cerebral palsy exhibit simplified motor control when walking~\cite{Steele:2015}, and by reproducing eye movement disorders~\cite{Priamikov:2016}. Simulations provide insights to increase safety as we push the limits of human performance, whether that’s designing exercise equipment for preserving bone density in outer space~\cite{Fregly:2015}, designing exoskeletons to reduce back injuries from heavy lifting~\cite{Manns:2016}, or studying knee ligament injuries in soccer~\cite{Thompson:2017}. Beyond human health and performance, researchers use musculoskeletal simulations to understand how animals move, for example by studying dinosaur locomotion~\cite{sthaya:2005uk} and differences between human and chimpanzee strength~\cite{ONeill:2017}.
 
-Simulations of movement generally fall within two categories: motion tracking or motion prediction. One can track observed motions~\cite{Thelen:2003bba,Lloyd:2003} to estimate unmeasured quantities such as control complexity~\cite{Steele:2015} and muscle-level metabolic cost of movement~\cite{FarrisLichtwark:2014,Jackson:2016}. Motion prediction~\cite{Geijtenbeek:2019} can establish cause-effect relationships and help design clinical interventions, such as discovering gait impairments that arise from weakness and contracture~\cite{Ong:2019a} and designing prostheses for amputees~\cite{Handford:2016kd}. Methods for motion tracking are rapid but inflexible, and methods for motion prediction often require either simplified models or many hours to solve. Moreover, researchers often seek to solve unique problems that may mix elements of tracking and prediction or involve optimizing model parameters. Clinicians may be interested in subtle changes in kinematics and muscle coordination that minimize joint loading and device designers may seek the optimal stiffness of an exoskeleton for improving the speed of an observed motion, but off-the-shelf simulation tools cannot easily handle these problems. To accelerate the application of musculoskeletal simulations to scientific and clinical problems, we need flexible tools that can solve problems along the entire tracking–prediction spectrum and allow users to easily optimize model parameters and to choose their own cost terms.
+Simulations of movement generally fall within two categories: motion tracking or motion prediction. One can track observed motions~\cite{Thelen:2003bba,Lloyd:2003} to estimate unmeasured quantities such as control complexity~\cite{Steele:2015} and muscle-level metabolic cost of movement~\cite{Farris:2014du,Jackson:2017go}. Motion prediction~\cite{Geijtenbeek:2019} can establish cause-effect relationships and help design clinical interventions, such as discovering gait impairments that arise from weakness and contracture~\cite{Ong:2019a} and designing prostheses for amputees~\cite{Handford:2016kd}. Methods for motion tracking are rapid but inflexible, and methods for motion prediction often require either simplified models or many hours to solve. Moreover, researchers often seek to solve unique problems that may mix elements of tracking and prediction or involve optimizing model parameters. Clinicians may be interested in subtle changes in kinematics and muscle coordination that minimize joint loading and device designers may seek the optimal stiffness of an exoskeleton for improving the speed of an observed motion, but off-the-shelf simulation tools cannot easily handle these problems. To accelerate the application of musculoskeletal simulations to scientific and clinical problems, we need flexible tools that can solve problems along the entire tracking–prediction spectrum and allow users to easily optimize model parameters and to choose their own cost terms.
 
 Most musculoskeletal biomechanics problems, whether tracking or prediction, are naturally posed as optimal control problems: we seek a system’s parameters and time-dependent states and controls that minimize a cost (e.g., effort) subject to the dynamics of the system expressed as differential-algebraic equations (DAEs). An increasingly popular method for solving optimal control problems is to approximate the system’s states and controls as polynomial splines and solve for the knot points that lead the spline to obey the system’s dynamics. The dynamics are enforced by requiring the time derivative of the state splines to match the derivative from the system’s differential equations at specified time points. This method is called “direct collocation”, because the spline derivatives are “collocated” with the exact derivatives; see page 211 in~\cite{Hairer:1993} and page 498 in~\cite{Hairer:1996}. Direct collocation~\cite{Betts:2010,Umberger:2018ec,Mombaur:2016eb,Kelly:2017} is useful for musculoskeletal problems because it is flexible and fast: the method can handle arbitrary objectives, can optimize model parameters, and leads to sparse nonlinear programs (NLPs) that can be solved by generic optimization software.
 
 The advantages of direct collocation have led biomechanists to evaluate the method for tracking motions~\cite{Lin:2017jp}, predicting motions~\cite{Porsa:2015dn,Meyer:2016gl,Lee:2016dn,KMoore:2018ea,Lin:2018ex}, fitting muscle properties~\cite{Falisse:2016}, and optimizing design parameters~\cite{Rohani:2017}. Biomechanists now know how to efficiently handle multibody and muscle dynamics~\cite{vandenBogert:2011fv,Groote:2016dq}, solve the muscle redundancy problem~\cite{Groote:2016dq}, include energy consumption in the objective~\cite{Koelewijn:2018kw,Koelewijn:2019}, and employ automatic differentiation to rapidly simulate complex models~\cite{Falisse:2019a}. Using these methodological advances, we have learned that minimizing an energy-related cost produces non-physiological knee flexion during walking~\cite{Ackermann:2010dd}, that rearfoot striking is more energy efficient than forefoot striking~\cite{Miller:2015fc}, that skipping is the most efficient gait on our moon~\cite{Ackermann:2012}, that the energetically optimal fiber type to recruit depends on the demands of a motion~\cite{Lai:2018}, that unilateral amputees can improve gait symmetry with only a minor increase in effort~\cite{Koelewijn:2016bm}, and that hip abductor weakness can cause Trendelenberg gait~\cite{Falisse:2019b}. Direct collocation has been used in conjunction with other methods common in biomechanics, such as muscle synergies~\cite{Mehrabi:2019} and genetic algorithms~\cite{Nguyen:2019}.
 
-Despite its advantages and successes, direct collocation is not easy to adopt. The method requires arduous bookkeeping of variables and constraint equations and efficient calculation of sparse finite differences for derivative-based optimization. Many direct collocation solvers exist~\cite{Becerra:2010,Patterson:2014}, but current solutions require users to bring their own musculoskeletal models. OpenSim is a popular software package for modeling musculoskeletal systems~\cite{Seth:2018}, but OpenSim does not provide direct collocation. Many biomechanists have graciously shared their code combining OpenSim or hand-coded models with direct collocation solvers, but such code is tailored to specific models or motions, handles only unconstrained models, does not leverage the latest advances in direct collocation, contains closed-source components, is inefficient, or is difficult to install on one’s own computer. Lastly, choosing the problem formulation (e.g., expressing dynamics as explicit or implicit differential equations) and solver settings (e.g., first-order or second-order Newton methods) that lead to fast convergence requires expertise; ideally, such expertise is embedded into the software via reasonable defaults, and users can edit their formulation or solver settings by editing single lines of code.
+Despite its advantages and successes, direct collocation is not easy to adopt. The method requires arduous bookkeeping of variables and constraint equations and efficient calculation of sparse finite differences for derivative-based optimization. Many direct collocation solvers exist~\cite{Becerra:2010,Patterson:2014}, but current solutions require users to bring their own musculoskeletal models. OpenSim is a popular software package for modeling musculoskeletal systems~\cite{Seth:2018gg}, but OpenSim does not provide direct collocation. Many biomechanists have graciously shared their code combining OpenSim or hand-coded models with direct collocation solvers, but such code is tailored to specific models or motions, handles only unconstrained models, does not leverage the latest advances in direct collocation, contains closed-source components, is inefficient, or is difficult to install on one’s own computer. Lastly, choosing the problem formulation (e.g., expressing dynamics as explicit or implicit differential equations) and solver settings (e.g., first-order or second-order Newton methods) that lead to fast convergence requires expertise; ideally, such expertise is embedded into the software via reasonable defaults, and users can edit their formulation or solver settings by editing single lines of code.
 
 To improve the accessibility of advanced optimal control methods in musculoskeletal biomechanics, we introduce OpenSim Moco (“musculoskeletal optimal control”): an easy-to-use, flexible, extensible, and community-oriented software toolkit for solving optimal control problems with OpenSim musculoskeletal models. OpenSim frees biomechanists from implementing equations of motion on their own, and now OpenSim Moco frees biomechanists from implementing optimal control methods. Moco not only removes the need to set up derivative-based optimization, but also includes an intuitive interface that abstracts away the details of constructing an optimal control problem. With just a few lines of code, OpenSim Moco allows researchers to solve complex problems with their own OpenSim model for almost any movement. Users can add custom cost terms or constraints if Moco does not provide what users need. In this paper, we first use Moco to solve for muscle activity to track an observed walking motion and compare the results with those from an existing method. Then, we use Moco to predict a crouch-to-stand motion and optimize the stiffness of an assistive device.
 
@@ -408,7 +542,7 @@ The kinematic variables $q$ and $u$ are replaced with known quantities $\hat{q}$
 
 \subsubsection*{How does Moco solve problems?}
 
-All details of solving an optimal control problem are encapsulated in MocoSolver, which is decoupled from MocoProblem to afford the user with flexibility. The MocoProblem knows nothing about the solver that may be used. When a user defines a custom cost term, they need not worry about how the solver will handle the cost. The only assumption made by MocoSolver about the problem is that it describes a multibody system; this allows using special solver algorithms not suited to generic dynamic systems, such as for handling kinematic constraints~\cite{Posa:2015}. Moco users can add bodies or muscles to their model and use the same exact solver, whereas homebrewed code may require updating the direct collocation algorithm.
+All details of solving an optimal control problem are encapsulated in MocoSolver, which is decoupled from MocoProblem to afford the user with flexibility. The MocoProblem knows nothing about the solver that may be used. When a user defines a custom cost term, they need not worry about how the solver will handle the cost. The only assumption made by MocoSolver about the problem is that it describes a multibody system; this allows using special solver algorithms not suited to generic dynamic systems, such as for handling kinematic constraints~\cite{Posa:2016}. Moco users can add bodies or muscles to their model and use the same exact solver, whereas homebrewed code may require updating the direct collocation algorithm.
 
 Moco provides two direct collocation solvers that transcribe continuous optimal control problems into finite-dimensional NLPs that are passed on to well-established derivative-based NLP solvers. MocoCasADiSolver uses the third-party CasADi library~\cite{Andersson:2019}, and MocoTropterSolver uses a direct collocation solver we developed called Tropter; see Table~\ref{tab:solvers}. CasADi is an open-source package for algorithmic differentiation and is a bridge to NLP solvers IPOPT~\cite{Wachter:2006}, SNOPT~\cite{Gill:2005}, and others.
 
@@ -417,7 +551,7 @@ Moco provides two direct collocation solvers that transcribe continuous optimal 
     \begin{adjustwidth}{-2.25in}{0in} % Comment out/remove adjustwidth environment if table fits in text column.
         \centering
         \caption{
-        {\bf Table caption TODO.}}
+        {\bf Moco’s solvers. (opt) indicates an optional dependency.}}
         \begin{tabular}{p{2.1in}p{2.1in}p{2.1in}}
             \toprule
              & \bf MocoCasADiSolver & \bf MocoTropterSolver \\ \midrule
@@ -478,7 +612,7 @@ The result of the trapezoidal transcription, with multibody dynamics expressed a
 
 In this form, the problem can be solved directly by an NLP solver.
 
-When expressing the multibody dynamics implicitly, we remove the constraint involving $f_\mathrm{mb}$, introduce generalized accelerations as an algebraic (control) variable $\xi$, and enforce multibody dynamics in “inverse dynamics” form:
+When expressing the multibody dynamics implicitly, we remove the constraint involving $f_\mathrm{mb}$, introduce generalized accelerations as an algebraic (control) variable $\zeta$, and enforce multibody dynamics in “inverse dynamics” form:
 
 \trapimplicit
 
@@ -510,9 +644,6 @@ Using the explicit multibody dynamics function $f_{\textrm{mb}}$ defined previou
 
 \hermitesimpsonnlp
 
-
-TODO: reorder g and V.
-
 The $G(\bar{q}_i, p)^T \bar{\gamma}_i$ term represents a velocity correction that is necessary to impose when enforcing derivatives of kinematic constraints in the NLP. The additional variables $bar{\gamma}_i$ prevents the kinematics from being overconstrained, and the kinematic constraint Jacobian transpose operator, $G(\bar{q}_i, p)^T$, restricts the velocity correction to the tangent plane of the constraint manifold~\cite{Posa:2016}. Currently, we only support enforcing derivatives of position-level, or holonomic, constraints, represented by the equations:
 
 \hermitesimpsonkincon
@@ -529,7 +660,7 @@ The constant $\xi_B$ is a large positive number (1000 by default).
 
 \subsection*{Verification}
 
-Verifying software is essential for good science and gaining the trust of users~\cite{Hicks:2015}, thus we conduct extensive verification tests. For example, producing the known solution to an optimal control problem verifies that Moco implements direct collocation correctly. We solved the following linear optimal control problem, which has a known solution.
+Verifying software is essential for good science and gaining the trust of users~\cite{Hicks:2015bo}, thus we conduct extensive verification tests. For example, producing the known solution to an optimal control problem verifies that Moco implements direct collocation correctly. We solved the following linear optimal control problem, which has a known solution.
 
 \analytic
 
@@ -556,7 +687,7 @@ Moco contains an automated test suite that extends beyond the verification descr
 
 \subsection*{Estimating muscle activity from motion capture data of walking}
 
-Moco can estimate muscle activity in walking, which allows studies of gait disorders, muscle coordination, and prostheses. We used a model with 18 degrees of freedom and 80 lower-limb muscles~\cite{Rajagopal:2016ek} to track one gait cycle of walking at a self-selected speed of 1.26 m/s. The scaled model and data are based on the supplementary material of~\cite{Rajagopal:2016ek}. We solved for muscle activity using two of Moco’s tools: MocoTrack, which tracks kinematics as a cost, and MocoInverse, which prescribes kinematics (see “The ‘tool’ interface” for details). We compared the resulting muscle activations to those from Computed Muscle Control (CMC)~\cite{Thelen:2003bb}, a popular tracking tool in OpenSim (Fig 3).
+Moco can estimate muscle activity in walking, which allows studies of gait disorders, muscle coordination, and prostheses. We used a model with 18 degrees of freedom and 80 lower-limb muscles~\cite{Rajagopal:2016ek} to track one gait cycle of walking at a self-selected speed of 1.26 m/s. The scaled model and data are based on the supplementary material of~\cite{Rajagopal:2016ek}. We solved for muscle activity using two of Moco’s tools: MocoTrack, which tracks kinematics as a cost, and MocoInverse, which prescribes kinematics (see “The ‘tool’ interface” for details). We compared the resulting muscle activations to those from Computed Muscle Control (CMC)~\cite{Thelen:2003bba}, a popular tracking tool in OpenSim (Fig 3).
 
 % Place figure captions after the first paragraph in which they are cited.
 \begin{figure}[!h]
@@ -569,7 +700,7 @@ Moco can estimate muscle activity in walking, which allows studies of gait disor
         \end{adjustwidth}
 \end{figure}
 
-Computed Muscle Control (CMC), MocoTrack, and MocoInverse produced muscle activation that was consistent with electromyography. MocoInverse and CMC yielded similar muscle activation (root-mean-square difference of 0.091), while MocoTrack produced higher muscle activation than CMC and MocoInverse for some muscles (e.g., rectus femoris, biceps femoris, vastus lateralis, and tibialis anterior). The difference between required net joint moments and muscle-generated net joint moments (termed “reserve” moments in OpenSim) had a maximum value of 0.12 N-m for MocoTrack and 7.8 N-m for MocoInverse~\cite{Hicks:2015}. CMC solved in 2.5 minutes, MocoTrack solved in 2.8 hours, and MocoInverse solved in 7.7 minutes.
+Computed Muscle Control (CMC), MocoTrack, and MocoInverse produced muscle activation that was consistent with electromyography. MocoInverse and CMC yielded similar muscle activation (root-mean-square difference of 0.091), while MocoTrack produced higher muscle activation than CMC and MocoInverse for some muscles (e.g., rectus femoris, biceps femoris, vastus lateralis, and tibialis anterior). The difference between required net joint moments and muscle-generated net joint moments (termed “reserve” moments in OpenSim) had a maximum value of 0.12 N-m for MocoTrack and 7.8 N-m for MocoInverse~\cite{Hicks:2015bo}. CMC solved in 2.5 minutes, MocoTrack solved in 2.8 hours, and MocoInverse solved in 7.7 minutes.
 
 Although Computed Muscle Control solved more quickly, Moco’s tools are more flexible. MocoTrack allows for deviations in kinematics, and both MocoTrack and MocoInverse support flexible cost terms. To show this ability, we added a cost term to the MocoInverse problem for minimizing knee joint loading. With this additional cost, the peak magnitude of the knee joint reaction force decreased from 5.1 to 3.9 body weights. As expected, the activity of muscles crossing the knee joint (vastus lateralis, biceps femoris short head, and gastrocnemius) decreased. To compensate for the lost moment at the ankle joint caused by the decrease in gastrocnemius activity, soleus activity increases, as seen in a previous simulation study~\cite{DeMers:2014}.
 
@@ -633,7 +764,7 @@ TODO
 %
 % Compile your BiBTeX database using our plos2015.bst
 % style file and paste the contents of your .bbl file
-% here. See http://journals.plos.org/plosone/s/latex for 
+% here. See http://journals.plos.org/plosone/s/latex for
 % step-by-step instructions.
 %
 

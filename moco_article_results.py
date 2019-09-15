@@ -468,6 +468,7 @@ class MotionTrackingWalking(MocoPaperResult):
             ['subtalar_r', 'mtp_r', 'subtalar_l', 'mtp_l']))
         modelProcessor.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())
         modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
+        modelProcessor.append(osim.ModOpIgnoreTendonCompliance())
         # modelProcessor.append(osim.ModOpScaleActiveFiberForceCurveWidthDGF(1.5))
         modelProcessor.append(osim.ModOpAddReserves(1))
         modelProcessor.process().printToXML("subject_armless_for_cmc.osim")

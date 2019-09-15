@@ -385,14 +385,14 @@
 \newcommand{\analytic}{
 \begin{equation}
     \begin{aligned}
-        \mbox{minimize}
-         \quad & \int_{t_0}^{t_f} \frac{1}{2}x^2~dt &&  \\
-         \mbox{subject to}
-         \quad & \dot{q} = u \\
-         & \dot{u} = -u + x \\
-         & q_0 = 0 & q_f = 5 \\
-         & u_0 = 0 & u_f = 2\\
-         & t_0 = 0 & t_f = 2.
+        \mbox{minimize} \quad
+         \mathrlap{\int_{t_0}^{t_f} \frac{1}{2}x^2~dt}  \\
+         \mbox{subject to} \quad
+         && \dot{q} &= u \\
+         && \dot{u} &= -u + x \\
+         && t_0 &= 0 & t_f &= 2 \\
+         && q_0 &= 0 & q_f &= 5 \\
+         && u_0 &= 0 & u_f &= 2.
     \end{aligned}
 \end{equation}
 }
@@ -673,7 +673,7 @@ Verifying software is essential for good science and gaining the trust of users~
 
 Moco’s solution for the optimal control matched the known control solution with a root-mean-square error of $8.0 \times 10^{-8}$.
 
-Next, we ensured that a time-stepping forward simulation using controls from a motion prediction produced the same motion as in the prediction. These tests used a model consisting of a point mass suspended by three muscles and under the influence of gravity; see Fig 2. We first predicted the state and control trajectories to move the point mass between prescribed initial and final positions, starting and ending at rest (Fig 2, gray band). In this prediction, the cost included both the sum of squared muscle excitations and the final time. Then, we used the predicted controls to perform a time-stepping forward simulation using an OpenSim (Simbody) integrator (Fig 2, blue line). The resulting position trajectory of the point mass matched that from the prediction with a root-mean-square error of 0.0051 m. This gives us confidence that Moco does indeed enforce the same multibody and muscle dynamics enforced in a time-stepping forward simulation in OpenSim. For more complex problems, conducting a time-stepping forward simulation using controls from a \textit{MocoSolution} requires a stabilizing feedback controller to counteract numerical errors.
+Next, we ensured that a time-stepping forward simulation using controls from a motion prediction produced the same motion as in the prediction. These tests used a model consisting of a point mass suspended by three muscles and under the influence of gravity; see Fig 2. We first predicted the state and control trajectories to move the point mass between prescribed initial and final positions, starting and ending at rest (Fig 2, gray band). In this prediction, the cost included both the sum of squared muscle excitations and the final time. Then, we used the predicted controls to perform a time-stepping forward simulation using an OpenSim (Simbody) integrator (Fig 2, blue line). The resulting position trajectory of the point mass matched that from the prediction with a root-mean-square error of \input{results/suspended_mass_time_stepping_coord_rms.txt}\unskip~m. This gives us confidence that Moco does indeed enforce the same multibody and muscle dynamics enforced in a time-stepping forward simulation in OpenSim. For more complex problems, conducting a time-stepping forward simulation using controls from a \textit{MocoSolution} requires a stabilizing feedback controller to counteract numerical errors.
 
 % Place figure captions after the first paragraph in which they are cited.
 \begin{figure}[!h]
@@ -686,7 +686,7 @@ Next, we ensured that a time-stepping forward simulation using controls from a m
 %    \end{adjustwidth}
 \end{figure}
 
-To trust the results of motion tracking problems, we ensured that using \textit{MocoTrack} on a synthesized motion with known muscle activity produced the original muscle activity. We used the same suspended point mass model and tracked the previous motion prediction (Fig 2, gray band). The muscle activations from \textit{MocoTrack} (Fig 2, orange line) matched those from the prediction with a root-mean-square error of 0.0024. To show that there are indeed multiple muscle activity trajectories that produce the same motion, we tracked the motion while minimizing the sum of muscle excitations raised to the fourth power (Fig 2, green line); this resulted in a much larger root-mean-square error of 0.10. For most tracking problems of interest, we do not know the true muscle activity solution; verifying tracking problems using synthesized data gives us confidence in Moco’s estimates of muscle activity for real-world data.
+To trust the results of motion tracking problems, we ensured that using \textit{MocoTrack} on a synthesized motion with known muscle activity produced the original muscle activity. We used the same suspended point mass model and tracked the previous motion prediction (Fig 2, gray band). The muscle activations from \textit{MocoTrack} (Fig 2, orange line) matched those from the prediction with a root-mean-square error of \input{results/suspended_mass_track_activation_rms.txt}\unskip. To show that there are indeed multiple muscle activity trajectories that produce the same motion, we tracked the motion while minimizing the sum of muscle excitations raised to the fourth power (Fig 2, green line); this resulted in a much larger root-mean-square error of \input{results/suspended_mass_track_p_activation_rms.txt}\unskip. For most tracking problems of interest, we do not know the true muscle activity solution; verifying tracking problems using synthesized data gives us confidence in Moco’s estimates of muscle activity for real-world data.
 
 Moco contains an automated test suite that extends beyond the verification described here. These tests include ensuring that users receive error messages for incorrect input, that a \textit{MocoStudy} can be written to and read from an XML (.omoco) file, that kinematic constraints are enforced properly, and that implicit and explicit differential equations lead to the same solution.
 
@@ -694,7 +694,7 @@ Moco contains an automated test suite that extends beyond the verification descr
 
 \subsection*{Estimating muscle activity from motion capture data of walking}
 
-Moco can estimate muscle activity in walking, which allows studies of gait disorders, muscle coordination, and prostheses. We used a model with 18 degrees of freedom and 80 lower-limb muscles~\cite{Rajagopal:2016ek} to track one gait cycle of walking at a self-selected speed of 1.26 m/s. The scaled model and data are based on the supplementary material of~\cite{Rajagopal:2016ek}. We solved for muscle activity using two of Moco’s tools: \textit{MocoTrack}, which tracks kinematics as a cost, and \textit{MocoInverse}, which prescribes kinematics (see “The ‘tool’ interface” for details). We compared the resulting muscle activations to those from Computed Muscle Control~\cite{Thelen:2003bba}, a popular tracking tool in OpenSim; see Fig 3.
+Moco can estimate muscle activity in walking, which allows studies of gait disorders, muscle coordination, and prostheses. We used a model with 18 degrees of freedom and 80 lower-limb muscles~\cite{Rajagopal:2016ek} to track one gait cycle of walking at a self-selected speed of 1.26~m/s. The scaled model and data are based on the supplementary material of~\cite{Rajagopal:2016ek}. We solved for muscle activity using two of Moco’s tools: \textit{MocoTrack}, which tracks kinematics as a cost, and \textit{MocoInverse}, which prescribes kinematics (see “The ‘tool’ interface” for details). We compared the resulting muscle activations to those from Computed Muscle Control~\cite{Thelen:2003bba}, a popular tracking tool in OpenSim; see Fig 3.
 
 % Place figure captions after the first paragraph in which they are cited.
 \begin{figure}[!h]
@@ -707,9 +707,9 @@ Moco can estimate muscle activity in walking, which allows studies of gait disor
         \end{adjustwidth}
 \end{figure}
 
-Computed Muscle Control, \textit{MocoTrack}, and \textit{MocoInverse} produced muscle activation that was consistent with electromyography. \textit{MocoInverse} and Computed Muscle Control yielded similar muscle activation (root-mean-square difference of 0.091), while \textit{MocoTrack} produced higher muscle activation than Computed Muscle Control and \textit{MocoInverse} for some muscles (e.g., rectus femoris, biceps femoris, vastus lateralis, and tibialis anterior). The difference between required net joint moments and muscle-generated net joint moments (termed “reserve” moments in OpenSim) had a maximum value of 0.12 N-m for \textit{MocoTrack} and 7.8 N-m for \textit{MocoInverse}~\cite{Hicks:2015bo}. Computed Muscle Control solved in 2.5 minutes, \textit{MocoTrack} solved in 2.8 hours, and \textit{MocoInverse} solved in 7.7 minutes.
+Computed Muscle Control, \textit{MocoTrack}, and \textit{MocoInverse} produced muscle activation that was consistent with electromyography. \textit{MocoInverse} and Computed Muscle Control yielded similar muscle activation (root-mean-square difference of \input{results/motion_tracking_walking_inverse_cmc_rms.txt}\unskip), while \textit{MocoTrack} produced higher muscle activation than Computed Muscle Control and \textit{MocoInverse} for some muscles (e.g., rectus femoris, biceps femoris, vastus lateralis, and tibialis anterior). The difference between required net joint moments and muscle-generated net joint moments (termed “reserve” moments in OpenSim) had a maximum value of \input{results/motion_tracking_walking_track_max_reserve.txt}\unskip~N-m for \textit{MocoTrack} and \input{results/motion_tracking_walking_inverse_max_reserve.txt}\unskip~N-m for \textit{MocoInverse}~\cite{Hicks:2015bo}. Computed Muscle Control solved in 2.5 minutes, \textit{MocoTrack} solved in \input{results/motion_tracking_walking_track_duration.txt}\unskip~hours, and \textit{MocoInverse} solved in \input{results/motion_tracking_walking_inverse_duration.txt}\unskip~minutes.
 
-Although Computed Muscle Control solved more quickly, Moco’s tools are more flexible. \textit{MocoTrack} allows for deviations in kinematics, and both \textit{MocoTrack} and \textit{MocoInverse} support flexible cost terms. To show this ability, we added a cost term to the \textit{MocoInverse} problem for minimizing knee joint loading. With this additional cost, the peak magnitude of the knee joint reaction force decreased from 5.1 to 3.9 body weights. As expected, the activity of muscles crossing the knee joint (vastus lateralis, biceps femoris short head, and gastrocnemius) decreased. To compensate for the lost moment at the ankle joint caused by the decrease in gastrocnemius activity, soleus activity increased, as seen in a previous simulation study~\cite{DeMers:2014}.
+Although Computed Muscle Control solved more quickly, Moco’s tools are more flexible. \textit{MocoTrack} allows for deviations in kinematics, and both \textit{MocoTrack} and \textit{MocoInverse} support flexible cost terms. To show this ability, we added a cost term to the \textit{MocoInverse} problem for minimizing knee joint loading. With this additional cost, the peak magnitude of the knee joint reaction force decreased from \input{results/motion_tracking_walking_inverse_maxjr.txt}\unskip~to \input{results/motion_tracking_walking_inverse_jr_maxjr.txt}\unskip~body weights. As expected, the activity of muscles crossing the knee joint (vastus lateralis, biceps femoris short head, and gastrocnemius) decreased. To compensate for the lost moment at the ankle joint caused by the decrease in gastrocnemius activity, soleus activity increased, as seen in a previous simulation study~\cite{DeMers:2014}.
 
 \subsection*{Predicting and assisting a crouch-to-stand motion}
 
@@ -727,7 +727,7 @@ We predicted a crouch-to-stand motion with prescribed initial and final poses th
     \end{adjustwidth}
 \end{figure}
 
-Next, we added a torsional spring to the knee and solved for the optimal motion, muscle activations, and spring stiffness. The spring was in equilibrium when the knee was extended (knee angle of 0). We used the same cost as in the unassisted case; no motion was tracked. With the assistive device, the motion was achieved with lower muscle activation (the vasti muscle is minimally active) and in a shorter duration. Moco predicted slightly different kinematics with the assistive device, and found an optimal spring stiffness of 76 N-m/rad.
+Next, we added a torsional spring to the knee and solved for the optimal motion, muscle activations, and spring stiffness. The spring was in equilibrium when the knee was extended (knee angle of 0). We used the same cost as in the unassisted case; no motion was tracked. With the assistive device, the motion was achieved with lower muscle activation (the vasti muscle is minimally active) and in a shorter duration. Moco predicted slightly different kinematics with the assistive device, and found an optimal spring stiffness of \input{results/crouch_to_stand_stiffness.txt}\unskip~N-m/rad.
 
 Moco’s ability to rapidly predict motions and optimize device parameters makes it an ideal tool for predicting the effects of clinical interventions and designing assistive devices.
 

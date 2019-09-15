@@ -950,7 +950,7 @@ class MotionTrackingWalking(MocoPaperResult):
             print(f'track max abs {column_labels[icol]}: {max}')
         with open('results/motion_tracking_walking_'
                   'track_max_reserve.txt', 'w') as f:
-            f.write(f'{max_res_track:.3f}')
+            f.write(f'{max_res_track:.2f}')
 
         res_inverse = self.calc_reserves(sol_inverse)
         column_labels = res_inverse.getColumnLabels()
@@ -963,7 +963,7 @@ class MotionTrackingWalking(MocoPaperResult):
             print(f'inverse max abs {column_labels[icol]}: {max}')
         with open('results/motion_tracking_walking_'
                   'inverse_max_reserve.txt', 'w') as f:
-            f.write(f'{max_res_inverse:.3f}')
+            f.write(f'{max_res_inverse:.1f}')
 
         res_inverse_jr = self.calc_reserves(sol_inverse_jointreaction)
         column_labels = res_inverse_jr.getColumnLabels()

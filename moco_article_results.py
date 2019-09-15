@@ -58,7 +58,7 @@ class Analytic(MocoPaperResult):
         problem.addGoal(osim.MocoControlGoal("effort", 0.5))
 
         solver = moco.initCasADiSolver()
-        solver.set_num_mesh_points(51)
+        solver.set_num_mesh_intervals(50)
         solution = moco.solve()
         solution.write(self.solution_file)
 
@@ -174,7 +174,7 @@ class SuspendedMass(MocoPaperResult):
         problem.setControlInfo("/forceset/right", [0, 1])
 
         solver = study.initCasADiSolver()
-        solver.set_num_mesh_points(101)
+        solver.set_num_mesh_intervals(100)
 
         return study
 
@@ -1008,7 +1008,7 @@ class CrouchToStand(MocoPaperResult):
         moco.set_write_solution("results/")
         solver = moco.initCasADiSolver()
         solver.set_dynamics_mode('implicit')
-        solver.set_num_mesh_points(50)
+        solver.set_num_mesh_intervals(50)
         solver.set_optim_convergence_tolerance(1e-3)
         solver.set_optim_constraint_tolerance(1e-3)
         solver.set_optim_finite_difference_scheme('forward')

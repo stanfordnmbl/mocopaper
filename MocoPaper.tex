@@ -168,8 +168,6 @@
 
 %% Include all macros below
 
-\newcommand{\lorem}{{\bf LOREM}}
-\newcommand{\ipsum}{{\bf IPSUM}}
 \newcommand{\ocp}{
 % TODO: get (1) to the right of the equation.
 % \mathrlap causes the contents to not take up horizontal space, allowing
@@ -227,6 +225,7 @@
          & t_f \in [t_{f,L}, t_{f,U}] \\
          & z \in [z_{L}, z_{U}] \\
          & x \in [x_{L}, x_{U}] \\
+         & \lambda \\
          & p \in [p_{L}, p_{U}].
     \end{aligned}
 \end{align}
@@ -234,11 +233,15 @@
 
 % TODO: Center the first equation.
 \newcommand{\traptau}{
-    \begin{gather}
+\begin{equation}
+    \begin{gathered}
         0 = \tau_0 < \tau_1 < \tau_2 < \ldots < \tau_i < \ldots < \tau_{n - 1} < \tau_n = 1, \\
-        t_i = (t_f - t_0) \tau_i + t_0, \\
-        h_i = (t_f - t_0)(\tau_i - \tau_{i-1}).
-    \end{gather}
+        \begin{aligned}
+        t_i &= (t_f - t_0) \tau_i + t_0, \\
+        h_i &= (t_f - t_0)(\tau_i - \tau_{i-1}).
+        \end{aligned}
+    \end{gathered}
+\end{equation}
 }
 
 \newcommand{\trapfuncs}{
@@ -294,13 +297,17 @@
 }
 
 \newcommand{\hermitesimpsontau}{
-    \begin{gather}
+\begin{equation}
+    \begin{gathered}
         0 = \tau_0 < \tau_1 < \tau_2 < \ldots < \tau_i < \ldots < \tau_{n - 1} < \tau_n = 1, \\
-        \bar{\tau}_i = 0.5 (\tau_{i-1} + \tau_i), \\
-        t_i = (t_f - t_0) \tau_i + t_0, \\
-        \bar{t}_i = (t_f - t_0) \bar{\tau}_i + t_0, \\
-        h_i = (t_f - t_0)(\tau_i - \tau_{i-1}).
-    \end{gather}
+        \begin{aligned}
+        \bar{\tau}_i &= 0.5 (\tau_{i-1} + \tau_i), \\
+        t_i &= (t_f - t_0) \tau_i + t_0, \\
+        \bar{t}_i &= (t_f - t_0) \bar{\tau}_i + t_0, \\
+        h_i &= (t_f - t_0)(\tau_i - \tau_{i-1}),
+        \end{aligned}
+    \end{gathered}
+\end{equation}
 }
 
 \newcommand{\hermitesimpsonfuncs}{
@@ -362,17 +369,17 @@
 \begin{align}
     \begin{aligned}
     \mbox{subject to} \quad
-         & \bar{u}_i = \textrm{hermite}_i(u, \zeta) & i = 1, \ldots, n \\
-         & u_i = u_{i-1} + \textrm{simpson}_i(\zeta)  & i = 1, \ldots, n \\
+         & \bar{u}_i = \textrm{hermite}_i(u, \zeta) && i = 1, \ldots, n \\
+         & u_i = u_{i-1} + \textrm{simpson}_i(\zeta)  && i = 1, \ldots, n \\
          & M(q_i, p)\zeta_i + G(q_i, p)^T \lambda_i =
           f_{\textrm{app},i} -
-            f_{\textrm{bias},i} & i = 0, \ldots, n \\
+            f_{\textrm{bias},i} && i = 0, \ldots, n \\
          & M(\bar{q}_i, p)\bar{\zeta}_i + G(\bar{q}_i, p)^T \bar{\lambda}_i =
           \bar{f}_{\textrm{app},i} -
-            \bar{f}_{\textrm{bias},i} & i = 1, \ldots, n \\
+            \bar{f}_{\textrm{bias},i} && i = 1, \ldots, n \\
     \mbox{with respect to} \quad
-         & \zeta_i \in [-\zeta_{B}, \zeta_{B}] & i = 0, \ldots, n \\
-         & \bar{\zeta}_i \in [-\zeta_{B}, \zeta_{B}] & i = 1, \ldots, n.
+         & \zeta_i \in [-\zeta_{B}, \zeta_{B}] && i = 0, \ldots, n \\
+         & \bar{\zeta}_i \in [-\zeta_{B}, \zeta_{B}] && i = 1, \ldots, n.
     \end{aligned}
 \end{align}
 }
@@ -387,7 +394,7 @@
          & \dot{u} = -u + x \\
          & q_0 = 0 & q_f = 5 \\
          & u_0 = 0 & u_f = 2\\
-         & t_0 = 0 & t_f = 2
+         & t_0 = 0 & t_f = 2.
     \end{aligned}
 \end{equation}
 }
@@ -395,7 +402,8 @@
 %% END MACROS SECTION
 
 % PREPRINT ONLY:
-%\usepackage[charter]{mathdesign}
+\usepackage[charter]{mathdesign}
+\usepackage{charter}
 \usepackage{mathtools}
 \usepackage{booktabs}
 
@@ -489,77 +497,77 @@ To improve the accessibility of advanced optimal control methods in musculoskele
 
 \section*{Design and implementation}
 
-Moco provides two interfaces: a simple “tool” interface for common problems and an advanced “study” interface for custom problems. The “tool” interface uses the “study” interface internally, so we begin by describing the “study” interface.
+Moco provides two interfaces: a simple “tool” interface for common problems and an advanced “study” interface for custom problems. The “tool” interface uses the “study” interface internally, so we begin by describing the “study” interface. Both interfaces are shown in Fig 1.
 
 % Place figure captions after the first paragraph in which they are cited.
 \begin{figure}[!h]
 \begin{adjustwidth}{-2.25in}{0in} % Comment out/remove adjustwidth environment if table fits in text column.
 \centering
     \includegraphics{figures/MocoDiagram.png}
-    \caption{{\bf Moco is flexible but provides convenient interfaces for common problems.}
-    TODO.}
+    \caption{{\bf Overview of Moco.}
+Moco can solve customized optimal control problems (“Customizable optimal control”) using a library of costs, endpoint constraints, and path constraints (“Modules”). Under “Examples,” we list different ways to combine Moco’s modules to solve problems of interest. Users can use the solution of one problem to set the initial guess for a subsequent problem (“Solving problems iteratively”); solving problems iteratively is supported by the \textit{MocoTrajectory} and \textit{MocoSolution} classes (“Trajectory for guesses and solutions”). Moco provides higher-level interfaces for some standard problems (“Tools for standard problems”).}
     \label{mocodiagram}
 \end{adjustwidth}
 \end{figure}
 
 \subsection*{The “study” interface}
-The “study” interface starts with the MocoStudy class, which includes a MocoProblem and a MocoSolver (Fig 1). We denote names of classes in Moco with italics, and all these classes are available via C++, Matlab, Python, and XML text files, with interfaces familiar to OpenSim users. To support sharing studies with others and reproducing results, a MocoStudy can be written to and loaded from an XML file with a ‘.omoco’ extension.
+The “study” interface starts with the \textit{MocoStudy} class, which includes a \textit{MocoProblem} and a \textit{MocoSolver} (Fig 1). We denote names of classes in Moco with italics, and all these classes are available via C++, Matlab, Python, and XML text files, with interfaces familiar to OpenSim users. To support sharing studies with others and reproducing results, a \textit{MocoStudy} can be written to and loaded from an XML file with a ‘.omoco’ extension.
 
 \subsubsection*{What problems can Moco solve?}
 
-We designed MocoProblem to support the diversity of problems that researchers find useful for answering their scientific questions; see Fig 1. A MocoProblem contains the following elements.
+We designed \textit{MocoProblem} to support the diversity of problems that researchers find useful for answering their scientific questions; see Fig 1. A \textit{MocoProblem} contains the following elements.
 
 \begin{itemize}
-    \item cost terms, defined using the MocoGoal class: Users can minimize a mix of control effort, error from an observed motion, joint reaction loads, the duration of a motion, and other costs.
-    \item multibody dynamics, auxiliary (muscle) dynamics, and kinematic constraints, defined using an OpenSim Model: OpenSim Models are a standard way to describe musculoskeletal systems, and Moco uses OpenSim Models to obtain the system’s differential equations and kinematic constraints. Moco is the first musculoskeletal direct collocation tool to handle kinematic constraints, which are commonly used to model anatomy such as the patella, the medial and lateral compartments of the knee, the clavicle, and the neck~\cite{Seth:2016,Lerner:2015,Rajagopal:2016ek,Cazzola:2017}.
-    \item endpoint constraints, also defined using MocoGoal: Users can enforce average speed, symmetry, or periodicity with constraints relating initial and final states.
-    \item algebraic path constraints, defined using MocoPathConstraint: Researchers often estimate muscle activity with electromyography~\cite{Pizzolato:2015,Falisse:2016}, and Moco allows constraining simulated muscle excitation to be close to those measurements (MocoControlBoundConstraint).
-    \item parameter optimization, defined using MocoParameter: Users can optimize static model properties such as a body’s mass, a muscle’s optimal fiber length, or an exoskeleton’s stiffness.
-    \item variable bounds, defined using MocoVariableInfo: Users can provide simple bounds on states, controls, and initial and final time.
+    \item cost terms, defined using the \textit{MocoGoal} class: Users can minimize a mix of control effort, error from an observed motion, joint reaction loads, the duration of a motion, and other costs.
+    \item multibody dynamics, auxiliary (muscle) dynamics, and kinematic constraints, defined using an OpenSim \textit{Model}: OpenSim \textit{Models} are a standard way to describe musculoskeletal systems, and Moco uses OpenSim \textit{Models} to obtain the system’s differential equations and kinematic constraints. Moco is the first musculoskeletal direct collocation tool to handle kinematic constraints, which are commonly used to model anatomy such as the patella, the medial and lateral compartments of the knee, the clavicle, and the neck~\cite{Seth:2016,Lerner:2015,Rajagopal:2016ek,Cazzola:2017}.
+    \item endpoint constraints, also defined using \textit{MocoGoal}: Users can enforce average speed, symmetry, or periodicity with constraints relating initial and final states.
+    \item algebraic path constraints, defined using \textit{MocoPathConstraint}: Researchers often estimate muscle activity with electromyography~\cite{Pizzolato:2015,Falisse:2016}, and Moco allows constraining simulated muscle excitation to be close to those measurements (\textit{MocoControlBoundConstraint}).
+    \item parameter optimization, defined using \textit{MocoParameter}: Users can optimize static model properties such as a body’s mass, a muscle’s optimal fiber length, or an exoskeleton’s stiffness.
+    \item bounds on variables, defined using \textit{MocoVariableInfo}: Users can bound the values of states, controls, and initial and final time.
 \end{itemize}
 
-Fig 1 shows a subset of the MocoGoals available. All MocoGoals can be enforced as costs to be minimized, and some can be enforced strictly as endpoint constraints. Costs and endpoint constraints have a similar structure: they depend on the initial and final states and controls and on an integral over the motion.
+Fig 1 shows a subset of the \textit{MocoGoals} available. All \textit{MocoGoals} can be enforced as costs to be minimized, and some can be enforced strictly as endpoint constraints.
 
-Mathematically, a MocoProblem describes the optimization problem Eq (1). We seek the time-dependent states $y(t)$ and controls $x(t)$ that minimize a sum of cost functionals $J_j$ with weights $w_j$. The states include generalized coordinates $q(t)$, generalized speeds $u(t)$, and auxiliary states $z(t)$, such as muscle activation and fiber length. We may also seek static (time-invariant) parameters $p$, the initial time of the motion $t_i$, or the final time of the motion $t_f$. We place lower and upper bounds (denoted by subscripts L and U, respectively) on all variables, as well as bounds on the initial and final values of the states and controls.
+Mathematically, a \textit{MocoProblem} describes the optimization problem Eq (1). We seek the time-dependent states $y(t)$ and controls $x(t)$ that minimize a sum of cost functionals $J_j$ with weights $w_j$. The states include generalized coordinates $q(t)$, generalized speeds $u(t)$, and auxiliary states $z(t)$, such as muscle activation. We may also seek static (time-invariant) parameters $p$, the initial time of the motion $t_i$, or the final time of the motion $t_f$. We place lower and upper bounds (denoted by subscripts L and U, respectively) on all variables, as well as bounds on the initial and final values of the states and controls.
 
 \ocp
 
-The variables must obey the system’s multibody dynamics (involving the mass matrix $M$; applied forces $f_\mathrm{app}$, from gravity, muscles, etc.; and centripetal and Coriolis terms $f_\mathrm{bias}$) and auxiliary dynamics $f_\mathrm{aux}$. The system may contain kinematic constraints at the position level (e.g., to prescribe the location of the patella based on the knee angle), $\phi$, velocity level, $\nu$, or acceleration level, $\alpha$. When kinematic constraints exist, we introduce time-dependent Lagrange multiplier variables $\lambda$, to enforce the constraints with forces applied in directions determined by the kinematic constraint Jacobian, $G$.
+The variables must obey the system’s multibody dynamics (involving the mass matrix $M$; applied forces $f_\mathrm{app}$, from gravity, muscles, etc.; and centripetal and Coriolis terms $f_\mathrm{bias}$) and auxiliary dynamics $f_\mathrm{aux}$. The system may contain kinematic constraints at the position level (e.g., to prescribe the location of the patella based on the knee angle), $\phi$, velocity level, $\nu$, or acceleration level, $\alpha$. When kinematic constraints exist, we introduce time-dependent Lagrange multiplier variables $\lambda$ to enforce the constraints with forces applied in directions determined by the kinematic constraint Jacobian $G$.
 
-Additionally, the variables must obey algebraic (non-differential) path constraints $g$, over the motion, with static bounds $g_L$ and $g_U$; and endpoint constraints $V_k$ with static bounds $V_{L,k}$ and $V_{U,k}$. The cost terms and endpoint constraints may depend on initial and final time, states, controls, kinematic constraint multipliers (required for joint reactions), static parameters, and an integral, $S_\mathrm{c,j}$ or $S_\mathrm{e,k}$, over the motion.
+Additionally, the variables must obey algebraic (non-differential) path constraints $g$ over the motion, with static bounds $g_L$ and $g_U$; and endpoint constraints $V_k$ with bounds $V_{L,k}$ and $V_{U,k}$. The cost terms and endpoint constraints may depend on initial and final time, states, controls, kinematic constraint multipliers (required for joint reactions), static parameters, and an integral, $S_\mathrm{c,j}$ or $S_\mathrm{e,k}$, over the motion.
 
 Users wishing to employ a cost term, endpoint constraint, or path constraint that Moco does not yet support can create a C++ plugin using the same steps as for OpenSim plugins. By providing a library of cost, endpoint constraint, and path constraint modules, allowing users to create their own modules, and allowing these modules to be combined, we achieve our design goals of ease-of-use, flexibility, and extensibility.
 
 \subsubsection*{Prescribed kinematics}
 
-A common goal in musculoskeletal biomechanics is to estimate the muscle and actuator behavior that drove an observed motion. We can solve this problem by minimizing the error between the observed motion and the simulated motion, as with Computed Muscle Control (using the "slow target") or MocoTrack (described later). Alternatively, we can prescribe the motion exactly, as with Static Optimization, EMG-driven simulation~\cite{Lloyd:2003}, and the Muscle Redundancy Solver~\cite{Groote:2016dq}. Prescribing kinematics leads to a problem that is robust and fast, as the nonlinear multibody dynamics are removed from the optimization problem, but prevents predicting deviations from the observed motion.
+A common task in musculoskeletal biomechanics is to estimate the muscle and actuator behavior that drove an observed motion. We can solve this problem by minimizing the error between the observed motion and the simulated motion, as with Computed Muscle Control (using the "slow target")~\cite{Thelen:2003bba} or \textit{MocoTrack} (described later). Alternatively, we can prescribe the motion exactly, as with Static Optimization, EMG-driven simulation~\cite{Lloyd:2003}, and the Muscle Redundancy Solver~\cite{Groote:2016dq}. Prescribing kinematics leads to a problem that is robust and fast---the nonlinear multibody dynamics are removed from the optimization problem---but prevents predicting deviations from the observed motion.
 
-When we prescribe kinematics, MocoProblem describes the following optimal control problem instead of Eq (1):
+When we prescribe kinematics, \textit{MocoProblem} describes the following optimal control problem instead of Eq (1):
 
 \prescribed
 
-The kinematic variables $q$ and $u$ are replaced with known quantities $\hat{q}$ and $\hat{u}$. The system still depends on auxiliary state variables $z$, control variables $x$, and auxiliary dynamics. If none of the parameter variables affect the multibody system, then the multibody dynamics are reduced to a force balance: applied forces must match the net generalized forces determined by the kinematics. Users can prescribe kinematics using the PositionMotion model component in Moco. Note that this type of prescribed motion---which removes degrees of freedom---differs from the prescribed motion in OpenSim’s Coordinate, which adds kinematic constraints to the system.
+We replace the kinematic variables $q$ and $u$ with known quantities $\hat{q}$ and $\hat{u}$. The system still depends on auxiliary state variables $z$, control variables $x$, and auxiliary dynamics. If none of the parameter variables affect the multibody system, then the multibody dynamics are reduced to a force balance: applied forces must match the net generalized forces determined by the kinematics. Users can prescribe kinematics using the \textit{PositionMotion} model component in Moco. Note that this type of prescribed motion---which removes degrees of freedom---differs from the prescribed motion in OpenSim’s Coordinate, which adds kinematic constraints to the system.
 
 \subsubsection*{How does Moco solve problems?}
 
-All details of solving an optimal control problem are encapsulated in MocoSolver, which is decoupled from MocoProblem to afford the user with flexibility. The MocoProblem knows nothing about the solver that may be used. When a user defines a custom cost term, they need not worry about how the solver will handle the cost. The only assumption made by MocoSolver about the problem is that it describes a multibody system; this allows using special solver algorithms not suited to generic dynamic systems, such as for handling kinematic constraints~\cite{Posa:2016}. Moco users can add bodies or muscles to their model and use the same exact solver, whereas homebrewed code may require updating the direct collocation algorithm.
+All details of solving an optimal control problem are encapsulated in \textit{MocoSolver}, which is decoupled from \textit{MocoProblem} to afford the user with flexibility. The \textit{MocoProblem} knows nothing about the solver that may be used. When a user defines a custom cost term, they need not worry about how the solver will handle the cost. The only assumption made by \textit{MocoSolver} about the problem is that it describes a multibody system; this allows using special solver algorithms not suited to generic dynamic systems, such as for handling kinematic constraints~\cite{Posa:2016}. Moco users can add bodies or muscles to their model and use the same exact solver, whereas homebrewed code may require updating the direct collocation algorithm.
 
-Moco provides two direct collocation solvers that transcribe continuous optimal control problems into finite-dimensional NLPs that are passed on to well-established derivative-based NLP solvers. MocoCasADiSolver uses the third-party CasADi library~\cite{Andersson:2019}, and MocoTropterSolver uses a direct collocation solver we developed called Tropter; see Table~\ref{tab:solvers}. CasADi is an open-source package for algorithmic differentiation and is a bridge to NLP solvers IPOPT~\cite{Wachter:2006}, SNOPT~\cite{Gill:2005}, and others.
+Moco provides two direct collocation solvers that transcribe continuous optimal control problems into finite-dimensional NLPs that are passed on to well-established derivative-based NLP solvers. \textit{MocoCasADiSolver} uses the third-party CasADi library~\cite{Andersson:2019}, and \textit{MocoTropterSolver} uses a direct collocation solver we developed called Tropter; see Table~\ref{tab:solvers}. CasADi is an open-source package for algorithmic differentiation and is a bridge to NLP solvers IPOPT~\cite{Wachter:2006}, SNOPT~\cite{Gill:2005}, and others.
 
 % Place tables after the first paragraph in which they are cited.
 \begin{table}[!ht]
     \begin{adjustwidth}{-2.25in}{0in} % Comment out/remove adjustwidth environment if table fits in text column.
         \centering
         \caption{
-        {\bf Moco’s solvers. (opt) indicates an optional dependency.}}
+        {\bf Comparison of Moco’s solvers.} Optional dependencies are marked (opt).}
         \begin{tabular}{p{2.1in}p{2.1in}p{2.1in}}
             \toprule
-             & \bf MocoCasADiSolver & \bf MocoTropterSolver \\ \midrule
+             & \textbf{\textit{MocoCasADiSolver}} & \textbf{\textit{MocoTropterSolver}} \\ \midrule
             dependencies & CasADi, IPOPT, SNOPT (opt) & Tropter, Eigen, ColPack, ADOL-C (opt), SNOPT (opt) \\ \midrule
             supported NLP solvers & IPOPT, SNOPT, and others & IPOPT, SNOPT \\ \midrule
             parallelized & yes & no \\ \midrule
             transcription schemes & trapezoidal and Hermite-Simpson & trapezoidal and Hermite-Simpson \\ \midrule
-            dynamics modes & implicit and explicit & implicit (with no kinematic constraints) and explicit \\ \midrule
+            multibody dynamics modes & implicit and explicit & implicit (with no kinematic constraints) and explicit \\ \midrule
             supports endpoint constraints & yes & no \\ \midrule
             automatic differentiation & symbolic algorithmic differentiation & operator overloading with ADOL-C \\ \midrule
             finite differences & adaptive perturbation & fixed perturbation, efficient Hessian estimate~\cite{Bohme:20179} \\ \midrule
@@ -570,25 +578,28 @@ Moco provides two direct collocation solvers that transcribe continuous optimal 
     \end{adjustwidth}
 \end{table}
 
-Derivative-based NLP solvers require the gradient of the objective, the Jacobian of the constraints, and sometimes the Hessian of the Lagrangian~\cite{Betts:2010}. To maximize computational efficiency, these derivatives are ideally computed exactly through either analytic equations or automatic differentiation~\cite{Andersson:2019,Walther:2003}. OpenSim’s main distribution does not provide exact derivatives, so we use finite differences. CasADi is an ideal library for employing direct collocation, but two limitations led us to create Tropter: CasADi did not initially support finite differences, and CasADi’s open-source license is more restrictive than OpenSim’s. More recent versions of CasADi support finite differences and CasADi understands the structure of the objective and constraint functions, allowing for potentially more efficient finite difference calculations than with Tropter, which treats the objective and constraints as black-box functions~\cite{Patterson:2012}. If OpenSim provides exact derivatives in the future, we can exploit Tropter’s and CasADi’s automatic differentiation modes~\cite{Falisse:2019a}. Those distributing Moco as a dependency of closed-source software may prefer distributing Moco without CasADi, as CasADi’s “weak copyleft” GNU Lesser General Public License 3.0 places requirements on how CasADi software is redistributed.
+Derivative-based NLP solvers require the gradient of the objective, the Jacobian of the constraints, and sometimes the Hessian of the Lagrangian~\cite{Betts:2010}. To maximize computational efficiency, these derivatives are ideally computed exactly through either analytic equations or automatic differentiation~\cite{Andersson:2019,Walther:2003}. OpenSim’s main distribution does not provide exact derivatives, so we use finite differences. CasADi is an ideal library for employing direct collocation, but two limitations led us to create Tropter: CasADi did not initially support finite differences, and CasADi’s open-source license is more restrictive than OpenSim’s. More recent versions of CasADi support finite differences and CasADi understands the structure of the objective and constraint functions, allowing for potentially more efficient finite difference calculations than with Tropter, which treats the objective and constraints as black-box functions~\cite{Patterson:2012}. If OpenSim provides exact derivatives in the future, we can exploit Tropter’s and CasADi’s automatic differentiation modes~\cite{Falisse:2019a}. Those distributing Moco as a dependency of closed-source software may prefer distributing Moco without CasADi, as CasADi’s “weak copyleft” GNU Lesser General Public License 3.0 places requirements on how CasADi is redistributed.
 
-Both the Tropter and CasADi solvers provide two transcription schemes: the second-order trapezoidal scheme and the third-order Hermite-Simpson scheme~\cite{Betts:2010}; see the “Transcription schemes” for details. Multibody dynamics can be expressed with either explicit differential equations (“forward dynamics”) or implicit differential equations (“inverse dynamics”); problems may converge faster in implicit mode~\cite{vandenBogert:2011fv}. Solving a musculoskeletal optimal control problem often requires trying many problem formulations and solver settings. Moco users can change the transcription scheme, dynamics mode, and other solver settings with a single line of code, allowing users to focus on their research question. The solvers currently handle only position-level (non-holonomic) constraints $\phi$; velocity-level (holonomic) constraints $\nu$ and acceleration-level constraints $\alpha$ are not supported yet.
+Both the Tropter and CasADi solvers provide two transcription schemes: the second-order trapezoidal scheme and the third-order Hermite-Simpson scheme~\cite{Betts:2010}; see “Transcription schemes” for details. Multibody dynamics can be expressed with either explicit differential equations (“forward dynamics”) or implicit differential equations (“inverse dynamics”); problems may converge faster in implicit mode~\cite{vandenBogert:2011fv}.
+The solvers currently handle only position-level (non-holonomic) constraints $\phi$; velocity-level (holonomic) constraints $\nu$ and acceleration-level constraints $\alpha$ are not supported yet.
+Solving a musculoskeletal optimal control problem often requires trying many problem formulations and solver settings.
+Moco users can change the transcription scheme, dynamics mode, and other solver settings with a single line of code, allowing users to focus on their research question.
 
-To solve a problem, users invoke the solve() function of the MocoStudy class, which provides the user with a MocoSolution object (see Fig 1). The MocoSolution class derives from MocoTrajectory, which provides easy access to the values of all variables at any iteration in the optimization algorithm. Users provide initial guesses via a MocoTrajectory, and can use the solution object from one problem as the initial guess for a subsequent problem; this permits users to build a complex problem by solving a series of simpler problems. MocoSolution provides additional information, including whether the solver converged, the final objective value, and the number of solver iterations.
+To solve a problem, users invoke the solve() function of the \textit{MocoStudy} class, which provides the user with a \textit{MocoSolution} object (see Fig 1). The \textit{MocoSolution} class derives from \textit{MocoTrajectory}, which provides easy access to the values of all variables at any iteration in the optimization algorithm. Users provide initial guesses via a \textit{MocoTrajectory}, and can use the solution object from one problem as the initial guess for a subsequent problem; this permits users to build a complex problem by solving a series of simpler problems. \textit{MocoSolution} provides additional information, including whether the solver converged, the final objective value, and the number of solver iterations.
 
 \subsection*{The “tool” interface}
 
-While the “study” interface is powerful, many questions can be answered by more standard tools with simpler interfaces, similar to OpenSim’s existing tools like Scale and Computed Muscle Control. Currently, Moco provides two tools: MocoTrack solves motion tracking problems, wherein the system tracks motion data while minimizing a desired cost; and MocoInverse solves the muscle/actuator redundancy problem, wherein the system’s motion is prescribed (using PositionMotion) and we seek muscle (or other actuator) controls that achieve the motion (Fig 1). MocoTrack is useful for predicting deviations from motion data (e.g., predicting kinematic adaptations to an exoskeleton), while MocoInverse is a faster option for when the motion should be enforced exactly (e.g., estimating elastic energy storage for an observed motion). In both cases, the only required inputs are an OpenSim model and motion data (coordinate or marker trajectories, and external forces). Internally, both tools use the MocoStudy interface with solver settings that we found to yield good performance.
+While the “study” interface is powerful, many questions can be answered by more standard tools with simpler interfaces, similar to OpenSim’s existing tools like Scale and Computed Muscle Control. Currently, Moco provides two tools: \textit{MocoTrack} solves motion tracking problems, wherein the system tracks motion data while minimizing a desired cost; and \textit{MocoInverse} solves the muscle/actuator redundancy problem, wherein the system’s motion is prescribed (using \textit{PositionMotion}) and we seek muscle (or other actuator) controls that achieve the motion (Fig 1). \textit{MocoTrack} is useful for predicting deviations from motion data (e.g., predicting kinematic adaptations to an exoskeleton), while \textit{MocoInverse} is a faster option for when the motion should be enforced exactly (e.g., estimating elastic energy storage for an observed motion). In both cases, the only required inputs are an OpenSim model and motion data (coordinate or marker trajectories, and external forces). Internally, both tools use the \textit{MocoStudy} interface with solver settings that we found to yield good performance.
 
-In subsequent versions of Moco, the “tool” interface may be expanded to handle other standard problems such as model calibration and hybrid EMG-driven simulation. For problems that do not fit into a standard form, such as motion prediction, the flexibility of the “study” interface makes it a better choice.
+In future versions of Moco, the “tool” interface may be expanded to handle other standard problems such as model calibration and hybrid EMG-driven simulation. For problems that do not fit into a standard form, such as motion prediction, the “study” interface provides the necessary flexibility.
 
 \subsection*{Postprocessing a solution}
 
-After solving a problem, users often wish to visualize the solution as an animation, plot the state and control trajectories, or compute quantities from the solution. With a MocoStudy and MocoSolution, each of these tasks require only a single line of code. MocoTrajectories can be written to and read from tab-delimited Storage text files, which are familiar to OpenSim users. The ability to save MocoTrajectories and MocoStudies to files allows users to easily reproduce each other’s results, which is essential for sound science~\cite{Peng:2011}.
+After solving a problem, users often wish to visualize the solution as an animation, plot the state and control trajectories, or compute quantities from the solution. With a \textit{MocoStudy} and \textit{MocoSolution}, each of these tasks require only a single line of code. \textit{MocoTrajectories} can be written to and read from tab-delimited Storage text files, which are familiar to OpenSim users. The ability to save \textit{MocoTrajectories} and \textit{MocoStudies} to files allows users to easily reproduce each other’s results, which is essential for sound science~\cite{Peng:2011}.
 
 \subsection*{Transcription schemes}
 
-Direct collocation can be implemented with a variety of schemes for transcribing (discretizing) the continuous-time optimal control problem into a finite-dimensional NLP. Moco implements two transcription schemes: trapezoidal and Hermite-Simpson.
+Direct collocation can be implemented with a variety of schemes for discretizing, or transcribing, the continuous-time optimal control problem into a finite-dimensional NLP. Moco implements two transcription schemes: trapezoidal and Hermite-Simpson.
 
 \subsubsection*{Trapezoidal transcription}
 
@@ -616,9 +627,9 @@ When expressing the multibody dynamics implicitly, we remove the constraint invo
 
 \trapimplicit
 
-The constant $\xi_B$ is a large positive number (1000 by default).
+The constant $\zeta_B$ is a large positive number (1000 by default).
 
-The dynamic, kinematic, and path constraints are enforced at a set of discrete time points, so the quadratic spline approximation to the continuous variables is allowed to violate the original continuous-time constraints between the discrete time points. For this reason, a mesh with more points leads to a more accurate solution. Algebraic constraints—those involving $\phi$ and $g$—are enforced only at the mesh points; the quadratic spline approximation of the continuous variables may violate the constraints within the mesh intervals.
+The dynamic, kinematic, and path constraints are enforced at a set of discrete time points, so the quadratic spline approximation to the continuous variables may violate the original continuous-time constraints between the discrete time points. For this reason, a mesh with more points leads to a more accurate solution.
 
 Our implementation of trapezoidal transcription handles kinematic constraints, but not in the most robust fashion. We enforce $\phi$ but not its time derivatives; enforcing the constraints at only the position level yields an index-3 differential-algebraic system of equations, which is challenging to solve~\cite{Hairer:1996,Campbell:2016,Betts:2010}. Furthermore, we minimize these multipliers (with weight $w_\lambda$) to improve numerical conditioning.
 
@@ -626,47 +637,44 @@ When kinematics are prescribed (see “Prescribed kinematics”), the multibody 
 
 \subsubsection*{Hermite-Simpson transcription}
 
-The Hermite-Simpson scheme transcribes the optimal control problem into an NLP by approximating differential equations and integrals using a Hermite interpolant and Simpson integration rule. As a third-order scheme, Hermite-Simpson transcription exhibits accuracy that improves six-fold when halving the mesh interval.
+The Hermite-Simpson scheme transcribes the optimal control problem into an NLP by approximating integrals using a Hermite interpolant and Simpson integration rule. As a third-order scheme, Hermite-Simpson transcription exhibits accuracy that improves six-fold when halving the mesh interval.
 
-We use a similar dimensionless time mesh as for the trapezoidal scheme, with $n$ mesh intervals with durations $h_i$. We also introduce additional collocation points necessary for the transcription scheme at the mesh interval midpoints, leading to a total of $2n + 1$ time points on which we discretize the continuous variables:
+We use a similar dimensionless time mesh as for the trapezoidal scheme, with $n$ mesh intervals with durations $h_i$. We also introduce collocation points at the midpoints of the mesh intervals, leading to a total of $2n + 1$ time points at which we discretize the continuous variables:
 
 \hermitesimpsontau
 
 where $ \bar{\tau}_i $ denote mesh interval midpoints.
-
 For conciseness, we define the following functions:
 
 \hermitesimpsonfuncs
 
 where $\mathrm{hermite}_i()$ represents the Hermite interpolant and $\mathrm{simpson}_i()$ represents the Simpson integration rule. Again, $F$ is a function for mesh interval $i$, and $\eta$ represents any subset of continuous variables.
 
-Using the explicit multibody dynamics function $f_{\textrm{mb}}$ defined previously, the result of the Hermite-Simpson transcription is the following nonlinear program:
+Using the explicit multibody dynamics function $f_{\textrm{mb}}$ defined previously, Hermite-Simpson transcription results in the following NLP:
 
 \hermitesimpsonnlp
 
-The $G(\bar{q}_i, p)^T \bar{\gamma}_i$ term represents a velocity correction that is necessary to impose when enforcing derivatives of kinematic constraints in the NLP. The additional variables $bar{\gamma}_i$ prevents the kinematics from being overconstrained, and the kinematic constraint Jacobian transpose operator, $G(\bar{q}_i, p)^T$, restricts the velocity correction to the tangent plane of the constraint manifold~\cite{Posa:2016}. Currently, we only support enforcing derivatives of position-level, or holonomic, constraints, represented by the equations:
+The $G(\bar{q}_i, p)^T \bar{\gamma}_i$ term represents a velocity correction that is necessary to impose when enforcing derivatives of kinematic constraints in the NLP. The additional variables $\bar{\gamma}_i$ prevent the kinematics from being overconstrained, and the kinematic constraint Jacobian transpose operator $G(\bar{q}_i, p)^T$ restricts the velocity correction to the tangent plane of the constraint manifold~\cite{Posa:2016}. Currently, we only support enforcing derivatives of position-level, or holonomic, constraints, represented by the equations:
 
 \hermitesimpsonkincon
 
-The explicit multibody dynamics function is used here where $ \dot{u} $ would be if it were a continuous variable in the problem (as is in implicit mode, see below).
+The explicit multibody dynamics function is used here where $ \dot{u} $ would appear if it were a continuous variable in the problem (as is in implicit mode, see below).
 
+Algebraic constraints are not enforced at the midpoints of the mesh intervals, but exhibit fourth-order accuracy at these points~\cite{Posa:2016}.
 
-As with the trapezoidal rule, algebraic constraints are enforced only at the mesh points. They are not enforced at the mesh interval collocation points; however, it can be shown that the algebraic constraints have fourth-order accuracy at these time points in Hermite-Simpson transcription~\cite{Posa:2016}.
-For implicit multibody dynamics, we again remove the constraints involving $f_\mathrm{mb}$ and introduce generalized accelerations as an algebraic variable $\xi$ to enforce multibody dynamics in “inverse dynamics” form:
+For implicit multibody dynamics, we again remove the constraints involving $f_\mathrm{mb}$ and introduce generalized accelerations as an algebraic variable $\zeta$ to enforce multibody dynamics in “inverse dynamics” form:
 
 \hermitesimpsonimplicit
 
-The constant $\xi_B$ is a large positive number (1000 by default).
-
 \subsection*{Verification}
 
-Verifying software is essential for good science and gaining the trust of users~\cite{Hicks:2015bo}, thus we conduct extensive verification tests. For example, producing the known solution to an optimal control problem verifies that Moco implements direct collocation correctly. We solved the following linear optimal control problem, which has a known solution.
+Verifying software is essential for good science and gaining the trust of users~\cite{Hicks:2015bo}, thus we conduct extensive verification tests. For example, producing the known solution to an optimal control problem verifies that Moco implements direct collocation correctly. We solved the following linear optimal control problem, which has a known solution:
 
 \analytic
 
 Moco’s solution for the optimal control matched the known control solution with a root-mean-square error of $8.0 \times 10^{-8}$.
 
-Next, we ensured that a time-stepping forward simulation using controls from a motion prediction produces the same motion as in the prediction. These tests used a model consisting of a point mass suspended by three muscles and under the influence of gravity; see Fig 2. We first predicted the state and control trajectories to move the point mass between prescribed initial and final positions, starting and ending at rest (Fig 2, gray band). In this prediction, the cost included both the sum of squared muscle excitations and the final time. Then, we used the controls from the prediction to perform a time-stepping forward simulation using an OpenSim (Simbody) integrator (Fig 2, blue line). The resulting position trajectory of the point mass matched that from the prediction with a root-mean-square error of 0.0051 m. This gives us confidence that Moco does indeed enforce the same multibody and muscle dynamics enforced in a time-stepping forward simulation in OpenSim. For more complex problems, conducting a time-stepping forward simulation using controls from a MocoSolution requires a stabilizing feedback controller to counteract numerical errors.
+Next, we ensured that a time-stepping forward simulation using controls from a motion prediction produced the same motion as in the prediction. These tests used a model consisting of a point mass suspended by three muscles and under the influence of gravity; see Fig 2. We first predicted the state and control trajectories to move the point mass between prescribed initial and final positions, starting and ending at rest (Fig 2, gray band). In this prediction, the cost included both the sum of squared muscle excitations and the final time. Then, we used the predicted controls to perform a time-stepping forward simulation using an OpenSim (Simbody) integrator (Fig 2, blue line). The resulting position trajectory of the point mass matched that from the prediction with a root-mean-square error of 0.0051 m. This gives us confidence that Moco does indeed enforce the same multibody and muscle dynamics enforced in a time-stepping forward simulation in OpenSim. For more complex problems, conducting a time-stepping forward simulation using controls from a \textit{MocoSolution} requires a stabilizing feedback controller to counteract numerical errors.
 
 % Place figure captions after the first paragraph in which they are cited.
 \begin{figure}[!h]
@@ -674,20 +682,20 @@ Next, we ensured that a time-stepping forward simulation using controls from a m
         \centering
         \includegraphics{figures/suspended_mass.png}
         \caption{{\bf Verification of time-stepping and motion tracking.}
-        The trajectory of a point mass suspended by three muscles in various simulations is shown on the left. The activations of the  “left,” “middle,” and “right” muscles throughout the motion are shown on the right. We predicted a trajectory (gray band) that minimized the sum of squared muscle excitations (x2) and final time. We then performed a time-stepping forward simulation (blue) with the predicted controls and recovered the original motion. When minimizing the sum of squared excitations (x2), MocoTrack (orange) recovered the original activations. Using MocoTrack with a different cost (sum of excitations to the fourth power, x4; green) led to different muscle activations.}
+        The trajectory of a point mass suspended by three muscles in various simulations is shown on the left. The activations of the  “left,” “middle,” and “right” muscles throughout the motion are shown on the right. We predicted a trajectory (gray band) that minimized the sum of squared muscle excitations ($x^2$) and final time. We then performed a time-stepping forward simulation (blue) with the predicted controls and recovered the original motion. When minimizing the sum of squared excitations ($x^2$), \textit{MocoTrack} (orange) recovered the original activations. Using \textit{MocoTrack} with a different cost (sum of excitations to the fourth power, $x^4$; green) led to different muscle activations.}
         \label{verification}
 %    \end{adjustwidth}
 \end{figure}
 
-To trust the results of motion tracking problems, we ensured that using MocoTrack on a synthesized motion with known muscle activity produces the original muscle activity. We used the same suspended point mass model and tracked the previous motion prediction (Fig 2, gray band). The muscle activations from MocoTrack (Fig 2, orange line) matched those from the prediction with a root-mean-square error of 0.0024. To show that there are indeed multiple muscle activity trajectories that produce the same motion, we tracked the motion while minimizing the sum of muscle excitations raised to the fourth power (Fig 2, green line); this resulted in a much larger root-mean-square error of 0.10. For most tracking problems of interest, we do not know the true muscle activity solution; verifying tracking problems using synthesized data gives us confidence in Moco’s estimates of muscle activity for real-world data.
+To trust the results of motion tracking problems, we ensured that using \textit{MocoTrack} on a synthesized motion with known muscle activity produced the original muscle activity. We used the same suspended point mass model and tracked the previous motion prediction (Fig 2, gray band). The muscle activations from \textit{MocoTrack} (Fig 2, orange line) matched those from the prediction with a root-mean-square error of 0.0024. To show that there are indeed multiple muscle activity trajectories that produce the same motion, we tracked the motion while minimizing the sum of muscle excitations raised to the fourth power (Fig 2, green line); this resulted in a much larger root-mean-square error of 0.10. For most tracking problems of interest, we do not know the true muscle activity solution; verifying tracking problems using synthesized data gives us confidence in Moco’s estimates of muscle activity for real-world data.
 
-Moco contains an automated test suite that extends beyond the verification described here. These tests include ensuring that users get error messages for incorrect input, that a MocoStudy can be written to and read from an XML (.omoco) file, that kinematic constraints are properly enforced, and that implicit and explicit differential equations lead to the same solution.
+Moco contains an automated test suite that extends beyond the verification described here. These tests include ensuring that users receive error messages for incorrect input, that a \textit{MocoStudy} can be written to and read from an XML (.omoco) file, that kinematic constraints are enforced properly, and that implicit and explicit differential equations lead to the same solution.
 
 \section*{Results}
 
 \subsection*{Estimating muscle activity from motion capture data of walking}
 
-Moco can estimate muscle activity in walking, which allows studies of gait disorders, muscle coordination, and prostheses. We used a model with 18 degrees of freedom and 80 lower-limb muscles~\cite{Rajagopal:2016ek} to track one gait cycle of walking at a self-selected speed of 1.26 m/s. The scaled model and data are based on the supplementary material of~\cite{Rajagopal:2016ek}. We solved for muscle activity using two of Moco’s tools: MocoTrack, which tracks kinematics as a cost, and MocoInverse, which prescribes kinematics (see “The ‘tool’ interface” for details). We compared the resulting muscle activations to those from Computed Muscle Control (CMC)~\cite{Thelen:2003bba}, a popular tracking tool in OpenSim (Fig 3).
+Moco can estimate muscle activity in walking, which allows studies of gait disorders, muscle coordination, and prostheses. We used a model with 18 degrees of freedom and 80 lower-limb muscles~\cite{Rajagopal:2016ek} to track one gait cycle of walking at a self-selected speed of 1.26 m/s. The scaled model and data are based on the supplementary material of~\cite{Rajagopal:2016ek}. We solved for muscle activity using two of Moco’s tools: \textit{MocoTrack}, which tracks kinematics as a cost, and \textit{MocoInverse}, which prescribes kinematics (see “The ‘tool’ interface” for details). We compared the resulting muscle activations to those from Computed Muscle Control~\cite{Thelen:2003bba}, a popular tracking tool in OpenSim; see Fig 3.
 
 % Place figure captions after the first paragraph in which they are cited.
 \begin{figure}[!h]
@@ -695,18 +703,18 @@ Moco can estimate muscle activity in walking, which allows studies of gait disor
     \centering
     \includegraphics{figures/motion_tracking_walking.png}
     \caption{{\bf Estimates of muscle activity from motion capture data of walking.}
-    We compared muscle activation from MocoTrack (orange) and MocoInverse (green) to OpenSim’s existing Computed Muscle Control tool (blue) and obtained similar muscle activity over a gait cycle. Simulated activity was consistent with electromyography (EMG; gray), which was available for all shown muscles except psoas. Electromyography was normalized such that its peak matches CMC’s peak. Moco allows users to customize the optimization cost; minimizing knee joint loading reduces the activity of muscles spanning the knee. The simulations started and ended at the start of swing, but we shifted the data so the plots start at foot strike; this caused the discontinuity after 60\% gait cycle.}
+    We compared muscle activation from \textit{MocoTrack} (orange) and \textit{MocoInverse} (green) to OpenSim’s existing Computed Muscle Control tool (CMC, blue) and obtained similar muscle activity over a gait cycle. Simulated activity was consistent with electromyography (EMG; gray), which was available for all shown muscles except psoas. Electromyography was normalized such that its peak matched Computed Muscle Control's peak. Moco allows users to customize the optimization cost; minimizing knee joint loading reduced the activity of muscles spanning the knee. The simulations started and ended at the start of swing, but we shifted the data so the plots start at foot strike; this caused the discontinuity after 60\% gait cycle.}
     \label{walking}
         \end{adjustwidth}
 \end{figure}
 
-Computed Muscle Control (CMC), MocoTrack, and MocoInverse produced muscle activation that was consistent with electromyography. MocoInverse and CMC yielded similar muscle activation (root-mean-square difference of 0.091), while MocoTrack produced higher muscle activation than CMC and MocoInverse for some muscles (e.g., rectus femoris, biceps femoris, vastus lateralis, and tibialis anterior). The difference between required net joint moments and muscle-generated net joint moments (termed “reserve” moments in OpenSim) had a maximum value of 0.12 N-m for MocoTrack and 7.8 N-m for MocoInverse~\cite{Hicks:2015bo}. CMC solved in 2.5 minutes, MocoTrack solved in 2.8 hours, and MocoInverse solved in 7.7 minutes.
+Computed Muscle Control, \textit{MocoTrack}, and \textit{MocoInverse} produced muscle activation that was consistent with electromyography. \textit{MocoInverse} and Computed Muscle Control yielded similar muscle activation (root-mean-square difference of 0.091), while \textit{MocoTrack} produced higher muscle activation than Computed Muscle Control and \textit{MocoInverse} for some muscles (e.g., rectus femoris, biceps femoris, vastus lateralis, and tibialis anterior). The difference between required net joint moments and muscle-generated net joint moments (termed “reserve” moments in OpenSim) had a maximum value of 0.12 N-m for \textit{MocoTrack} and 7.8 N-m for \textit{MocoInverse}~\cite{Hicks:2015bo}. Computed Muscle Control solved in 2.5 minutes, \textit{MocoTrack} solved in 2.8 hours, and \textit{MocoInverse} solved in 7.7 minutes.
 
-Although Computed Muscle Control solved more quickly, Moco’s tools are more flexible. MocoTrack allows for deviations in kinematics, and both MocoTrack and MocoInverse support flexible cost terms. To show this ability, we added a cost term to the MocoInverse problem for minimizing knee joint loading. With this additional cost, the peak magnitude of the knee joint reaction force decreased from 5.1 to 3.9 body weights. As expected, the activity of muscles crossing the knee joint (vastus lateralis, biceps femoris short head, and gastrocnemius) decreased. To compensate for the lost moment at the ankle joint caused by the decrease in gastrocnemius activity, soleus activity increases, as seen in a previous simulation study~\cite{DeMers:2014}.
+Although Computed Muscle Control solved more quickly, Moco’s tools are more flexible. \textit{MocoTrack} allows for deviations in kinematics, and both \textit{MocoTrack} and \textit{MocoInverse} support flexible cost terms. To show this ability, we added a cost term to the \textit{MocoInverse} problem for minimizing knee joint loading. With this additional cost, the peak magnitude of the knee joint reaction force decreased from 5.1 to 3.9 body weights. As expected, the activity of muscles crossing the knee joint (vastus lateralis, biceps femoris short head, and gastrocnemius) decreased. To compensate for the lost moment at the ankle joint caused by the decrease in gastrocnemius activity, soleus activity increased, as seen in a previous simulation study~\cite{DeMers:2014}.
 
 \subsection*{Predicting and assisting a crouch-to-stand motion}
 
-To show that Moco can predict motions and optimize parameters of a model, we predicted a crouch-to-stand motion that minimizes a combination of effort (sum of squared excitations) and the duration of the motion. The initial pose was prescribed to be crouching, and the final pose was prescribed to be standing; see Fig 4. The model contained a torso and one leg with 9 muscles. No motion was tracked. We used Moco’s default initial guess, in which each variable’s value is the midpoint of the variable’s bounds. Moco solved the problem in under 2 minutes. The resulting kinematics and muscle activations are shown in Fig 4. The vasti is the dominant muscle for this motion, as the vasti extends the knee.
+To show that Moco can predict motions and optimize parameters of a model, we predicted a crouch-to-stand motion that minimized a combination of effort (sum of squared excitations) and the duration of the motion. The initial pose was prescribed to be crouching, and the final pose was prescribed to be standing. The model contained a torso and one leg with 9 muscles. No motion was tracked. We used Moco’s default initial guess, in which each variable’s value is the midpoint of the variable’s bounds. Moco solved the problem in under 2 minutes. The resulting kinematics and muscle activations are shown in Fig 4. The vasti is the dominant muscle for this motion, as the vasti extends the knee.
 
 
 % Place figure captions after the first paragraph in which they are cited.
@@ -715,12 +723,12 @@ To show that Moco can predict motions and optimize parameters of a model, we pre
         \centering
         \includegraphics{figures/crouch_to_stand.png}
         \caption{{\bf Predicting and assisting a crouch-to-stand motion.}
-We predicted a crouch-to-stand motion with prescribed initial and final poses that minimized sum of squared muscle excitations and final time (left; black). The predicted joint angles are shown in the first column, and the activations of key muscles are shown in the remaining columns. We then added a torsional spring to the knee and solved for the optimal motion, muscle activations, and spring stiffness (blue). The spring allowed the motion to be completed in less time and allowed vasti activity to decrease substantially.}
+We predicted a crouch-to-stand motion with prescribed initial and final poses that minimized sum of squared muscle excitations and final time (black). The predicted joint angles are shown in the first column, and the activations of key muscles are shown in the remaining columns. We then added a torsional spring to the knee and solved for the optimal motion, muscle activations, and spring stiffness (blue). The spring allowed the motion to be completed in less time and allowed vasti activity to decrease substantially.}
         \label{crouchtostand}
     \end{adjustwidth}
 \end{figure}
 
-Next, we added a torsional spring to the knee and solved for the optimal motion, muscle activations, and spring stiffness. The spring was in equilibrium when the knee was extended (knee angle of 0). We used the same cost as in the unassisted case (i.e., no motion was tracked). With the assistive device, the motion was achieved with lower muscle activation (the vasti muscle is minimally active) and in a shorter duration. Moco predicted slightly different kinematics with the assistive device, and found an optimal spring stiffness of 76 N-m/rad.
+Next, we added a torsional spring to the knee and solved for the optimal motion, muscle activations, and spring stiffness. The spring was in equilibrium when the knee was extended (knee angle of 0). We used the same cost as in the unassisted case; no motion was tracked. With the assistive device, the motion was achieved with lower muscle activation (the vasti muscle is minimally active) and in a shorter duration. Moco predicted slightly different kinematics with the assistive device, and found an optimal spring stiffness of 76 N-m/rad.
 
 Moco’s ability to rapidly predict motions and optimize device parameters makes it an ideal tool for predicting the effects of clinical interventions and designing assistive devices.
 
@@ -741,16 +749,13 @@ The performance and ease of use of Moco’s direct collocation solvers could be 
 
 To ensure that Moco will grow to meet the community’s evolving needs, we made the software freely available. We invite the community to contribute to documentation, examples, teaching materials, and code.
 
-
-
-
-
-
-\section*{Supporting information}
+%\section*{Supporting information}
 
 \section*{Acknowledgments}
 
-TODO
+We thank Ajay Seth, Michael Sherman, Friedl de Groote, Antoine van den Bogert, B.J. Fregly, and Michael Posa for discussing methodology and implementation; Bradley Humphreys, Carmichael Ong, Noah Gordon, and Jenny Yong for contributing code; and Andrew Baines, Mohammad Shourijeh, and Prasanna Sritharan for testing the software.
+
+This work was supported by the National Institutes of Health (www.nih.gov) grants U54 EB020405 (Mobilize Center), U54 GM072970 (Simulation of Biological Structures), R24 HD065690, and P2C HD065690 (Simulation in Rehabilitation Research). CLD and NAB received support from the National Science Foundation Graduate Fellowship Program (https://www.nsfgrfp.org); CLD received support from the Stanford (University) Bio-X Graduate Fellowship (https://biox.stanford.edu/fellowship-app-info).
 
 \nolinenumbers
 

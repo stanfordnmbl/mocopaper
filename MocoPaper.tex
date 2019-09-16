@@ -211,7 +211,7 @@
         \mbox{subject to} \quad &
          M(\hat{q}, p)\dot{\hat{u}} + G(\hat{q}, p)^T \lambda = f_{\textrm{app}}(t, \hat{q}, \hat{u}, z, x, p) - f_{\textrm{bias}}(\hat{q}, \hat{u}, p) \\
          & \dot{z}(t) = f_{\textrm{aux}}(t, \hat{q}, \hat{u}, x, \lambda, p) \\
-         & V_{L,k} \leq V_k(t_0, t_f, \hat{q}_0, \hat{q}_f, \hat{u}_0, \hat{u}_f, z_0, z_f, x_{0}, x_{f}, \lambda_0, \lambda_f, p, S_{e,j}) \leq V_{U,k} \\
+         & V_{L,k} \leq V_k(t_0, t_f, \hat{q}_0, \hat{q}_f, \hat{u}_0, \hat{u}_f, z_0, z_f, x_{0}, x_{f}, \lambda_0, \lambda_f, p, S_{e,k}) \leq V_{U,k} \\
         & \quad\quad\quad S_{e,k} = \int_{t_0}^{t_f} s_{e,k}(t, \hat{q}, \hat{u}, z, x, \lambda, p)~dt \\
          & \quad\quad\quad k = 1, \ldots, K \\
         & g_{L} \leq g(t, \hat{q}, \hat{u}, z, x, \lambda, p) \leq g_{U} \\
@@ -263,7 +263,7 @@
          & z_i = z_{i-1} + \textrm{trap}_i(f_{\textrm{aux}}(t, y, x, \lambda, p)) && i = 1, \ldots, n \\
          & 0 = \phi(q_i)  && i = 0, \ldots, n\\
          & V_{L,k} \leq V_k(t_0, t_f, y_0, y_f, x_{0}, x_{f}, \lambda_0, \mathrlap{\lambda_f, p, S_{e,k}) \leq V_{U,k}} \\
-         & \quad\quad\quad S_{e,j} = \sum_{i=1}^{n} \textrm{trap}_i(s_{e,j}(t, y, x, \lambda, p)) \\
+         & \quad\quad\quad S_{e,k} = \sum_{i=1}^{n} \textrm{trap}_i(s_{e,k}(t, y, x, \lambda, p)) \\
          & \quad\quad\quad k = 1, \ldots, K \\
          & g_{L} \leq g(t_i, y_i, x_{i}, p) \leq g_{U}  && i = 0, \ldots, n\\
          \mbox{with respect to} \quad
@@ -334,7 +334,7 @@
          & 0 = \dot{\phi}(q_i, u_i, p) && i = 0, \ldots, n\\
          & 0 = \ddot{\phi}(t_i, y_i, x_i, \lambda_i, p) && i = 0, \ldots, n\\
          & V_{L,k} \leq V_k(t_0, t_f, y_0, y_f, x_{0}, x_{f}, \lambda_0, \mathrlap{\lambda_f, p, S_{e,k}) \leq V_{U,k}} \\
-        & \quad\quad\quad S_{e,j} = \sum_{i=1}^{n} \textrm{simpson}_i(s_{e,j}(t, y, x, \lambda, p)) \\
+        & \quad\quad\quad S_{e,k} = \sum_{i=1}^{n} \textrm{simpson}_i(s_{e,k}(t, y, x, \lambda, p)) \\
         & \quad\quad\quad k = 1, \ldots, K \\
         & g_{L} \leq g(t_i, y_i, x_{i}, p) \leq g_{U}  && i = 0, \ldots, n\\
          \mbox{with respect to} \quad

@@ -206,26 +206,26 @@
 \newcommand{\prescribed}{
 \begin{align}
     \begin{aligned}
-        \mbox{minimize} \quad & \sum_j w_j J_{j}(t_0, t_f, \hat{q}_0, \hat{q}_f, \hat{u}_0, \hat{u}_f, z_0, z_f, x_{0}, x_{f}, \lambda_0, \lambda_f, p, S_{c,j}) \\
-        & \quad\quad\quad S_{c,j} = \int_{t_0}^{t_f} s_{c,j}(t, \hat{q}, \hat{u}, z, x, \lambda, p)~dt \\
+        \mbox{minimize} \quad & \sum_j w_j J_{j}(t_0, t_f, \hat{q}_0, \hat{q}_f, \hat{u}_0, \hat{u}_f, z_0, z_f, x_{0}, x_{f}, \lambda_0, \mathrlap{\lambda_f, p, S_{c,j})} & \textrm{costs} \\
+        & \quad\quad\quad S_{c,j} = \int_{t_0}^{t_f} s_{c,j}(t, \hat{q}, \hat{u}, z, x, \lambda, p)~dt\\
         \mbox{subject to} \quad &
-         M(\hat{q}, p)\dot{\hat{u}} + G(\hat{q}, p)^T \lambda = f_{\textrm{app}}(t, \hat{q}, \hat{u}, z, x, p) - f_{\textrm{bias}}(\hat{q}, \hat{u}, p) \\
-         & \dot{z}(t) = f_{\textrm{aux}}(t, \hat{q}, \hat{u}, x, \lambda, p) \\
-         & V_{L,k} \leq V_k(t_0, t_f, \hat{q}_0, \hat{q}_f, \hat{u}_0, \hat{u}_f, z_0, z_f, x_{0}, x_{f}, \lambda_0, \lambda_f, p, S_{e,k}) \leq V_{U,k} \\
-        & \quad\quad\quad S_{e,k} = \int_{t_0}^{t_f} s_{e,k}(t, \hat{q}, \hat{u}, z, x, \lambda, p)~dt \\
+         M(\hat{q}, p)\dot{\hat{u}} + G(\hat{q}, p)^T \lambda = f_{\textrm{app}}(t, \hat{q}, \hat{u}, z, x, p) - \mathrlap{f_{\textrm{bias}}(\hat{q}, \hat{u}, p)} & \textrm{multi.} \\
+         & \dot{z}(t) = f_{\textrm{aux}}(t, \hat{q}, \hat{u}, x, \lambda, p) & \textrm{auxiliary} \\
+         & V_{L,k} \leq V_k(t_0, t_f, \hat{q}_0, \hat{q}_f, \hat{u}_0, \hat{u}_f, z_0, z_f, x_{0}, x_{f}, \lambda_0, \mathrlap{\lambda_f, p, S_{e,k}) \leq V_{U,k}} \\
+        & \quad\quad\quad S_{e,k} = \int_{t_0}^{t_f} s_{e,k}(t, \hat{q}, \hat{u}, z, x, \lambda, p)~dt & \textrm{endpoint} \\
          & \quad\quad\quad k = 1, \ldots, K \\
-        & g_{L} \leq g(t, \hat{q}, \hat{u}, z, x, \lambda, p) \leq g_{U} \\
-         & z_{0,L} \leq z_0 \leq z_{0,U} \\
-         & x_{0,L} \leq x_0 \leq x_{0,U} \\
-         & z_{f,L} \leq z_f \leq z_{f,U} \\
-         & x_{f,L} \leq x_f \leq x_{f,U} \\
+        & g_{L} \leq g(t, \hat{q}, \hat{u}, z, x, \lambda, p) \leq g_{U} & \textrm{endpoint} \\
+         & z_{0,L} \leq z_0 \leq z_{0,U} & \textrm{initial states} \\
+         & x_{0,L} \leq x_0 \leq x_{0,U} & \textrm{initial controls}\\
+         & z_{f,L} \leq z_f \leq z_{f,U} & \textrm{final states} \\
+         & x_{f,L} \leq x_f \leq x_{f,U} & \textrm{final controls} \\
          \mbox{with respect to} \quad
-         & t_0 \in [t_{0,L}, t_{0,U}] \\
-         & t_f \in [t_{f,L}, t_{f,U}] \\
-         & z \in [z_{L}, z_{U}] \\
-         & x \in [x_{L}, x_{U}] \\
-         & \lambda \\
-         & p \in [p_{L}, p_{U}].
+         & t_0 \in [t_{0,L}, t_{0,U}] & \textrm{initial time} \\
+         & t_f \in [t_{f,L}, t_{f,U}] & \textrm{final time} \\
+         & z \in [z_{L}, z_{U}] & \textrm{auxiliary states} \\
+         & x \in [x_{L}, x_{U}] & \textrm{controls} \\
+         & \lambda & \textrm{multipliers} \\
+         & p \in [p_{L}, p_{U}]. & \textrm{parameters}
     \end{aligned}
 \end{align}
 }

@@ -556,7 +556,9 @@ class MotionTrackingWalking(MocoPaperResult):
         # TODO: why is recfem used instead of vaslat? recfem counters the hip
         # extension moment in early stance.
 
-        # TODO compare to MocoInverse.
+        # TODO:
+        # try min activation of 0.
+        # why are activations so high? the objective is 6e3.
         inverse = osim.MocoInverse()
         inverse.setModel(modelProcessor)
         inverse.setKinematics(coordinates)

@@ -723,11 +723,11 @@ class MotionTrackingWalking(MocoPaperResult):
 
         sol_inverse_jr_table = osim.TimeSeriesTable(self.mocoinverse_jointreaction_solution_file)
         inverse_jr_duration = sol_inverse_jr_table.getTableMetaDataString('solver_duration')
-        inverse_jr_duration = float(inverse_jr_duration) / 60.0
+        inverse_jr_duration = float(inverse_jr_duration) / 60.0 / 60.0
         print('inverse joint reaction duration ', inverse_jr_duration)
         with open('results/'
                   'motion_tracking_walking_inverse_jr_duration.txt', 'w') as f:
-            f.write(f'{inverse_jr_duration:.0f}')
+            f.write(f'{inverse_jr_duration:.1f}')
 
         emg = self.load_electromyography()
 
@@ -1245,6 +1245,22 @@ class CrouchToStand(MocoPaperResult):
         # fig.savefig('figures/crouch_to_stand_assisted_'
         #             'joint_moment_contribution.png',
         #             dpi=600)
+
+        sol_predict_table = osim.TimeSeriesTable(self.predict_solution_file)
+        sol_predict_duration = sol_predict_table.getTableMetaDataString('solver_duration')
+        sol_predict_duration = float(sol_predict_duration) / 60.0
+        print('prediction duration ', sol_predict_duration)
+        with open('results/'
+                  'crouch_to_stand_predict_duration.txt', 'w') as f:
+            f.write(f'{sol_predict_duration:.1f}')
+
+        sol_predict_assisted_table = osim.TimeSeriesTable(self.predict_assisted_solution_file)
+        sol_predict_assisted_duration = sol_predict_assisted_table.getTableMetaDataString('solver_duration')
+        sol_predict_assisted_duration = float(sol_predict_assisted_duration) / 60.0
+        print('prediction assisted duration ', sol_predict_assisted_duration)
+        with open('results/'
+                  'crouch_to_stand_predict_assisted_duration.txt', 'w') as f:
+            f.write(f'{sol_predict_assisted_duration:.1f}')
 
 if __name__ == "__main__":
     import argparse

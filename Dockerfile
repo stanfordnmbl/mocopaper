@@ -61,8 +61,8 @@ RUN cd /opensim-moco \
         && mkdir ../moco_dependencies_build \
         && cd ../moco_dependencies_build \
         && cmake ../opensim-moco/dependencies -DOPENSIM_PYTHON_WRAPPING=on \
-        && make --jobs 4 ipopt \
-        && make --jobs 4 \
+        && make --jobs $(nproc) ipopt \
+        && make --jobs $(nproc) \
         && echo "/moco_dependencies_install/adol-c/lib64" >> /etc/ld.so.conf.d/moco.conf \
         && echo "/moco_dependencies_install/ipopt/lib" >> /etc/ld.so.conf.d/moco.conf \
         && ldconfig \
@@ -75,7 +75,7 @@ RUN cd / \
             -DMOCO_PYTHON_BINDINGS=on \
             -DBUILD_TESTING=off \
             -DBUILD_EXAMPLES=off \
-        && make --jobs 4 install \
+        && make --jobs $(nproc) install \
         && echo "/opensim-moco-install/sdk/lib" >> /etc/ld.so.conf.d/moco.conf \
         && echo "/opensim-moco-install/sdk/Simbody/lib" >> /etc/ld.so.conf.d/moco.conf \
         && ldconfig \
@@ -85,7 +85,7 @@ RUN cd / \
 RUN echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula \
         select true | debconf-set-selections
 
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
         python3-scipy python3-matplotlib python3-opencv \
         ttf-mscorefonts-installer
 

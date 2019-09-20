@@ -470,7 +470,7 @@ class MotionTrackingWalking(MocoPaperResult):
         modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
         modelProcessor.append(osim.ModOpIgnoreTendonCompliance())
         # modelProcessor.append(osim.ModOpScaleActiveFiberForceCurveWidthDGF(1.5))
-        modelProcessor.append(osim.ModOpAddReserves(1))
+        modelProcessor.append(osim.ModOpAddReserves(1, 20))
         modelProcessor.process().printToXML("subject_armless_for_cmc.osim")
         ext_loads_xml = "resources/Rajagopal2016/grf_walk.xml"
         modelProcessor.append(osim.ModOpAddExternalLoads(ext_loads_xml))

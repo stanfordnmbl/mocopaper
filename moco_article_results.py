@@ -58,7 +58,7 @@ class Analytic(MocoPaperResult):
         problem.addGoal(osim.MocoControlGoal("effort", 0.5))
 
         solver = moco.initCasADiSolver()
-        solver.set_num_mesh_points(51)
+        solver.set_num_mesh_intervals(51)
         solution = moco.solve()
         solution.write(self.solution_file)
 
@@ -174,7 +174,7 @@ class SuspendedMass(MocoPaperResult):
         problem.setControlInfo("/forceset/right", [0, 1])
 
         solver = study.initCasADiSolver()
-        solver.set_num_mesh_points(101)
+        solver.set_num_mesh_intervals(101)
 
         return study
 
@@ -460,74 +460,100 @@ class MotionTrackingWalking(MocoPaperResult):
         return utilities.shift_data_to_cycle(initial_time, final_time,
                                    starting_time, time, y, cut_off=True)
 
-    def create_model_processor(self):
-        modelProcessor = osim.ModelProcessor(
+    def create_model_processor(self):        
+
+        # Create CMC model first.
+        modelProcessorCMC = osim.ModelProcessor(
             # "resources/ArnoldSubject02Walk3/subject02_armless.osim")
-            "resources/Rajagopal2016/subject_walk_armless.osim")
-        modelProcessor.append(osim.ModOpReplaceJointsWithWelds(
+            "resources/Rajagopal2016/subject_scaled_walk_18musc_armless.osim")
+        modelProcessorCMC.append(osim.ModOpReplaceJointsWithWelds(
             ['subtalar_r', 'mtp_r', 'subtalar_l', 'mtp_l']))
-        modelProcessor.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())
-        modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
+        modelProcessorCMC.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())
+        modelProcessorCMC.append(osim.ModOpIgnorePassiveFiberForcesDGF())
         # modelProcessor.append(osim.ModOpScaleActiveFiberForceCurveWidthDGF(1.5))
-        modelProcessor.append(osim.ModOpAddReserves(1))
-        modelProcessor.process().printToXML("subject_armless_for_cmc.osim")
+        modelProcessorCMC.append(osim.ModOpAddReserves(1000))
+
+        cmcModel = modelProcessorCMC.process()
+        cmcModel.initSystem()
+        muscles = cmcModel.updMuscles()
+        for imusc in np.arange(muscles.getSize()):
+            muscle = osim.DeGrooteFregly2016Muscle.safeDownCast(
+                muscles.get(int(imusc)))
+            muscle.set_ignore_tendon_compliance(False)
+            muscle.set_ignore_activation_dynamics(False)
+            muscle.set_tendon_compliance_dynamics_mode('explicit')
+            muscle.set_fiber_damping(0);
+
+        cmcModel.printToXML("subject_scaled_walk_18musc_armless_for_cmc.osim")
+
+        for imusc in np.arange(muscles.getSize()):
+            muscle = osim.DeGrooteFregly2016Muscle.safeDownCast(
+                muscles.get(int(imusc)))
+            muscle.set_tendon_compliance_dynamics_mode('implicit')
+
+        # Add external loads to MocoTrack model.
         ext_loads_xml = "resources/Rajagopal2016/grf_walk.xml"
-        modelProcessor.append(osim.ModOpAddExternalLoads(ext_loads_xml))
-        return modelProcessor
+        modelProcessorDC = osim.ModelProcessor(cmcModel)
+        modelProcessorDC.append(osim.ModOpAddExternalLoads(ext_loads_xml))
+        return modelProcessorDC
 
     def generate_results(self):
         # Create and name an instance of the MocoTrack tool.
-        track = osim.MocoTrack()
-        track.setName("motion_tracking_walking")
+        # track = osim.MocoTrack()
+        # track.setName("motion_tracking_walking")
 
         modelProcessor = self.create_model_processor()
-        track.setModel(modelProcessor)
+        # track.setModel(modelProcessor)
 
-        # TODO:
-        #  - avoid removing muscle passive forces
+        # # TODO:
+        # #  - avoid removing muscle passive forces
 
         coordinates = osim.TableProcessor(
             "resources/Rajagopal2016/coordinates.sto")
         coordinates.append(osim.TabOpLowPassFilter(6))
-        track.setStatesReference(coordinates)
-        track.set_states_global_tracking_weight(0.05)
+        # track.setStatesReference(coordinates)
+        # track.set_states_global_tracking_weight(0.05)
 
-        # This setting allows extra data columns contained in the states
-        # reference that don't correspond to model coordinates.
-        track.set_allow_unused_references(True)
+        # # This setting allows extra data columns contained in the states
+        # # reference that don't correspond to model coordinates.
+        # track.set_allow_unused_references(True)
 
-        track.set_track_reference_position_derivatives(True)
+        # track.set_track_reference_position_derivatives(True)
 
-        # Initial time, final time, and mesh interval.
-        track.set_initial_time(self.initial_time)
-        track.set_final_time(self.final_time)
-        track.set_mesh_interval(0.01)
+        # # Initial time, final time, and mesh interval.
+        # track.set_initial_time(self.initial_time)
+        # track.set_final_time(self.final_time)
+        # track.set_mesh_interval(0.01)
 
-        moco = track.initialize()
-        moco.set_write_solution("results/")
+        # moco = track.initialize()
+        # moco.set_write_solution("results/")
 
-        problem = moco.updProblem()
-        effort = osim.MocoControlGoal.safeDownCast(
-            problem.updGoal("control_effort"))
+        # problem = moco.updProblem()
+        # effort = osim.MocoControlGoal.safeDownCast(
+        #     problem.updGoal("control_effort"))
 
         model = modelProcessor.process()
         model.initSystem()
-        forceSet = model.getForceSet()
-        for i in range(forceSet.getSize()):
-            forcePath = forceSet.get(i).getAbsolutePathString()
-            if 'pelvis' in str(forcePath):
-                effort.setWeightForControl(forcePath, 10)
+        # forceSet = model.getForceSet()
+        # for i in range(forceSet.getSize()):
+        #     forcePath = forceSet.get(i).getAbsolutePathString()
+        #     if 'pelvis' in str(forcePath):
+        #         effort.setWeightForControl(forcePath, 10)
 
-        problem.addGoal(osim.MocoInitialActivationGoal('init_activation'))
+        # problem.addGoal(osim.MocoInitialActivationGoal('init_activation'))
+        # # init_tendon_eq = problem.addGoal(
+        # #         osim.MocoInitialVelocityEquilibriumDGFGoal('init_velocity_eq'))
+        # # init_tendon_eq.setMode('cost')
+        # # init_tendon_eq.setWeight(0.001)
 
-        solver = osim.MocoCasADiSolver.safeDownCast(moco.updSolver())
-        # solver.set_optim_convergence_tolerance(1e-4)
+        # solver = osim.MocoCasADiSolver.safeDownCast(moco.updSolver())
+        # # solver.set_optim_convergence_tolerance(1e-4)
 
         # Solve and visualize.
-        moco.printToXML('motion_tracking_walking.omoco')
+        # moco.printToXML('motion_tracking_walking.omoco')
         # 45 minutes
-        solution = moco.solve()
-        solution.write(self.mocotrack_solution_file)
+        # solution = moco.solve()
+        # solution.write(self.mocotrack_solution_file)
         # moco.visualize(solution)
 
         # tasks = osim.CMC_TaskSet()
@@ -540,7 +566,7 @@ class MotionTrackingWalking(MocoPaperResult):
         #     task.setActive(True, False, False)
         #     tasks.cloneAndAppend(task)
         # tasks.printToXML('motion_tracking_walking_cmc_tasks.xml')
-        # TODO plotting should happen separately from generating the results.
+        # # TODO plotting should happen separately from generating the results.
         # cmc = osim.CMCTool()
         # cmc.setName('motion_tracking_walking_cmc')
         # cmc.setExternalLoadsFileName('grf_walk.xml')
@@ -627,7 +653,7 @@ class MotionTrackingWalking(MocoPaperResult):
         else:
             duration = self.final_time - self.initial_time
             shifted_time, shifted_y = self.shift(time, y,
-                                                 starting_time=self.footstrike + 0.5 * duration)
+                     starting_time=self.footstrike + 0.5 * duration)
 
         # TODO is this correct?
         duration = self.final_time - self.initial_time
@@ -1005,7 +1031,7 @@ class CrouchToStand(MocoPaperResult):
         moco.set_write_solution("results/")
         solver = moco.initCasADiSolver()
         solver.set_dynamics_mode('implicit')
-        solver.set_num_mesh_points(50)
+        solver.set_num_mesh_intervals(50)
         solver.set_optim_convergence_tolerance(1e-3)
         solver.set_optim_constraint_tolerance(1e-3)
         solver.set_optim_finite_difference_scheme('forward')

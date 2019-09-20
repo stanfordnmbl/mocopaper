@@ -550,7 +550,7 @@ class MotionTrackingWalking(MocoPaperResult):
         # # cmc.setLowpassCutoffFrequency(6)
         # cmc.printToXML('motion_tracking_walking_cmc_setup.xml')
         cmc = osim.CMCTool('motion_tracking_walking_cmc_setup.xml')
-        # 1 minute
+        # 2.5 minute
         cmc.run()
 
         # TODO: why is recfem used instead of vaslat? recfem counters the hip

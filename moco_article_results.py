@@ -477,12 +477,8 @@ class MotionTrackingWalking(MocoPaperResult):
         return modelProcessor
 
     def generate_results(self):
-        # Create and name an instance of the MocoTrack tool.
-        track = osim.MocoTrack()
-        track.setName("motion_tracking_walking")
 
         modelProcessor = self.create_model_processor()
-        track.setModel(modelProcessor)
 
         # TODO:
         #  - avoid removing muscle passive forces
@@ -490,46 +486,7 @@ class MotionTrackingWalking(MocoPaperResult):
         coordinates = osim.TableProcessor(
             "resources/Rajagopal2016/coordinates.sto")
         coordinates.append(osim.TabOpLowPassFilter(6))
-        track.setStatesReference(coordinates)
-        track.set_states_global_tracking_weight(0.05)
 
-        # This setting allows extra data columns contained in the states
-        # reference that don't correspond to model coordinates.
-        track.set_allow_unused_references(True)
-
-        track.set_track_reference_position_derivatives(True)
-
-        # Initial time, final time, and mesh interval.
-        track.set_initial_time(self.initial_time)
-        track.set_final_time(self.final_time)
-        track.set_mesh_interval(0.01)
-
-        moco = track.initialize()
-        moco.set_write_solution("results/")
-
-        problem = moco.updProblem()
-        effort = osim.MocoControlGoal.safeDownCast(
-            problem.updGoal("control_effort"))
-
-        model = modelProcessor.process()
-        model.initSystem()
-        forceSet = model.getForceSet()
-        for i in range(forceSet.getSize()):
-            forcePath = forceSet.get(i).getAbsolutePathString()
-            if 'pelvis' in str(forcePath):
-                effort.setWeightForControl(forcePath, 10)
-
-        problem.addGoal(osim.MocoInitialActivationGoal('init_activation'))
-
-        solver = osim.MocoCasADiSolver.safeDownCast(moco.updSolver())
-        # solver.set_optim_convergence_tolerance(1e-4)
-
-        # Solve and visualize.
-        moco.printToXML('motion_tracking_walking.omoco')
-        # 45 minutes
-        solution = moco.solve()
-        solution.write(self.mocotrack_solution_file)
-        # moco.visualize(solution)
 
         # tasks = osim.CMC_TaskSet()
         # for coord in model.getCoordinateSet():
@@ -618,6 +575,52 @@ class MotionTrackingWalking(MocoPaperResult):
         # 50 minutes.
         solution_reaction = study.solve()
         solution_reaction.write(self.mocoinverse_jointreaction_solution_file)
+
+
+        # Create and name an instance of the MocoTrack tool.
+        track = osim.MocoTrack()
+        track.setName("motion_tracking_walking")
+        track.setModel(modelProcessor)
+        track.setStatesReference(coordinates)
+        track.set_states_global_tracking_weight(0.05)
+
+        # This setting allows extra data columns contained in the states
+        # reference that don't correspond to model coordinates.
+        track.set_allow_unused_references(True)
+
+        track.set_track_reference_position_derivatives(True)
+
+        # Initial time, final time, and mesh interval.
+        track.set_initial_time(self.initial_time)
+        track.set_final_time(self.final_time)
+        track.set_mesh_interval(0.01)
+
+        moco = track.initialize()
+        moco.set_write_solution("results/")
+
+        problem = moco.updProblem()
+        effort = osim.MocoControlGoal.safeDownCast(
+            problem.updGoal("control_effort"))
+
+        model = modelProcessor.process()
+        model.initSystem()
+        forceSet = model.getForceSet()
+        for i in range(forceSet.getSize()):
+            forcePath = forceSet.get(i).getAbsolutePathString()
+            if 'pelvis' in str(forcePath):
+                effort.setWeightForControl(forcePath, 10)
+
+        problem.addGoal(osim.MocoInitialActivationGoal('init_activation'))
+
+        solver = osim.MocoCasADiSolver.safeDownCast(moco.updSolver())
+        # solver.set_optim_convergence_tolerance(1e-4)
+
+        # Solve and visualize.
+        moco.printToXML('motion_tracking_walking.omoco')
+        # 45 minutes
+        solution = moco.solve()
+        solution.write(self.mocotrack_solution_file)
+        # moco.visualize(solution)
 
         # TODO: Minimize joint reaction load!
     def plot(self, ax, time, y, shift=True, fill=False, *args, **kwargs):

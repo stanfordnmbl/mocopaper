@@ -553,18 +553,13 @@ class MotionTrackingWalking(MocoPaperResult):
         # 2.5 minute
         cmc.run()
 
-        # TODO: why is recfem used instead of vaslat? recfem counters the hip
-        # extension moment in early stance.
 
-        # TODO:
-        # try min activation of 0.
-        # why are activations so high? the objective is 6e3.
         inverse = osim.MocoInverse()
         inverse.setModel(modelProcessor)
         inverse.setKinematics(coordinates)
         inverse.set_initial_time(self.initial_time)
         inverse.set_final_time(self.final_time)
-        inverse.set_mesh_interval(0.01)
+        inverse.set_mesh_interval(0.02)
         inverse.set_kinematics_allow_extra_columns(True)
         inverse.set_tolerance(1e-3)
         # 8 minutes

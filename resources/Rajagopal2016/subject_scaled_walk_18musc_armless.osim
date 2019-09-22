@@ -5367,7 +5367,7 @@
 					<!--Name of the generalized coordinate to which the actuator applies.-->
 					<coordinate>lumbar_bending</coordinate>
 					<!--The maximum generalized force produced by this actuator.-->
-					<optimal_force>1000</optimal_force>
+					<optimal_force>1</optimal_force>
 				</CoordinateActuator>
 				<CoordinateActuator name="lumbar_rot">
 					<!--Minimum allowed value for control signal. Used primarily when solving for control values.-->
@@ -5377,7 +5377,7 @@
 					<!--Name of the generalized coordinate to which the actuator applies.-->
 					<coordinate>lumbar_rotation</coordinate>
 					<!--The maximum generalized force produced by this actuator.-->
-					<optimal_force>1000</optimal_force>
+					<optimal_force>1</optimal_force>
 				</CoordinateActuator>
                 <CoordinateActuator name="hip_rot_r">
 					<!--Minimum allowed value for control signal. Used primarily when solving for control values.-->
@@ -5387,7 +5387,7 @@
 					<!--Name of the generalized coordinate to which the actuator applies.-->
 					<coordinate>hip_rotation_r</coordinate>
 					<!--The maximum generalized force produced by this actuator.-->
-					<optimal_force>1000</optimal_force>
+					<optimal_force>1</optimal_force>
 				</CoordinateActuator>
 				<CoordinateActuator name="hip_add_r">
 					<!--Minimum allowed value for control signal. Used primarily when solving for control values.-->
@@ -5397,7 +5397,7 @@
 					<!--Name of the generalized coordinate to which the actuator applies.-->
 					<coordinate>hip_adduction_r</coordinate>
 					<!--The maximum generalized force produced by this actuator.-->
-					<optimal_force>1000</optimal_force>
+					<optimal_force>1</optimal_force>
 				</CoordinateActuator>
                 <CoordinateActuator name="hip_rot_l">
 					<!--Minimum allowed value for control signal. Used primarily when solving for control values.-->
@@ -5407,7 +5407,7 @@
 					<!--Name of the generalized coordinate to which the actuator applies.-->
 					<coordinate>hip_rotation_l</coordinate>
 					<!--The maximum generalized force produced by this actuator.-->
-					<optimal_force>1000</optimal_force>
+					<optimal_force>1</optimal_force>
 				</CoordinateActuator>
 				<CoordinateActuator name="hip_add_l">
 					<!--Minimum allowed value for control signal. Used primarily when solving for control values.-->
@@ -5417,8 +5417,44 @@
 					<!--Name of the generalized coordinate to which the actuator applies.-->
 					<coordinate>hip_adduction_l</coordinate>
 					<!--The maximum generalized force produced by this actuator.-->
-					<optimal_force>1000</optimal_force>
+					<optimal_force>1</optimal_force>
 				</CoordinateActuator>
+				<CoordinateActuator name="residual_pelvis_tilt">
+                    <!--Name of the generalized coordinate to which the actuator applies.-->
+                    <coordinate>pelvis_tilt</coordinate>
+                    <!--The maximum generalized force produced by this actuator.-->
+                    <optimal_force>1</optimal_force>
+                </CoordinateActuator>
+                <CoordinateActuator name="residual_pelvis_list">
+                    <!--Name of the generalized coordinate to which the actuator applies.-->
+                    <coordinate>pelvis_list</coordinate>
+                    <!--The maximum generalized force produced by this actuator.-->
+                    <optimal_force>1</optimal_force>
+                </CoordinateActuator>
+                <CoordinateActuator name="residual_pelvis_rotation">
+                    <!--Name of the generalized coordinate to which the actuator applies.-->
+                    <coordinate>pelvis_rotation</coordinate>
+                    <!--The maximum generalized force produced by this actuator.-->
+                    <optimal_force>1</optimal_force>
+                </CoordinateActuator>
+                <CoordinateActuator name="residual_pelvis_tx">
+                    <!--Name of the generalized coordinate to which the actuator applies.-->
+                    <coordinate>pelvis_tx</coordinate>
+                    <!--The maximum generalized force produced by this actuator.-->
+                    <optimal_force>10</optimal_force>
+                </CoordinateActuator>
+                <CoordinateActuator name="residual_pelvis_ty">
+                    <!--Name of the generalized coordinate to which the actuator applies.-->
+                    <coordinate>pelvis_ty</coordinate>
+                    <!--The maximum generalized force produced by this actuator.-->
+                    <optimal_force>10</optimal_force>
+                </CoordinateActuator>
+                <CoordinateActuator name="residual_pelvis_tz">
+                    <!--Name of the generalized coordinate to which the actuator applies.-->
+                    <coordinate>pelvis_tz</coordinate>
+                    <!--The maximum generalized force produced by this actuator.-->
+                    <optimal_force>10</optimal_force>
+                </CoordinateActuator>
 			</objects>
 			<groups />
 		</ForceSet>

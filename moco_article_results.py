@@ -470,8 +470,9 @@ class MotionTrackingWalking(MocoPaperResult):
             ['subtalar_r', 'mtp_r', 'subtalar_l', 'mtp_l']))
         modelProcessorCMC.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())
         modelProcessorCMC.append(osim.ModOpIgnorePassiveFiberForcesDGF())
+        modelProcessorCMC.append(osim.ModOpIgnoreTendonCompliance())
         # modelProcessor.append(osim.ModOpScaleActiveFiberForceCurveWidthDGF(1.5))
-        modelProcessorCMC.append(osim.ModOpAddReserves(1000))
+        modelProcessorCMC.append(osim.ModOpAddReserves(1))
 
         cmcModel = modelProcessorCMC.process()
         cmcModel.initSystem()
@@ -479,10 +480,10 @@ class MotionTrackingWalking(MocoPaperResult):
         for imusc in np.arange(muscles.getSize()):
             muscle = osim.DeGrooteFregly2016Muscle.safeDownCast(
                 muscles.get(int(imusc)))
-            muscle.set_ignore_tendon_compliance(False)
+            # muscle.set_ignore_tendon_compliance(False)
             muscle.set_ignore_activation_dynamics(False)
             muscle.set_tendon_compliance_dynamics_mode('explicit')
-            muscle.set_fiber_damping(0);
+            muscle.set_fiber_damping(0)
 
         cmcModel.printToXML("subject_scaled_walk_18musc_armless_for_cmc.osim")
 
@@ -498,12 +499,8 @@ class MotionTrackingWalking(MocoPaperResult):
         return modelProcessorDC
 
     def generate_results(self):
-        # Create and name an instance of the MocoTrack tool.
-        # track = osim.MocoTrack()
-        # track.setName("motion_tracking_walking")
 
         modelProcessor = self.create_model_processor()
-        # track.setModel(modelProcessor)
 
         # # TODO:
         # #  - avoid removing muscle passive forces
@@ -511,50 +508,6 @@ class MotionTrackingWalking(MocoPaperResult):
         coordinates = osim.TableProcessor(
             "resources/Rajagopal2016/coordinates.sto")
         coordinates.append(osim.TabOpLowPassFilter(6))
-        # track.setStatesReference(coordinates)
-        # track.set_states_global_tracking_weight(0.05)
-
-        # # This setting allows extra data columns contained in the states
-        # # reference that don't correspond to model coordinates.
-        # track.set_allow_unused_references(True)
-
-        # track.set_track_reference_position_derivatives(True)
-
-        # # Initial time, final time, and mesh interval.
-        # track.set_initial_time(self.initial_time)
-        # track.set_final_time(self.final_time)
-        # track.set_mesh_interval(0.01)
-
-        # moco = track.initialize()
-        # moco.set_write_solution("results/")
-
-        # problem = moco.updProblem()
-        # effort = osim.MocoControlGoal.safeDownCast(
-        #     problem.updGoal("control_effort"))
-
-        model = modelProcessor.process()
-        model.initSystem()
-        # forceSet = model.getForceSet()
-        # for i in range(forceSet.getSize()):
-        #     forcePath = forceSet.get(i).getAbsolutePathString()
-        #     if 'pelvis' in str(forcePath):
-        #         effort.setWeightForControl(forcePath, 10)
-
-        # problem.addGoal(osim.MocoInitialActivationGoal('init_activation'))
-        # # init_tendon_eq = problem.addGoal(
-        # #         osim.MocoInitialVelocityEquilibriumDGFGoal('init_velocity_eq'))
-        # # init_tendon_eq.setMode('cost')
-        # # init_tendon_eq.setWeight(0.001)
-
-        # solver = osim.MocoCasADiSolver.safeDownCast(moco.updSolver())
-        # # solver.set_optim_convergence_tolerance(1e-4)
-
-        # Solve and visualize.
-        # moco.printToXML('motion_tracking_walking.omoco')
-        # 45 minutes
-        # solution = moco.solve()
-        # solution.write(self.mocotrack_solution_file)
-        # moco.visualize(solution)
 
         # tasks = osim.CMC_TaskSet()
         # for coord in model.getCoordinateSet():
@@ -577,6 +530,7 @@ class MotionTrackingWalking(MocoPaperResult):
         cmc = osim.CMCTool('motion_tracking_walking_cmc_setup.xml')
         # 1 minute
         cmc.run()
+        return # TODO
 
         # TODO: why is recfem used instead of vaslat? recfem counters the hip
         # extension moment in early stance.
@@ -643,8 +597,58 @@ class MotionTrackingWalking(MocoPaperResult):
         # TODO: try 1e-2 for MocoInverse without JR minimization.
         solver.set_optim_convergence_tolerance(1e-2)
 
-        solution_reaction = study.solve()
-        solution_reaction.write(self.mocoinverse_jointreaction_solution_file)
+        # solution_reaction = study.solve()
+        # solution_reaction.write(self.mocoinverse_jointreaction_solution_file)
+
+
+        # Create and name an instance of the MocoTrack tool.
+        track = osim.MocoTrack()
+        track.setName("motion_tracking_walking")
+        track.setModel(modelProcessor)
+        track.setStatesReference(coordinates)
+        track.set_states_global_tracking_weight(0.05)
+
+        # This setting allows extra data columns contained in the states
+        # reference that don't correspond to model coordinates.
+        track.set_allow_unused_references(True)
+
+        track.set_track_reference_position_derivatives(True)
+
+        # Initial time, final time, and mesh interval.
+        track.set_initial_time(self.initial_time)
+        track.set_final_time(self.final_time)
+        track.set_mesh_interval(0.01)
+
+        moco = track.initialize()
+        moco.set_write_solution("results/")
+
+        problem = moco.updProblem()
+        effort = osim.MocoControlGoal.safeDownCast(
+            problem.updGoal("control_effort"))
+
+        model = modelProcessor.process()
+        model.initSystem()
+        forceSet = model.getForceSet()
+        for i in range(forceSet.getSize()):
+            forcePath = forceSet.get(i).getAbsolutePathString()
+            if 'pelvis' in str(forcePath):
+                effort.setWeightForControl(forcePath, 10)
+
+        problem.addGoal(osim.MocoInitialActivationGoal('init_activation'))
+        # init_tendon_eq = problem.addGoal(
+        #         osim.MocoInitialVelocityEquilibriumDGFGoal('init_velocity_eq'))
+        # init_tendon_eq.setMode('cost')
+        # init_tendon_eq.setWeight(0.001)
+
+        solver = osim.MocoCasADiSolver.safeDownCast(moco.updSolver())
+        # solver.set_optim_convergence_tolerance(1e-4)
+
+        # Solve and visualize.
+        moco.printToXML('motion_tracking_walking.omoco')
+        # 45 minutes
+        # solution = moco.solve()
+        # solution.write(self.mocotrack_solution_file)
+        # moco.visualize(solution)
 
         # TODO: Minimize joint reaction load!
     def plot(self, ax, time, y, shift=True, fill=False, *args, **kwargs):

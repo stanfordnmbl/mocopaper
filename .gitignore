@@ -232,3 +232,4 @@ subject_walk_armless_for_cmc.osim
 /crouch_to_stand_visualization/crouch_to_stand.webm
 !/figures/MocoDiagram.png
 *.batch
+!/results/motion_tracking_walking_cmc_results/README.md

@@ -8,7 +8,7 @@
 		<!--List of xml files used to construct a force set for the model.-->
 		<force_set_files />
 		<!--Directory used for writing results.-->
-		<results_directory>./</results_directory>
+		<results_directory>results/motion_tracking_walking_cmc_results</results_directory>
 		<!--Output precision.  It is 8 by default.-->
 		<output_precision>8</output_precision>
 		<!--Initial time for the simulation.-->
@@ -36,13 +36,13 @@
 			<groups />
 		</ControllerSet>
 		<!--XML file (.xml) containing the forces applied to the model as ExternalLoads.-->
-		<external_loads_file>resources\Rajagopal2016\grf_walk.xml</external_loads_file>
+		<external_loads_file>resources/Rajagopal2016/grf_walk.xml</external_loads_file>
 		<!--List of individual Actuators by individual or user-defined group name  to be excluded from CMC's control.-->
 		<actuators_to_exclude />
 		<!--Motion (.mot) or storage (.sto) file containing the desired point trajectories.-->
 		<desired_points_file />
 		<!--Motion (.mot) or storage (.sto) file containing the desired kinematic trajectories.-->
-		<desired_kinematics_file>resources\Rajagopal2016\coordinates.sto</desired_kinematics_file>
+		<desired_kinematics_file>resources/Rajagopal2016/coordinates.sto</desired_kinematics_file>
 		<!--File containing the tracking tasks. Which coordinates are tracked and with what weights are specified here.-->
 		<task_set_file>motion_tracking_walking_cmc_tasks.xml</task_set_file>
 		<!--File containing the constraints on the controls.-->

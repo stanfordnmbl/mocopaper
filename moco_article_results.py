@@ -464,7 +464,6 @@ class MotionTrackingWalking(MocoPaperResult):
 
         # Create CMC model first.
         modelProcessorCMC = osim.ModelProcessor(
-            # "resources/ArnoldSubject02Walk3/subject02_armless.osim")
             "resources/Rajagopal2016/subject_scaled_walk_18musc_armless.osim")
         modelProcessorCMC.append(osim.ModOpReplaceJointsWithWelds(
             ['subtalar_r', 'mtp_r', 'subtalar_l', 'mtp_l']))
@@ -472,7 +471,7 @@ class MotionTrackingWalking(MocoPaperResult):
         modelProcessorCMC.append(osim.ModOpIgnorePassiveFiberForcesDGF())
         modelProcessorCMC.append(osim.ModOpIgnoreTendonCompliance())
         # modelProcessor.append(osim.ModOpScaleActiveFiberForceCurveWidthDGF(1.5))
-        modelProcessorCMC.append(osim.ModOpAddReserves(1))
+        modelProcessorCMC.append(osim.ModOpAddReserves(200, 1))
 
         cmcModel = modelProcessorCMC.process()
         cmcModel.initSystem()
@@ -498,6 +497,20 @@ class MotionTrackingWalking(MocoPaperResult):
         modelProcessorDC.append(osim.ModOpAddExternalLoads(ext_loads_xml))
         return modelProcessorDC
 
+    def write_cmc_taskset(self):
+        model = self.create_model_processor().process()
+        tasks = osim.CMC_TaskSet()
+        for coord in model.getCoordinateSet():
+            task = osim.CMC_Joint()
+            task.setName(coord.getName())
+            task.setCoordinateName(coord.getName())
+            task.setKP(100, 1, 1)
+            task.setKV(20, 1, 1)
+            task.setActive(True, False, False)
+            tasks.cloneAndAppend(task)
+        tasks.printToXML('motion_tracking_walking_cmc_tasks.xml')
+
+
     def generate_results(self):
 
         modelProcessor = self.create_model_processor()
@@ -509,16 +522,7 @@ class MotionTrackingWalking(MocoPaperResult):
             "resources/Rajagopal2016/coordinates.sto")
         coordinates.append(osim.TabOpLowPassFilter(6))
 
-        # tasks = osim.CMC_TaskSet()
-        # for coord in model.getCoordinateSet():
-        #     task = osim.CMC_Joint()
-        #     task.setName(coord.getName())
-        #     task.setCoordinateName(coord.getName())
-        #     task.setKP(100, 1, 1)
-        #     task.setKV(20, 1, 1)
-        #     task.setActive(True, False, False)
-        #     tasks.cloneAndAppend(task)
-        # tasks.printToXML('motion_tracking_walking_cmc_tasks.xml')
+        # self.write_cmc_taskset()
         # # TODO plotting should happen separately from generating the results.
         # cmc = osim.CMCTool()
         # cmc.setName('motion_tracking_walking_cmc')
@@ -974,11 +978,11 @@ class MotionTrackingWalking(MocoPaperResult):
             self.plot(ax, time_inverse,
                       sol_inverse.getStateMat(activation_path),
                       label='MocoInverse',
-                      linewidth=1)
+                      linewidth=2)
             self.plot(ax, time_inverse_jointreaction,
                       sol_inverse_jointreaction.getStateMat(activation_path),
                       label='MocoInverse, knee',
-                      linewidth=1)
+                      linewidth=2)
             if len(muscle[3]) > 0:
                 self.plot(ax, emg['time'], emg[muscle[3]] * np.max(cmc_activ),
                                       shift=False,

@@ -235,3 +235,5 @@ out.log
 /motion_tracking_walking_cmc_results/motion_tracking_walking_cmc_Kinematics_u.sto
 /motion_tracking_walking_cmc_results/motion_tracking_walking_cmc_pErr.sto
 /motion_tracking_walking_cmc_results/motion_tracking_walking_cmc_states.sto
+/desiredKinematics_padded.sto
+/desiredKinematics_splinefit_accelerations.sto

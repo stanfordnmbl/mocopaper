@@ -471,7 +471,7 @@ class MotionTrackingWalking(MocoPaperResult):
         modelProcessorCMC.append(osim.ModOpIgnorePassiveFiberForcesDGF())
         modelProcessorCMC.append(osim.ModOpIgnoreTendonCompliance())
         # modelProcessor.append(osim.ModOpScaleActiveFiberForceCurveWidthDGF(1.5))
-        modelProcessorCMC.append(osim.ModOpAddReserves(200, 1))
+        modelProcessorCMC.append(osim.ModOpAddReserves(200, 1, False))
 
         cmcModel = modelProcessorCMC.process()
         cmcModel.initSystem()
@@ -515,8 +515,13 @@ class MotionTrackingWalking(MocoPaperResult):
 
         modelProcessor = self.create_model_processor()
 
-        # # TODO:
-        # #  - avoid removing muscle passive forces
+        # TODO:
+        #  - avoid removing muscle passive forces
+        #  - why does soleus activation drop so quickly?
+
+
+        # TODO: why is recfem used instead of vaslat? recfem counters the hip
+        # extension moment in early stance.
 
         coordinates = osim.TableProcessor(
             "resources/Rajagopal2016/coordinates.sto")
@@ -650,8 +655,8 @@ class MotionTrackingWalking(MocoPaperResult):
         # Solve and visualize.
         moco.printToXML('motion_tracking_walking.omoco')
         # 45 minutes
-        # solution = moco.solve()
-        # solution.write(self.mocotrack_solution_file)
+        solution = moco.solve()
+        solution.write(self.mocotrack_solution_file)
         # moco.visualize(solution)
 
         # TODO: Minimize joint reaction load!
@@ -831,46 +836,6 @@ class MotionTrackingWalking(MocoPaperResult):
             f.write(f'{inv_sol_rms:.3f}')
 
 
-        res_track = self.calc_reserves(sol_track)
-        column_labels = res_track.getColumnLabels()
-        max_res_track = -np.inf
-        for icol in range(res_track.getNumColumns()):
-            column = utilities.toarray(
-                res_track.getDependentColumnAtIndex(icol))
-            max = np.max(np.abs(column))
-            max_res_track = np.max([max_res_track, max])
-            print(f'track max abs {column_labels[icol]}: {max}')
-        with open('results/motion_tracking_walking_'
-                  'track_max_reserve.txt', 'w') as f:
-            f.write(f'{max_res_track:.3f}')
-
-        res_inverse = self.calc_reserves(sol_inverse)
-        column_labels = res_inverse.getColumnLabels()
-        max_res_inverse = -np.inf
-        for icol in range(res_inverse.getNumColumns()):
-            column = utilities.toarray(
-                res_inverse.getDependentColumnAtIndex(icol))
-            max = np.max(np.abs(column))
-            max_res_inverse = np.max([max_res_inverse, max])
-            print(f'inverse max abs {column_labels[icol]}: {max}')
-        with open('results/motion_tracking_walking_'
-                  'inverse_max_reserve.txt', 'w') as f:
-            f.write(f'{max_res_inverse:.3f}')
-
-        res_inverse_jr = self.calc_reserves(sol_inverse_jointreaction)
-        column_labels = res_inverse_jr.getColumnLabels()
-        max_res_inverse_jr = -np.inf
-        for icol in range(res_inverse_jr.getNumColumns()):
-            column = utilities.toarray(
-                res_inverse_jr.getDependentColumnAtIndex(icol))
-            max = np.max(np.abs(column))
-            max_res_inverse_jr = np.max([max_res_inverse_jr, max])
-            print(f'inverse_jr max abs {column_labels[icol]}: {max}')
-        with open('results/motion_tracking_walking_'
-                  'inverse_jr_max_reserve.txt', 'w') as f:
-            f.write(f'{max_res_inverse_jr:.3f}')
-
-
         plot_breakdown = False
 
         if plot_breakdown:
@@ -953,25 +918,25 @@ class MotionTrackingWalking(MocoPaperResult):
 
         # TODO: Compare to EMG.
         muscles = [
-            ((0, 0), 'glmax2', 'gluteus maximus', 'GMAX'),
+            ((0, 0), 'glut_max2', 'gluteus maximus', 'GMAX'),
             ((0, 1), 'psoas', 'psoas', ''),
             ((1, 0), 'semimem', 'semimembranosus', 'MH'),
-            ((0, 2), 'recfem', 'rectus femoris', 'RF'),
-            ((1, 1), 'bfsh', 'biceps femoris short head', 'BF'),
-            ((1, 2), 'vaslat', 'vastus lateralis', 'VL'),
-            ((2, 0), 'gasmed', 'medial gastrocnemius', 'GAS'),
+            ((0, 2), 'rect_fem', 'rectus femoris', 'RF'),
+            ((1, 1), 'bifemsh', 'biceps femoris short head', 'BF'),
+            ((1, 2), 'vas_int', 'vastus lateralis', 'VL'),
+            ((2, 0), 'med_gas', 'medial gastrocnemius', 'GAS'),
             ((2, 1), 'soleus', 'soleus', 'SOL'),
-            ((2, 2), 'tibant', 'tibialis anterior', 'TA'),
+            ((2, 2), 'tib_ant', 'tibialis anterior', 'TA'),
         ]
         for im, muscle in enumerate(muscles):
             ax = plt.subplot(gs[muscle[0][0], muscle[0][1]])
             activation_path = f'/forceset/{muscle[1]}_{self.side}/activation'
-            cmc_activ = toarray(sol_cmc.getDependentColumn(activation_path))
-            self.plot(ax, time_cmc,
-                      cmc_activ,
-                      linewidth=3,
-                          label='CMC',
-                    )
+            # cmc_activ = toarray(sol_cmc.getDependentColumn(activation_path))
+            # self.plot(ax, time_cmc,
+            #           cmc_activ,
+            #           linewidth=3,
+            #           label='CMC',
+            #         )
             self.plot(ax, time_track, sol_track.getStateMat(activation_path),
                           label='MocoTrack',
                           linewidth=2)
@@ -983,11 +948,11 @@ class MotionTrackingWalking(MocoPaperResult):
                       sol_inverse_jointreaction.getStateMat(activation_path),
                       label='MocoInverse, knee',
                       linewidth=2)
-            if len(muscle[3]) > 0:
-                self.plot(ax, emg['time'], emg[muscle[3]] * np.max(cmc_activ),
-                                      shift=False,
-                                      fill=True,
-                          color='lightgray')
+            # if len(muscle[3]) > 0:
+            #     self.plot(ax, emg['time'], emg[muscle[3]] * np.max(cmc_activ),
+            #                           shift=False,
+            #                           fill=True,
+            #               color='lightgray')
             if muscle[0][0] == 0 and muscle[0][1] == 0:
                 ax.legend(
                           frameon=False, handlelength=1.,
@@ -1026,6 +991,47 @@ class MotionTrackingWalking(MocoPaperResult):
         fig.savefig('figures/motion_tracking_walking.eps')
         fig.savefig('figures/motion_tracking_walking.pdf')
         fig.savefig('figures/motion_tracking_walking.png', dpi=600)
+
+        res_track = self.calc_reserves(sol_track)
+        column_labels = res_track.getColumnLabels()
+        max_res_track = -np.inf
+        for icol in range(res_track.getNumColumns()):
+            column = utilities.toarray(
+                res_track.getDependentColumnAtIndex(icol))
+            max = np.max(np.abs(column))
+            max_res_track = np.max([max_res_track, max])
+            print(f'track max abs {column_labels[icol]}: {max}')
+        with open('results/motion_tracking_walking_'
+                  'track_max_reserve.txt', 'w') as f:
+            f.write(f'{max_res_track:.3f}')
+
+        res_inverse = self.calc_reserves(sol_inverse)
+        column_labels = res_inverse.getColumnLabels()
+        max_res_inverse = -np.inf
+        for icol in range(res_inverse.getNumColumns()):
+            column = utilities.toarray(
+                res_inverse.getDependentColumnAtIndex(icol))
+            max = np.max(np.abs(column))
+            max_res_inverse = np.max([max_res_inverse, max])
+            print(f'inverse max abs {column_labels[icol]}: {max}')
+        with open('results/motion_tracking_walking_'
+                  'inverse_max_reserve.txt', 'w') as f:
+            f.write(f'{max_res_inverse:.3f}')
+
+        res_inverse_jr = self.calc_reserves(sol_inverse_jointreaction)
+        column_labels = res_inverse_jr.getColumnLabels()
+        max_res_inverse_jr = -np.inf
+        for icol in range(res_inverse_jr.getNumColumns()):
+            column = utilities.toarray(
+                res_inverse_jr.getDependentColumnAtIndex(icol))
+            max = np.max(np.abs(column))
+            max_res_inverse_jr = np.max([max_res_inverse_jr, max])
+            print(f'inverse_jr max abs {column_labels[icol]}: {max}')
+        with open('results/motion_tracking_walking_'
+                  'inverse_jr_max_reserve.txt', 'w') as f:
+            f.write(f'{max_res_inverse_jr:.3f}')
+
+
 
 class CrouchToStand(MocoPaperResult):
     def __init__(self):

@@ -446,6 +446,41 @@ def remove_fields_from_structured_ndarray(ndarray, fields, copy=True):
     else:
         return ndarray[names]
 
+def ndarray2storage(ndarray, storage_fpath, name=None, in_degrees=False):
+    """Saves an ndarray, with named dtypes, to an OpenSim Storage file.
+    Parameters
+    ----------
+    ndarray : numpy.ndarray
+    storage_fpath : str
+    in_degrees : bool, optional
+    name : str
+        Name of Storage object.
+    """
+    n_rows = ndarray.shape[0]
+    n_cols = len(ndarray.dtype.names)
+
+    f = open(storage_fpath, 'w')
+    f.write('%s\n' % (name if name else storage_fpath,))
+    f.write('version=1\n')
+    f.write('nRows=%i\n' % n_rows)
+    f.write('nColumns=%i\n' % n_cols)
+    f.write('inDegrees=%s\n' % ('yes' if in_degrees else 'no',))
+    f.write('endheader\n')
+    for line_num, col in enumerate(ndarray.dtype.names):
+        if line_num != 0:
+            f.write('\t')
+        f.write('%s' % col)
+    f.write('\n')
+
+    for i_row in range(n_rows):
+        for line_num, col in enumerate(ndarray.dtype.names):
+            if line_num != 0:
+                f.write('\t')
+            f.write('%f' % ndarray[col][i_row])
+        f.write('\n')
+
+    f.close()
+
 def filter_emg(raw_signal, sampling_rate, bandpass_order=6,
         bandpass_lower_frequency=50, bandpass_upper_frequency=500,
         lowpass_order=4,

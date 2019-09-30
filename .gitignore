@@ -206,7 +206,7 @@ out.log
 /subject_scaled_walk_18musc_armless_for_cmc.osim
 /motion_prediction_tracking_solution_fullcycle.sto
 /results/motion_prediction_prediction_solution_fullcycle.sto
-/MocoPaper.synctex.gz
+/MocoPaper.synctex*
 /MocoPaper.log
 /MocoPaper.out
 /MocoPaper.aux
@@ -222,6 +222,7 @@ out.log
 /crouch_to_stand_visualization/crouch_to_stand.mp4
 /crouch_to_stand_visualization/crouch_to_stand.webm
 !/figures/MocoDiagram.png
+!/figures/Moco*Diagram.png
 *.batch
 !/results/motion_tracking_walking_cmc_results/README.md
 

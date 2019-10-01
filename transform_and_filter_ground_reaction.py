@@ -6,11 +6,13 @@ import numpy as np
 from scipy.signal import butter, filtfilt
 
 import pylab as pl
+pl.matplotlib.use('TkAgg')
 
 from utilities import ANCFile, \
     remove_fields_from_structured_ndarray, ndarray2storage, \
     filter_critically_damped
 from scipy import interpolate
+from scipy.ndimage import gaussian_filter1d
 
 n_force_plates = 3
 
@@ -145,7 +147,7 @@ def transform_and_filter_ground_reaction(anc_fpath, mot_fpath, mot_name,
                         order=critically_damped_order)
 
     def create_vecs(colnames):
-        return np.matrix(data[colnames]).view(dtype=np.float64).reshape(-1, 3)
+        return np.array([list(item) for item in data[colnames]])
     def rotate_vecs(vecs, rotation_matrix):
         return vecs * rotation_matrix
     def repack_data(data, vecs, colnames):
@@ -204,6 +206,8 @@ def transform_and_filter_ground_reaction(anc_fpath, mot_fpath, mot_name,
             filt = (forces[side][:, 2] > (-threshold))
             for item in [forces, moments]:
                 item[side][filt, :] = 0
+                for i in np.arange(item[side].shape[1]):
+                    item[side][:,i] = gaussian_filter1d(item[side][:,i], 5)
 
         # Critically damped filter (prevents overshoot).
         # TODO may change array size.
@@ -216,10 +220,12 @@ def transform_and_filter_ground_reaction(anc_fpath, mot_fpath, mot_name,
                             order=critically_damped_order)
 
         # Cutoff again to remove the long tail created by the crit damped filter.
-        for side in sides:
-            filt = (forces[side][:, 2] > (-threshold2))
-            for item in [forces, moments]:
-                item[side][filt, :] = 0
+        # for side in sides:
+        #     filt = (forces[side][:, 2] > (-threshold2))
+        #     for item in [forces, moments]:
+        #         item[side][filt, :] = 0
+        #         for i in np.arange(item[side].shape[1]):
+        #             item[side][:,i] = gaussian_filter1d(item[side][:,i], 5)
 
     # Compute center of pressure.
     # ---------------------------
@@ -229,7 +235,7 @@ def transform_and_filter_ground_reaction(anc_fpath, mot_fpath, mot_name,
     for side in sides:
         # Only compute when foot is on ground.
         # Time indices corresponding to foot on ground.
-        filt = forces[side][:, 2] < (-threshold2)
+        filt = forces[side][:, 2] != 0
         Mx = moments[side][filt, 0]
         My = moments[side][filt, 1]
         Mz = moments[side][filt, 2]

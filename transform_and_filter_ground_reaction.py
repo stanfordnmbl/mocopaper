@@ -67,6 +67,7 @@ def transform_and_filter_ground_reaction(anc_fpath, mot_fpath, mot_name,
         butterworth_cutoff_frequency=50,
         critically_damped_order=2,
         critically_damped_cutoff_frequency=6,
+        gaussian_smoothing_sigma=5, 
         ):
     """Converts analog force plate data from the Stanford High Performance
     Laboratory (HPL)'s over-ground force plates into OpenSim .mot files. This
@@ -202,12 +203,15 @@ def transform_and_filter_ground_reaction(anc_fpath, mot_fpath, mot_name,
                     label='F_x, %s, raw' % side, lw=0.5)
 
         # Before filtering, cutoff the GRF using the first coarser cutoff.
+        # Use Gaussian filter after cutoff to smooth force transitions at ground
+        # contact and liftoff.
         for side in sides:
             filt = (forces[side][:, 2] > (-threshold))
             for item in [forces, moments]:
                 item[side][filt, :] = 0
                 for i in np.arange(item[side].shape[1]):
-                    item[side][:,i] = gaussian_filter1d(item[side][:,i], 5)
+                    item[side][:,i] = gaussian_filter1d(item[side][:,i], 
+                        gaussian_smoothing_sigma)
 
         # Critically damped filter (prevents overshoot).
         # TODO may change array size.
@@ -218,14 +222,6 @@ def transform_and_filter_ground_reaction(anc_fpath, mot_fpath, mot_name,
                             item[side][:, direc], anc.precise_rate,
                             critically_damped_cutoff_frequency,
                             order=critically_damped_order)
-
-        # Cutoff again to remove the long tail created by the crit damped filter.
-        # for side in sides:
-        #     filt = (forces[side][:, 2] > (-threshold2))
-        #     for item in [forces, moments]:
-        #         item[side][filt, :] = 0
-        #         for i in np.arange(item[side].shape[1]):
-        #             item[side][:,i] = gaussian_filter1d(item[side][:,i], 5)
 
     # Compute center of pressure.
     # ---------------------------
@@ -256,21 +252,6 @@ def transform_and_filter_ground_reaction(anc_fpath, mot_fpath, mot_name,
         moments[side][:, 0:2] = 0
         # TODO does this set all 3 columns to 0, or just the first 2?
 
-        # Time indices when foot is not on the ground.
-        # TODO unnecessary.
-        if mode == 'default':
-            filt = (forces[side][:, 2] > (-threshold2)) #& (forces[side][:, 1] < 0)
-            for item in [forces, moments]:
-                item[side][filt, :] = 0
-
-    # The forces when the foot is not on ground must be zero.
-    # -------------------------------------------------------
-    # TODO didn't we do this already?
-    # for side in sides:
-    #     filt = forces[side][:, 2] > 0
-    #     for item in [forces, moments]:
-    #         item[side][filt, :] = 0
-
     # Transform from motion capture frame to OpenSim ground frame.
     # ------------------------------------------------------------
     for side in sides:
@@ -280,62 +261,8 @@ def transform_and_filter_ground_reaction(anc_fpath, mot_fpath, mot_name,
         centers_of_pressure[side] = \
                 centers_of_pressure[side] * opensim_rotation
 
-    # Linear interpolation for COP between stance phases.
-    # ---------------------------------------------------
-    # This gets rid of large spikes in joint moments (ID, RRA, CMC).
-    # This interpolating code is taken from Amy Silder.
-    """
-    offset = 3
-    buff = 10
-    def next_stance_start(after=None):
-        if after == None:
-            idx = np.argwhere(copx > 0)
-        else:
-            idx = np.argwhere(copx[after::] > 0)
-
-        if idx.shape[0] == 0:
-            return None
-
-        if after != None:
-            return idx[0, 0] + after + 1
-        else:
-            return idx[0, 0] + 1
-    def next_swing_start(after):
-        return np.argwhere(copx[after::] == 0)[0, 0] + after + 1
-    indices = np.arange(n_times)
-    for side in sides:
-        copx = centers_of_pressure[side][:, 0].A1
-        copz = centers_of_pressure[side][:, 2].A1
-
-        inextstance = next_stance_start()
-        inextswing = 0
-
-        istart = inextstance + offset - 1
-        for var in [copx, copz]:
-            var[0:istart] = var[istart]
-        while inextswing < n_mot_times:
-            inextswing = next_swing_start(inextstance + buff)
-            inextstance = next_stance_start(inextswing + buff)
-
-            istart = inextswing - offset
-            if inextstance == None:
-                # No more stance phases.
-                for var in [copx, copz]:
-                    var[istart::] = var[istart]
-                break
-            else:
-                # Between stance phases: interpolate.
-                # TODO check indexing.
-                for var in [copx, copz]:
-                    var[istart:inextstance] = np.interp(
-                            indices[istart:inextstance],
-                            [istart, inextstance],
-                            [var[istart], var[inextstance]],
-                            )
-
-        centers_of_pressure[side][:, 0] = copx.reshape((copx.shape[0], -1))
-        centers_of_pressure[side][:, 2] = copz.reshape((copz.shape[0], -1))
-    """
+    # Spline interpolation of COP locations
+    # -------------------------------------
     indices = np.arange(n_times)
     for side in sides:
         # Find the intervals where the foot is in swing.
@@ -351,6 +278,15 @@ def transform_and_filter_ground_reaction(anc_fpath, mot_fpath, mot_name,
             cop[swing_filter] = spline(indices[swing_filter])
         centers_of_pressure[side][:, 0] = copx.reshape((copx.shape[0], -1))
         centers_of_pressure[side][:, 2] = copz.reshape((copz.shape[0], -1))
+
+
+    # for item in [forces, moments]:
+    #         for side in sides:
+    #             for direc in range(3):
+    #                 item[side][:, direc] = filter_critically_damped(
+    #                         item[side][:, direc], anc.precise_rate,
+    #                         critically_damped_cutoff_frequency,
+    #                         order=critically_damped_order)
 
 
     # Finalize plot.

@@ -266,10 +266,10 @@ def transform_and_filter_ground_reaction(anc_fpath, mot_fpath, mot_name,
     # The forces when the foot is not on ground must be zero.
     # -------------------------------------------------------
     # TODO didn't we do this already?
-    for side in sides:
-        filt = forces[side][:, 2] > 0
-        for item in [forces, moments]:
-            item[side][filt, :] = 0
+    # for side in sides:
+    #     filt = forces[side][:, 2] > 0
+    #     for item in [forces, moments]:
+    #         item[side][filt, :] = 0
 
     # Transform from motion capture frame to OpenSim ground frame.
     # ------------------------------------------------------------

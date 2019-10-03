@@ -533,7 +533,7 @@ class MotionTrackingWalking(MocoPaperResult):
         # cmc.setName('motion_tracking_walking_cmc')
         # cmc.setExternalLoadsFileName('grf_walk.xml')
         # # TODO filter:
-        # cmc.setDesiredKinematicsFileName('coordinates.sto')
+        # cmc.setDesiredKinematicsFileName('coordinates.mot')
         # # cmc.setLowpassCutoffFrequency(6)
         # cmc.printToXML('motion_tracking_walking_cmc_setup.xml')
         cmc = osim.CMCTool('motion_tracking_walking_cmc_setup.xml')

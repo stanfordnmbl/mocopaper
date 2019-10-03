@@ -464,7 +464,7 @@ class MotionTrackingWalking(MocoPaperResult):
 
         # Create CMC model first.
         modelProcessorCMC = osim.ModelProcessor(
-            "resources/Rajagopal2016/subject_scaled_walk_18musc_armless.osim")
+            "resources/Rajagopal2016/subject_scaled_armless_80musc.osim")
         modelProcessorCMC.append(osim.ModOpReplaceJointsWithWelds(
             ['subtalar_r', 'mtp_r', 'subtalar_l', 'mtp_l']))
         modelProcessorCMC.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())
@@ -479,12 +479,12 @@ class MotionTrackingWalking(MocoPaperResult):
         for imusc in np.arange(muscles.getSize()):
             muscle = osim.DeGrooteFregly2016Muscle.safeDownCast(
                 muscles.get(int(imusc)))
-            # muscle.set_ignore_tendon_compliance(False)
+            muscle.set_ignore_tendon_compliance(False)
             muscle.set_ignore_activation_dynamics(False)
             muscle.set_tendon_compliance_dynamics_mode('explicit')
             muscle.set_fiber_damping(0)
 
-        cmcModel.printToXML("subject_scaled_walk_18musc_armless_for_cmc.osim")
+        cmcModel.printToXML("subject_walk_armless_80musc_for_cmc.osim")
 
         for imusc in np.arange(muscles.getSize()):
             muscle = osim.DeGrooteFregly2016Muscle.safeDownCast(
@@ -524,7 +524,7 @@ class MotionTrackingWalking(MocoPaperResult):
         # extension moment in early stance.
 
         coordinates = osim.TableProcessor(
-            "resources/Rajagopal2016/coordinates.sto")
+            "resources/Rajagopal2016/coordinates.mot")
         coordinates.append(osim.TabOpLowPassFilter(6))
 
         # self.write_cmc_taskset()
@@ -908,12 +908,12 @@ class MotionTrackingWalking(MocoPaperResult):
         for im, muscle in enumerate(muscles):
             ax = plt.subplot(gs[muscle[0][0], muscle[0][1]])
             activation_path = f'/forceset/{muscle[1]}_{self.side}/activation'
-            # cmc_activ = toarray(sol_cmc.getDependentColumn(activation_path))
-            # self.plot(ax, time_cmc,
-            #           cmc_activ,
-            #           linewidth=3,
-            #           label='CMC',
-            #         )
+            cmc_activ = toarray(sol_cmc.getDependentColumn(activation_path))
+            self.plot(ax, time_cmc,
+                      cmc_activ,
+                      linewidth=3,
+                      label='CMC',
+                    )
             self.plot(ax, time_track, sol_track.getStateMat(activation_path),
                           label='MocoTrack',
                           linewidth=2)
@@ -925,11 +925,11 @@ class MotionTrackingWalking(MocoPaperResult):
                       sol_inverse_jointreaction.getStateMat(activation_path),
                       label='MocoInverse, knee',
                       linewidth=2)
-            # if len(muscle[3]) > 0:
-            #     self.plot(ax, emg['time'], emg[muscle[3]] * np.max(cmc_activ),
-            #                           shift=False,
-            #                           fill=True,
-            #               color='lightgray')
+            if len(muscle[3]) > 0:
+                self.plot(ax, emg['time'], emg[muscle[3]] * np.max(cmc_activ),
+                                      shift=False,
+                                      fill=True,
+                          color='lightgray')
             if muscle[0][0] == 0 and muscle[0][1] == 0:
                 ax.legend(
                           frameon=False, handlelength=1.,

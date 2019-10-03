@@ -279,16 +279,6 @@ def transform_and_filter_ground_reaction(anc_fpath, mot_fpath, mot_name,
         centers_of_pressure[side][:, 0] = copx.reshape((copx.shape[0], -1))
         centers_of_pressure[side][:, 2] = copz.reshape((copz.shape[0], -1))
 
-
-    # for item in [forces, moments]:
-    #         for side in sides:
-    #             for direc in range(3):
-    #                 item[side][:, direc] = filter_critically_damped(
-    #                         item[side][:, direc], anc.precise_rate,
-    #                         critically_damped_cutoff_frequency,
-    #                         order=critically_damped_order)
-
-
     # Finalize plot.
     # --------------
     # Plot processed GRF (before cutting off or filtering).

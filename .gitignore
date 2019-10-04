@@ -240,3 +240,5 @@ out.log
 /desiredKinematics_splinefit_accelerations.sto
 /resources/sitToStand_3dof9musc_dgf.osim
 /resources/Rajagopal2016/ground_reaction_before_and_after_processing.svg
+/resources/Rajagopal2016/grf_walk.mot
+/resources/Rajagopal2016/subject_walk_armless_for_cmc.osim

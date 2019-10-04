@@ -5608,7 +5608,7 @@
 			<groups />
 		</ContactGeometrySet>
 		<!--Controllers in the model.-->
-		<ControllerSet name="Controllers">
+		<ControllerSet>
 			<objects />
 			<groups />
 		</ControllerSet>

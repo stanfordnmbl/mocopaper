@@ -37,7 +37,6 @@ class CrouchToStand(MocoPaperResult):
         problem.setStateInfo('/jointset/ankle_r/ankle_angle_r/value',
                              [-0.5, 0.7], -0.5, 0)
         problem.setStateInfoPattern('/jointset/.*/speed', [], 0, 0)
-        # TODO: Minimize initial activation.
 
         # for muscle in model.getMuscles():
         #     if not muscle.get_ignore_activation_dynamics():

@@ -11,9 +11,9 @@ import utilities
 
 class MotionTrackingWalking(MocoPaperResult):
     def __init__(self):
-        self.initial_time = 0.450
-        self.final_time = 1.565
-        self.footstrike = 0.836 # 1.424
+        self.initial_time = 0.83 # 0.450
+        self.final_time = 2.0 # 1.565
+        # self.footstrike = 0.836 # 1.424
         self.mocotrack_solution_file = \
             'results/motion_tracking_walking_track_solution.sto'
         self.mocoinverse_solution_file = \
@@ -31,7 +31,8 @@ class MotionTrackingWalking(MocoPaperResult):
         if not final_time:
             final_time = self.final_time
         if not starting_time:
-            starting_time = self.footstrike
+            starting_time = self.initial_time
+            # starting_time = self.footstrike
         return utilities.shift_data_to_cycle(initial_time, final_time,
                                              starting_time, time, y, cut_off=True)
 
@@ -40,14 +41,14 @@ class MotionTrackingWalking(MocoPaperResult):
         # Create CMC model first.
         # TODO: try 18 muscles first for CMC.
         modelProcessorCMC = osim.ModelProcessor(
-            "resources/Rajagopal2016/subject_walk_armless_18musc.osim")
-        # "resources/Rajagopal2016/subject_scaled_armless_80musc.osim")
+            # "resources/Rajagopal2016/subject_walk_armless_18musc.osim")
+            "resources/Rajagopal2016/subject_walk_armless_80musc.osim")
         modelProcessorCMC.append(osim.ModOpReplaceJointsWithWelds(
             ['subtalar_r', 'mtp_r', 'subtalar_l', 'mtp_l']))
-        modelProcessorCMC.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())
-        modelProcessorCMC.append(osim.ModOpIgnorePassiveFiberForcesDGF())
-        modelProcessorCMC.append(osim.ModOpIgnoreTendonCompliance())
-        modelProcessorCMC.append(osim.ModOpAddReserves(500, 1, True))
+        # modelProcessorCMC.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())
+        # modelProcessorCMC.append(osim.ModOpIgnorePassiveFiberForcesDGF())
+        # modelProcessorCMC.append(osim.ModOpIgnoreTendonCompliance())
+        # modelProcessorCMC.append(osim.ModOpAddReserves(700, 1, True))
 
         cmcModel = modelProcessorCMC.process()
         cmcModel.initSystem()
@@ -59,6 +60,17 @@ class MotionTrackingWalking(MocoPaperResult):
         #     # muscle.set_ignore_activation_dynamics(False)
         #     muscle.set_tendon_compliance_dynamics_mode('explicit')
         #     muscle.set_fiber_damping(0)
+
+        tasks = osim.CMC_TaskSet()
+        for coord in cmcModel.getCoordinateSet():
+            task = osim.CMC_Joint()
+            task.setName(coord.getName())
+            task.setCoordinateName(coord.getName())
+            task.setKP(100, 1, 1)
+            task.setKV(20, 1, 1)
+            task.setActive(True, False, False)
+            tasks.cloneAndAppend(task)
+        tasks.printToXML('motion_tracking_walking_cmc_tasks.xml')
 
         cmcModel.printToXML("resources/Rajagopal2016/"
                             "subject_walk_armless_for_cmc.osim")
@@ -73,20 +85,6 @@ class MotionTrackingWalking(MocoPaperResult):
         modelProcessorDC = osim.ModelProcessor(cmcModel)
         modelProcessorDC.append(osim.ModOpAddExternalLoads(ext_loads_xml))
         return modelProcessorDC
-
-    def write_cmc_taskset(self):
-        model = self.create_model_processor().process()
-        tasks = osim.CMC_TaskSet()
-        for coord in model.getCoordinateSet():
-            task = osim.CMC_Joint()
-            task.setName(coord.getName())
-            task.setCoordinateName(coord.getName())
-            task.setKP(100, 1, 1)
-            task.setKV(20, 1, 1)
-            task.setActive(True, False, False)
-            tasks.cloneAndAppend(task)
-        tasks.printToXML('motion_tracking_walking_cmc_tasks.xml')
-
 
     def generate_results(self):
 
@@ -115,7 +113,6 @@ class MotionTrackingWalking(MocoPaperResult):
             "resources/Rajagopal2016/coordinates.mot")
         coordinates.append(osim.TabOpLowPassFilter(6))
 
-        # self.write_cmc_taskset()
         # # TODO plotting should happen separately from generating the results.
         # cmc = osim.CMCTool()
         # cmc.setName('motion_tracking_walking_cmc')
@@ -125,6 +122,7 @@ class MotionTrackingWalking(MocoPaperResult):
         # # cmc.setLowpassCutoffFrequency(6)
         # cmc.printToXML('motion_tracking_walking_cmc_setup.xml')
         cmc = osim.CMCTool('motion_tracking_walking_cmc_setup.xml')
+
         # 2.5 minute
         cmc.run()
         return
@@ -484,16 +482,27 @@ class MotionTrackingWalking(MocoPaperResult):
         #     utilities.publication_spines(ax)
 
         # TODO: Compare to EMG.
+        # muscles = [
+        #     ((0, 0), 'glut_max2', 'gluteus maximus', 'GMAX'),
+        #     ((0, 1), 'psoas', 'psoas', ''),
+        #     ((1, 0), 'semimem', 'semimembranosus', 'MH'),
+        #     ((0, 2), 'rect_fem', 'rectus femoris', 'RF'),
+        #     ((1, 1), 'bifemsh', 'biceps femoris short head', 'BF'),
+        #     ((1, 2), 'vas_int', 'vastus lateralis', 'VL'),
+        #     ((2, 0), 'med_gas', 'medial gastrocnemius', 'GAS'),
+        #     ((2, 1), 'soleus', 'soleus', 'SOL'),
+        #     ((2, 2), 'tib_ant', 'tibialis anterior', 'TA'),
+        # ]
         muscles = [
-            ((0, 0), 'glut_max2', 'gluteus maximus', 'GMAX'),
+            ((0, 0), 'glmax2', 'gluteus maximus', 'GMAX'),
             ((0, 1), 'psoas', 'psoas', ''),
             ((1, 0), 'semimem', 'semimembranosus', 'MH'),
-            ((0, 2), 'rect_fem', 'rectus femoris', 'RF'),
-            ((1, 1), 'bifemsh', 'biceps femoris short head', 'BF'),
-            ((1, 2), 'vas_int', 'vastus lateralis', 'VL'),
-            ((2, 0), 'med_gas', 'medial gastrocnemius', 'GAS'),
+            ((0, 2), 'recfem', 'rectus femoris', 'RF'),
+            ((1, 1), 'bfsh', 'biceps femoris short head', 'BF'),
+            ((1, 2), 'vasint', 'vastus lateralis', 'VL'),
+            ((2, 0), 'gasmed', 'medial gastrocnemius', 'GAS'),
             ((2, 1), 'soleus', 'soleus', 'SOL'),
-            ((2, 2), 'tib_ant', 'tibialis anterior', 'TA'),
+            ((2, 2), 'tibant', 'tibialis anterior', 'TA'),
         ]
         for im, muscle in enumerate(muscles):
             ax = plt.subplot(gs[muscle[0][0], muscle[0][1]])

@@ -64,7 +64,7 @@
 		<!--Maximum number of iterations for the optimizer.-->
 		<optimizer_max_iterations>1000</optimizer_max_iterations>
 		<!--Print level for the optimizer, 0 - 3. 0=no printing, 3=detailed printing, 2=in between-->
-		<optimizer_print_level>0</optimizer_print_level>
+		<optimizer_print_level>4</optimizer_print_level>
 		<!--True-false flag indicating whether or not to turn on verbose printing for cmc.-->
 		<use_verbose_printing>false</use_verbose_printing>
 	</CMCTool>

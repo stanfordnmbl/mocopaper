@@ -471,27 +471,27 @@ class MotionTrackingWalking(MocoPaperResult):
             ['subtalar_r', 'mtp_r', 'subtalar_l', 'mtp_l']))
         modelProcessorCMC.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())
         modelProcessorCMC.append(osim.ModOpIgnorePassiveFiberForcesDGF())
-        # modelProcessorCMC.append(osim.ModOpIgnoreTendonCompliance())
-        # modelProcessor.append(osim.ModOpScaleActiveFiberForceCurveWidthDGF(1.5))
-        # modelProcessorCMC.append(osim.ModOpAddReserves(200, 1, False))
+        modelProcessorCMC.append(osim.ModOpIgnoreTendonCompliance())
+        modelProcessorCMC.append(osim.ModOpAddReserves(500, 1, True))
 
         cmcModel = modelProcessorCMC.process()
         cmcModel.initSystem()
-        muscles = cmcModel.updMuscles()
-        for imusc in np.arange(muscles.getSize()):
-            muscle = osim.DeGrooteFregly2016Muscle.safeDownCast(
-                muscles.get(int(imusc)))
-            # muscle.set_ignore_tendon_compliance(False)
-            # muscle.set_ignore_activation_dynamics(False)
-            muscle.set_tendon_compliance_dynamics_mode('explicit')
-            muscle.set_fiber_damping(0)
+        # muscles = cmcModel.updMuscles()
+        # for imusc in np.arange(muscles.getSize()):
+        #     muscle = osim.DeGrooteFregly2016Muscle.safeDownCast(
+        #         muscles.get(int(imusc)))
+        #     # muscle.set_ignore_tendon_compliance(False)
+        #     # muscle.set_ignore_activation_dynamics(False)
+        #     muscle.set_tendon_compliance_dynamics_mode('explicit')
+        #     muscle.set_fiber_damping(0)
 
-        cmcModel.printToXML("subject_walk_armless_for_cmc.osim")
+        cmcModel.printToXML("resources/Rajagopal2016/"
+                            "subject_walk_armless_for_cmc.osim")
 
-        for imusc in np.arange(muscles.getSize()):
-            muscle = osim.DeGrooteFregly2016Muscle.safeDownCast(
-                muscles.get(int(imusc)))
-            muscle.set_tendon_compliance_dynamics_mode('implicit')
+        # for imusc in np.arange(muscles.getSize()):
+        #     muscle = osim.DeGrooteFregly2016Muscle.safeDownCast(
+        #         muscles.get(int(imusc)))
+        #     muscle.set_tendon_compliance_dynamics_mode('implicit')
 
         # Add external loads to MocoTrack model.
         ext_loads_xml = "resources/Rajagopal2016/grf_walk.xml"
@@ -520,9 +520,10 @@ class MotionTrackingWalking(MocoPaperResult):
         # TODO: We aren't actually using this filtered file yet.
         transform_and_filter_ground_reaction(
             'resources/Rajagopal2016/emg_walk_raw.anc',
-            'resources/Rajagopal2016/grf_walk_processed.mot',
+            'resources/Rajagopal2016/grf_walk.mot',
             'ground_reaction_forces',
-            'lrl')
+            'rlr',
+            mode='multicutoff')
 
 
         modelProcessor = self.create_model_processor()
@@ -550,7 +551,8 @@ class MotionTrackingWalking(MocoPaperResult):
         # cmc.printToXML('motion_tracking_walking_cmc_setup.xml')
         cmc = osim.CMCTool('motion_tracking_walking_cmc_setup.xml')
         # 2.5 minute
-        # cmc.run()
+        cmc.run()
+        return
 
 
         inverse = osim.MocoInverse()
@@ -562,9 +564,8 @@ class MotionTrackingWalking(MocoPaperResult):
         inverse.set_kinematics_allow_extra_columns(True)
         inverse.set_tolerance(1e-3)
         # 8 minutes
-        solution = inverse.solve()
-        solution.getMocoSolution().write(self.mocoinverse_solution_file)
-        return # TODO
+        # solution = inverse.solve()
+        # solution.getMocoSolution().write(self.mocoinverse_solution_file)
 
         study = inverse.initialize()
         reaction_r = osim.MocoJointReactionGoal('reaction_r', 0.1)
@@ -580,35 +581,36 @@ class MotionTrackingWalking(MocoPaperResult):
         effort = osim.MocoControlGoal.safeDownCast(
             problem.updGoal('excitation_effort'))
         # TODO: rename.
+        # effort.setWeightForControl(
+        #     '/forceset/reserve_jointset_ankle_r_ankle_angle_r',
+        #     50.0)
+        # effort.setWeightForControl(
+        #     '/forceset/reserve_jointset_ankle_l_ankle_angle_l',
+        #     50.0)
+        # effort.setWeightForControl(
+        #     '/forceset/reserve_jointset_walker_knee_r_knee_angle_r',
+        #     50.0)
+        # effort.setWeightForControl(
+        #     '/forceset/reserve_jointset_walker_knee_l_knee_angle_l',
+        #     50.0)
         effort.setWeightForControl(
-            '/forceset/reserve_jointset_ankle_r_ankle_angle_r',
+            '/forceset/reserve_hip_flexion_r',
             50.0)
         effort.setWeightForControl(
-            '/forceset/reserve_jointset_ankle_l_ankle_angle_l',
+            '/forceset/reserve_hip_flexion_l',
+            50.0)
+        # TODO: should remove for a 2D model:
+        effort.setWeightForControl(
+            '/forceset/reserve_hip_adduction_r',
             50.0)
         effort.setWeightForControl(
-            '/forceset/reserve_jointset_walker_knee_r_knee_angle_r',
+            '/forceset/reserve_hip_adduction_l',
             50.0)
         effort.setWeightForControl(
-            '/forceset/reserve_jointset_walker_knee_l_knee_angle_l',
+            '/forceset/reserve_hip_rotation_r',
             50.0)
         effort.setWeightForControl(
-            '/forceset/reserve_jointset_hip_r_hip_flexion_r',
-            50.0)
-        effort.setWeightForControl(
-            '/forceset/reserve_jointset_hip_l_hip_flexion_l',
-            50.0)
-        effort.setWeightForControl(
-            '/forceset/reserve_jointset_hip_r_hip_adduction_r',
-            50.0)
-        effort.setWeightForControl(
-            '/forceset/reserve_jointset_hip_l_hip_adduction_l',
-            50.0)
-        effort.setWeightForControl(
-            '/forceset/reserve_jointset_hip_r_hip_rotation_r',
-            50.0)
-        effort.setWeightForControl(
-            '/forceset/reserve_jointset_hip_l_hip_rotation_l',
+            '/forceset/reserve_hip_rotation_l',
             50.0)
 
 
@@ -617,8 +619,9 @@ class MotionTrackingWalking(MocoPaperResult):
         solver.set_optim_convergence_tolerance(1e-2)
 
         # 50 minutes.
-        solution_reaction = study.solve()
-        solution_reaction.write(self.mocoinverse_jointreaction_solution_file)
+        # solution_reaction = study.solve()
+        # solution_reaction.write(self.mocoinverse_jointreaction_solution_file)
+        # return # TODO
 
 
         # Create and name an instance of the MocoTrack tool.
@@ -666,7 +669,6 @@ class MotionTrackingWalking(MocoPaperResult):
         solution.write(self.mocotrack_solution_file)
         # moco.visualize(solution)
 
-        # TODO: Minimize joint reaction load!
     def plot(self, ax, time, y, shift=True, fill=False, *args, **kwargs):
         if shift:
             shifted_time, shifted_y = self.shift(time, y)

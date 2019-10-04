@@ -149,6 +149,7 @@
 		<force_units>N</force_units>
 		<!--Acceleration due to gravity.-->
 		<gravity> 0 -9.80665 0</gravity>
+		<assembly_accuracy>1e-7</assembly_accuracy>
 		<!--Bodies in the model.-->
 		<BodySet>
 			<objects>

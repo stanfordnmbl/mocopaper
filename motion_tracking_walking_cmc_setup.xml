@@ -2,7 +2,7 @@
 <OpenSimDocument Version="40000">
 	<CMCTool name="motion_tracking_walking_cmc">
 		<!--Name of the .osim file used to construct a model.-->
-		<model_file>subject_walk_armless_for_cmc.osim</model_file>
+		<model_file>resources/Rajagopal2016/subject_walk_armless_for_cmc.osim</model_file>
 		<!--Replace the model's force set with sets specified in <force_set_files>? If false, the force set is appended to.-->
 		<replace_force_set>false</replace_force_set>
 		<!--List of xml files used to construct a force set for the model.-->

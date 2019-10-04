@@ -238,3 +238,5 @@ out.log
 /motion_tracking_walking_cmc_results/motion_tracking_walking_cmc_states.sto
 /desiredKinematics_padded.sto
 /desiredKinematics_splinefit_accelerations.sto
+/resources/sitToStand_3dof9musc_dgf.osim
+/resources/Rajagopal2016/ground_reaction_before_and_after_processing.svg

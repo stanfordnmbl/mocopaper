@@ -59,7 +59,6 @@ class MotionTrackingWalking(MocoPaperResult):
             muscle.set_tendon_compliance_dynamics_mode('explicit')
             muscle.set_fiber_damping(0)
 
-        # TODO: remove patella tracking tasks.
         tasks = osim.CMC_TaskSet()
         for coord in cmcModel.getCoordinateSet():
             if not coord.getName().endswith('_beta'):
@@ -124,7 +123,6 @@ class MotionTrackingWalking(MocoPaperResult):
         # # cmc.setLowpassCutoffFrequency(6)
         # cmc.printToXML('motion_tracking_walking_cmc_setup.xml')
         cmc = osim.CMCTool('motion_tracking_walking_cmc_setup.xml')
-
         # 2.5 minute
         cmc.run()
 
@@ -138,8 +136,8 @@ class MotionTrackingWalking(MocoPaperResult):
         inverse.set_tolerance(1e-3)
         inverse.set_reserves_weight(50.0)
         # 8 minutes
-        # solution = inverse.solve()
-        # solution.getMocoSolution().write(self.mocoinverse_solution_file)
+        solution = inverse.solve()
+        solution.getMocoSolution().write(self.mocoinverse_solution_file)
 
         study = inverse.initialize()
         reaction_r = osim.MocoJointReactionGoal('reaction_r', 0.1)
@@ -158,8 +156,8 @@ class MotionTrackingWalking(MocoPaperResult):
         solver.set_optim_convergence_tolerance(1e-2)
 
         # 50 minutes.
-        # solution_reaction = study.solve()
-        # solution_reaction.write(self.mocoinverse_jointreaction_solution_file)
+        solution_reaction = study.solve()
+        solution_reaction.write(self.mocoinverse_jointreaction_solution_file)
 
 
         # Create and name an instance of the MocoTrack tool.
@@ -205,9 +203,7 @@ class MotionTrackingWalking(MocoPaperResult):
         if shift:
             shifted_time, shifted_y = self.shift(time, y)
         else:
-            duration = self.final_time - self.initial_time
-            shifted_time, shifted_y = self.shift(time, y,
-                                                 starting_time=self.footstrike + 0.5 * duration)
+            raise Exception("Unsupported.")
 
         # TODO is this correct?
         duration = self.final_time - self.initial_time
@@ -284,7 +280,7 @@ class MotionTrackingWalking(MocoPaperResult):
     def report_results(self):
         cmc = True
         track = False
-        knee = True
+        knee = False
 
         sol_track_table = osim.TimeSeriesTable(self.mocotrack_solution_file)
         track_duration = sol_track_table.getTableMetaDataString('solver_duration')
@@ -477,7 +473,7 @@ class MotionTrackingWalking(MocoPaperResult):
                           linewidth=2)
             if cmc and len(muscle[3]) > 0:
                 self.plot(ax, emg['time'], emg[muscle[3]] * np.max(cmc_activ),
-                          shift=False,
+                          # shift=False,
                           fill=True,
                           color='lightgray')
             if muscle[0][0] == 0 and muscle[0][1] == 0:

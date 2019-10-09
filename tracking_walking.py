@@ -52,34 +52,32 @@ class MotionTrackingWalking(MocoPaperResult):
 
         cmcModel = modelProcessorCMC.process()
         cmcModel.initSystem()
-        # muscles = cmcModel.updMuscles()
-        # for imusc in np.arange(muscles.getSize()):
-        #     muscle = osim.DeGrooteFregly2016Muscle.safeDownCast(
-        #         muscles.get(int(imusc)))
-        #     # muscle.set_ignore_tendon_compliance(False)
-        #     # muscle.set_ignore_activation_dynamics(False)
-        #     muscle.set_tendon_compliance_dynamics_mode('explicit')
-        #     muscle.set_fiber_damping(0)
+        muscles = cmcModel.updMuscles()
+        for imusc in np.arange(muscles.getSize()):
+            muscle = osim.DeGrooteFregly2016Muscle.safeDownCast(
+                muscles.get(int(imusc)))
+            muscle.set_tendon_compliance_dynamics_mode('explicit')
+            muscle.set_fiber_damping(0)
 
-        # TODO: remove patella tracking tasks.
         tasks = osim.CMC_TaskSet()
         for coord in cmcModel.getCoordinateSet():
-            task = osim.CMC_Joint()
-            task.setName(coord.getName())
-            task.setCoordinateName(coord.getName())
-            task.setKP(100, 1, 1)
-            task.setKV(20, 1, 1)
-            task.setActive(True, False, False)
-            tasks.cloneAndAppend(task)
+            if not coord.getName().endswith('_beta'):
+                task = osim.CMC_Joint()
+                task.setName(coord.getName())
+                task.setCoordinateName(coord.getName())
+                task.setKP(100, 1, 1)
+                task.setKV(20, 1, 1)
+                task.setActive(True, False, False)
+                tasks.cloneAndAppend(task)
         tasks.printToXML('motion_tracking_walking_cmc_tasks.xml')
 
         cmcModel.printToXML("resources/Rajagopal2016/"
                             "subject_walk_armless_for_cmc.osim")
 
-        # for imusc in np.arange(muscles.getSize()):
-        #     muscle = osim.DeGrooteFregly2016Muscle.safeDownCast(
-        #         muscles.get(int(imusc)))
-        #     muscle.set_tendon_compliance_dynamics_mode('implicit')
+        for imusc in np.arange(muscles.getSize()):
+            muscle = osim.DeGrooteFregly2016Muscle.safeDownCast(
+                muscles.get(int(imusc)))
+            muscle.set_tendon_compliance_dynamics_mode('implicit')
 
         # Add external loads to MocoTrack model.
         ext_loads_xml = "resources/Rajagopal2016/grf_walk.xml"
@@ -125,11 +123,8 @@ class MotionTrackingWalking(MocoPaperResult):
         # # cmc.setLowpassCutoffFrequency(6)
         # cmc.printToXML('motion_tracking_walking_cmc_setup.xml')
         cmc = osim.CMCTool('motion_tracking_walking_cmc_setup.xml')
-
         # 2.5 minute
-        # cmc.run()
-        # return
-
+        cmc.run()
 
         inverse = osim.MocoInverse()
         inverse.setModel(modelProcessor)
@@ -141,8 +136,8 @@ class MotionTrackingWalking(MocoPaperResult):
         inverse.set_tolerance(1e-3)
         inverse.set_reserves_weight(50.0)
         # 8 minutes
-        # solution = inverse.solve()
-        # solution.getMocoSolution().write(self.mocoinverse_solution_file)
+        solution = inverse.solve()
+        solution.getMocoSolution().write(self.mocoinverse_solution_file)
 
         study = inverse.initialize()
         reaction_r = osim.MocoJointReactionGoal('reaction_r', 0.1)
@@ -161,8 +156,8 @@ class MotionTrackingWalking(MocoPaperResult):
         solver.set_optim_convergence_tolerance(1e-2)
 
         # 50 minutes.
-        # solution_reaction = study.solve()
-        # solution_reaction.write(self.mocoinverse_jointreaction_solution_file)
+        solution_reaction = study.solve()
+        solution_reaction.write(self.mocoinverse_jointreaction_solution_file)
 
 
         # Create and name an instance of the MocoTrack tool.
@@ -208,9 +203,7 @@ class MotionTrackingWalking(MocoPaperResult):
         if shift:
             shifted_time, shifted_y = self.shift(time, y)
         else:
-            duration = self.final_time - self.initial_time
-            shifted_time, shifted_y = self.shift(time, y,
-                                                 starting_time=self.footstrike + 0.5 * duration)
+            raise Exception("Unsupported.")
 
         # TODO is this correct?
         duration = self.final_time - self.initial_time
@@ -285,9 +278,9 @@ class MotionTrackingWalking(MocoPaperResult):
         return max / weight
 
     def report_results(self):
-        cmc = False
-        track = True
-        knee = True
+        cmc = True
+        track = False
+        knee = False
 
         sol_track_table = osim.TimeSeriesTable(self.mocotrack_solution_file)
         track_duration = sol_track_table.getTableMetaDataString('solver_duration')
@@ -480,7 +473,7 @@ class MotionTrackingWalking(MocoPaperResult):
                           linewidth=2)
             if cmc and len(muscle[3]) > 0:
                 self.plot(ax, emg['time'], emg[muscle[3]] * np.max(cmc_activ),
-                          shift=False,
+                          # shift=False,
                           fill=True,
                           color='lightgray')
             if muscle[0][0] == 0 and muscle[0][1] == 0:

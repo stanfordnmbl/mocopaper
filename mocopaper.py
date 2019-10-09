@@ -32,6 +32,7 @@ if __name__ == "__main__":
                                                  "OpenSim Moco publication.")
     parser.add_argument('--no-generate', dest='generate', action='store_false',
                         help='Skip generating the results; only report.')
+
     results_help = 'Names of results to generate or report ('
     for i, result_name in enumerate(results.keys()):
         results_help += result_name
@@ -40,14 +41,20 @@ if __name__ == "__main__":
         results_help += ').'
 
     parser.add_argument('--results', type=str, nargs='+', help=results_help)
+
+    parser.add_argument('args', nargs=argparse.REMAINDER,
+                        help="Passed to each result's generate_results() "
+                             "and report_results() methods.")
+
     parser.set_defaults(generate=True)
+
     args = parser.parse_args()
 
     for result_name, result_object in results.items():
         if args.results is None or result_name in args.results:
             if args.generate:
                 print(f'Generating {result_name} results.')
-                result_object.generate_results()
+                result_object.generate_results(args.args)
             print(f'Reporting {result_name} results.')
-            result_object.report_results()
+            result_object.report_results(args.args)
 

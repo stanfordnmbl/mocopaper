@@ -549,7 +549,8 @@ We replace the kinematic variables $q$ and $u$ with known quantities $\hat{q}$ a
 
 \subsubsection*{How does Moco solve problems?}
 
-All details of solving an optimal control problem are encapsulated in \textit{MocoSolver}, which is decoupled from \textit{MocoProblem} to afford the user with flexibility. The \textit{MocoProblem} knows nothing about the solver that may be used. When a user defines a custom cost term, they need not worry about how the solver will handle the cost. The only assumption made by \textit{MocoSolver} about the problem is that it describes a multibody system; this allows using special solver algorithms not suited to generic dynamic systems, such as for handling kinematic constraints~\cite{Posa:2016}. Moco users can add bodies or muscles to their model and use the same exact solver, whereas homebrewed code may require updating the direct collocation algorithm.
+All details of solving an optimal control problem are encapsulated in \textit{MocoSolver}, which is decoupled from \textit{MocoProblem} to afford the user with flexibility. The \textit{MocoProblem} knows nothing about the solver that may be used. When a user defines a custom cost term, they need not worry about how the solver will handle the cost. The only assumption made by \textit{MocoSolver} about the problem is that it describes a multibody system; this allows using special solver algorithms not suited to generic dynamic systems, such as for handling kinematic constraints~\cite{Posa:2016}.
+Moco users can add bodies or muscles to their model and use the same exact solver, whereas homebrewed code may require updating the direct collocation algorithm.
 
 Moco provides two direct collocation solvers that transcribe continuous optimal control problems into finite-dimensional NLPs that are passed on to well-established derivative-based NLP solvers. \textit{MocoCasADiSolver} uses the third-party CasADi library~\cite{Andersson:2019}, and \textit{MocoTropterSolver} uses a direct collocation solver we developed called Tropter; see Table~\ref{tab:solvers}. CasADi is an open-source package for algorithmic differentiation and is a bridge to NLP solvers IPOPT~\cite{Wachter:2006}, SNOPT~\cite{Gill:2005}, and others.
 
@@ -568,7 +569,7 @@ Moco provides two direct collocation solvers that transcribe continuous optimal 
             transcription schemes & trapezoidal and Hermite-Simpson & trapezoidal and Hermite-Simpson \\ \midrule
             multibody dynamics modes & implicit and explicit & implicit (with no kinematic constraints) and explicit \\ \midrule
             supports endpoint constraints & yes & no \\ \midrule
-            automatic differentiation & symbolic algorithmic differentiation & operator overloading with ADOL-C \\ \midrule
+%            automatic differentiation & symbolic algorithmic differentiation & operator overloading with ADOL-C \\ \midrule
             finite differences & adaptive perturbation & fixed perturbation, efficient Hessian estimate~\cite{Bohme:20179} \\ \midrule
             parameter optimization speed & fast if initSystem() is not required & fast \\ \midrule
             least permissive license (including IPOPT but no other NLP solvers) & GNU Lesser General Public License 3.0 (weak copyleft) & Eclipse Public License, Mozilla Public License \\ \bottomrule

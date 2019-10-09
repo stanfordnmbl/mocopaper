@@ -52,14 +52,12 @@ class MotionTrackingWalking(MocoPaperResult):
 
         cmcModel = modelProcessorCMC.process()
         cmcModel.initSystem()
-        # muscles = cmcModel.updMuscles()
-        # for imusc in np.arange(muscles.getSize()):
-        #     muscle = osim.DeGrooteFregly2016Muscle.safeDownCast(
-        #         muscles.get(int(imusc)))
-        #     # muscle.set_ignore_tendon_compliance(False)
-        #     # muscle.set_ignore_activation_dynamics(False)
-        #     muscle.set_tendon_compliance_dynamics_mode('explicit')
-        #     muscle.set_fiber_damping(0)
+        muscles = cmcModel.updMuscles()
+        for imusc in np.arange(muscles.getSize()):
+            muscle = osim.DeGrooteFregly2016Muscle.safeDownCast(
+                muscles.get(int(imusc)))
+            muscle.set_tendon_compliance_dynamics_mode('explicit')
+            muscle.set_fiber_damping(0)
 
         # TODO: remove patella tracking tasks.
         tasks = osim.CMC_TaskSet()
@@ -77,10 +75,10 @@ class MotionTrackingWalking(MocoPaperResult):
         cmcModel.printToXML("resources/Rajagopal2016/"
                             "subject_walk_armless_for_cmc.osim")
 
-        # for imusc in np.arange(muscles.getSize()):
-        #     muscle = osim.DeGrooteFregly2016Muscle.safeDownCast(
-        #         muscles.get(int(imusc)))
-        #     muscle.set_tendon_compliance_dynamics_mode('implicit')
+        for imusc in np.arange(muscles.getSize()):
+            muscle = osim.DeGrooteFregly2016Muscle.safeDownCast(
+                muscles.get(int(imusc)))
+            muscle.set_tendon_compliance_dynamics_mode('implicit')
 
         # Add external loads to MocoTrack model.
         ext_loads_xml = "resources/Rajagopal2016/grf_walk.xml"
@@ -284,8 +282,8 @@ class MotionTrackingWalking(MocoPaperResult):
         return max / weight
 
     def report_results(self):
-        cmc = False
-        track = True
+        cmc = True
+        track = False
         knee = True
 
         sol_track_table = osim.TimeSeriesTable(self.mocotrack_solution_file)

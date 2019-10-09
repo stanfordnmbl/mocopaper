@@ -61,6 +61,7 @@ class MotionTrackingWalking(MocoPaperResult):
         #     muscle.set_tendon_compliance_dynamics_mode('explicit')
         #     muscle.set_fiber_damping(0)
 
+        # TODO: remove patella tracking tasks.
         tasks = osim.CMC_TaskSet()
         for coord in cmcModel.getCoordinateSet():
             task = osim.CMC_Joint()
@@ -113,6 +114,7 @@ class MotionTrackingWalking(MocoPaperResult):
         coordinates = osim.TableProcessor(
             "resources/Rajagopal2016/coordinates.mot")
         coordinates.append(osim.TabOpLowPassFilter(6))
+        coordinates.append(osim.TabOpUseAbsoluteStateNames())
 
         # # TODO plotting should happen separately from generating the results.
         # cmc = osim.CMCTool()
@@ -125,8 +127,8 @@ class MotionTrackingWalking(MocoPaperResult):
         cmc = osim.CMCTool('motion_tracking_walking_cmc_setup.xml')
 
         # 2.5 minute
-        cmc.run()
-        return
+        # cmc.run()
+        # return
 
 
         inverse = osim.MocoInverse()

@@ -165,7 +165,7 @@ class MotionTrackingWalking(MocoPaperResult):
         track.setName("motion_tracking_walking")
         track.setModel(modelProcessor)
         track.setStatesReference(coordinates)
-        track.set_states_global_tracking_weight(1.0)
+        track.set_states_global_tracking_weight(0.05)
 
         # This setting allows extra data columns contained in the states
         # reference that don't correspond to model coordinates.

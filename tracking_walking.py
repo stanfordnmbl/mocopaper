@@ -64,13 +64,14 @@ class MotionTrackingWalking(MocoPaperResult):
         # TODO: remove patella tracking tasks.
         tasks = osim.CMC_TaskSet()
         for coord in cmcModel.getCoordinateSet():
-            task = osim.CMC_Joint()
-            task.setName(coord.getName())
-            task.setCoordinateName(coord.getName())
-            task.setKP(100, 1, 1)
-            task.setKV(20, 1, 1)
-            task.setActive(True, False, False)
-            tasks.cloneAndAppend(task)
+            if not coord.getName().endswith('_beta'):
+                task = osim.CMC_Joint()
+                task.setName(coord.getName())
+                task.setCoordinateName(coord.getName())
+                task.setKP(100, 1, 1)
+                task.setKV(20, 1, 1)
+                task.setActive(True, False, False)
+                tasks.cloneAndAppend(task)
         tasks.printToXML('motion_tracking_walking_cmc_tasks.xml')
 
         cmcModel.printToXML("resources/Rajagopal2016/"
@@ -127,9 +128,7 @@ class MotionTrackingWalking(MocoPaperResult):
         cmc = osim.CMCTool('motion_tracking_walking_cmc_setup.xml')
 
         # 2.5 minute
-        # cmc.run()
-        # return
-
+        cmc.run()
 
         inverse = osim.MocoInverse()
         inverse.setModel(modelProcessor)

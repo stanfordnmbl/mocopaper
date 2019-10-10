@@ -47,8 +47,10 @@ class MotionTrackingWalking(MocoPaperResult):
             ['subtalar_r', 'mtp_r', 'subtalar_l', 'mtp_l']))
         modelProcessorCMC.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())
         modelProcessorCMC.append(osim.ModOpIgnorePassiveFiberForcesDGF())
-        # modelProcessorCMC.append(osim.ModOpIgnoreTendonCompliance())
-        # modelProcessorCMC.append(osim.ModOpAddReserves(700, 1, True))
+        modelProcessorCMC.append(osim.ModOpIgnoreTendonCompliance())
+        # modelProcessorCMC.append(osim.ModOpAddReserves(50, 1))
+        modelProcessorCMC.append(
+            osim.ModOpTendonComplianceDynamicsModeDGF('explicit'))
 
         cmcModel = modelProcessorCMC.process()
         cmcModel.initSystem()
@@ -56,7 +58,6 @@ class MotionTrackingWalking(MocoPaperResult):
         for imusc in np.arange(muscles.getSize()):
             muscle = osim.DeGrooteFregly2016Muscle.safeDownCast(
                 muscles.get(int(imusc)))
-            muscle.set_tendon_compliance_dynamics_mode('explicit')
             muscle.set_fiber_damping(0)
 
         tasks = osim.CMC_TaskSet()
@@ -83,10 +84,11 @@ class MotionTrackingWalking(MocoPaperResult):
         ext_loads_xml = "resources/Rajagopal2016/grf_walk.xml"
         modelProcessorDC = osim.ModelProcessor(cmcModel)
         modelProcessorDC.append(osim.ModOpAddExternalLoads(ext_loads_xml))
+        modelProcessorDC.append(
+            osim.ModOpTendonComplianceDynamicsModeDGF('implicit'))
         return modelProcessorDC
 
     def parse_args(self, args):
-
         self.cmc = False
         self.track = False
         self.inverse = False
@@ -96,6 +98,8 @@ class MotionTrackingWalking(MocoPaperResult):
             self.track = True
             self.inverse = True
             self.knee = True
+            return
+        print('Received arguments {}'.format(args))
         if 'cmc' in args:
             self.cmc = True
         if 'track' in args:
@@ -231,7 +235,9 @@ class MotionTrackingWalking(MocoPaperResult):
         if shift:
             shifted_time, shifted_y = self.shift(time, y)
         else:
-            raise Exception("Unsupported.")
+            duration = self.final_time - self.initial_time
+            shifted_time, shifted_y = self.shift(time, y,
+                                                 starting_time=self.initial_time + 0.5 * duration)
 
         # TODO is this correct?
         duration = self.final_time - self.initial_time
@@ -506,7 +512,7 @@ class MotionTrackingWalking(MocoPaperResult):
                           linewidth=2)
             if self.cmc and len(muscle[3]) > 0:
                 self.plot(ax, emg['time'], emg[muscle[3]] * np.max(cmc_activ),
-                          # shift=False,
+                          shift=False,
                           fill=True,
                           color='lightgray')
             if muscle[0][0] == 0 and muscle[0][1] == 0:
@@ -548,7 +554,7 @@ class MotionTrackingWalking(MocoPaperResult):
         fig.savefig('figures/motion_tracking_walking.pdf')
         fig.savefig('figures/motion_tracking_walking.png', dpi=600)
 
-        if self.cmc:
+        if self.cmc and self.inverse:
             mocosol_cmc = sol_inverse.clone()
             mocosol_cmc.insertStatesTrajectory(sol_cmc, True)
             inv_sol_rms = \

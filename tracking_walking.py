@@ -326,7 +326,7 @@ class MotionTrackingWalking(MocoPaperResult):
         if self.knee:
             sol_inverse_jr_table = osim.TimeSeriesTable(self.mocoinverse_jointreaction_solution_file)
             inverse_jr_duration = sol_inverse_jr_table.getTableMetaDataString('solver_duration')
-            inverse_jr_duration = float(inverse_jr_duration) / 60.0 / 60.0
+            inverse_jr_duration = float(inverse_jr_duration) / 60.0
             print('inverse joint reaction duration ', inverse_jr_duration)
             with open('results/'
                       'motion_tracking_walking_inverse_jr_duration.txt', 'w') as f:

@@ -47,6 +47,7 @@ class MotionTrackingWalking(MocoPaperResult):
             ['subtalar_r', 'mtp_r', 'subtalar_l', 'mtp_l']))
         modelProcessorCMC.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())
         modelProcessorCMC.append(osim.ModOpIgnorePassiveFiberForcesDGF())
+        # modelProcessorCMC.append(osim.ModOpScaleTendonSlackLength(0.96))
         # modelProcessorCMC.append(osim.ModOpIgnoreTendonCompliance())
         # modelProcessorCMC.append(osim.ModOpAddReserves(700, 1, True))
 
@@ -58,6 +59,7 @@ class MotionTrackingWalking(MocoPaperResult):
                 muscles.get(int(imusc)))
             muscle.set_tendon_compliance_dynamics_mode('explicit')
             muscle.set_fiber_damping(0)
+            #muscle.set_clamp_normalized_tendon_length(True)
 
         tasks = osim.CMC_TaskSet()
         for coord in cmcModel.getCoordinateSet():
@@ -153,10 +155,10 @@ class MotionTrackingWalking(MocoPaperResult):
         inverse.setKinematics(coordinates)
         inverse.set_initial_time(self.initial_time)
         inverse.set_final_time(self.final_time)
-        inverse.set_mesh_interval(0.02)
+        inverse.set_mesh_interval(0.05)
         inverse.set_kinematics_allow_extra_columns(True)
         inverse.set_tolerance(1e-3)
-        inverse.set_reserves_weight(50.0)
+        # inverse.set_reserves_weight(10.0)
         # 8 minutes
         if self.inverse:
             solution = inverse.solve()

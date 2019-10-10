@@ -3496,7 +3496,7 @@
 		<!--Forces in the model.-->
 		<ForceSet>
 			<objects>
-                <Millard2012EquilibriumMuscle name="bifemsh_r">
+                <Millard2012EquilibriumMuscle name="bfsh_r">
 					<!--The set of points defining the path of the actuator.-->
 					<GeometryPath name="geometrypath">
 						<!--The set of points defining the path-->
@@ -3554,7 +3554,7 @@
 					<!--Activation lower bound.-->
 					<minimum_activation>0.01</minimum_activation>
 					<!--Active-force-length curve.-->
-					<ActiveForceLengthCurve name="bifemsh_r_ActiveForceLengthCurve">
+					<ActiveForceLengthCurve name="bfsh_r_ActiveForceLengthCurve">
 						<!--Normalized fiber length where the steep ascending limb starts-->
 						<min_norm_active_fiber_length>0.25</min_norm_active_fiber_length>
 						<!--Normalized fiber length where the steep ascending limb transitions to the shallow ascending limb-->
@@ -3567,7 +3567,7 @@
 						<minimum_value>0</minimum_value>
 					</ActiveForceLengthCurve>
 					<!--Force-velocity curve.-->
-					<ForceVelocityCurve name="bifemsh_r_ForceVelocityCurve">
+					<ForceVelocityCurve name="bfsh_r_ForceVelocityCurve">
 						<!--Curve slope at the maximum normalized concentric (shortening) velocity (normalized velocity of -1)-->
 						<concentric_slope_at_vmax>0</concentric_slope_at_vmax>
 						<!--Curve slope just before reaching concentric_slope_at_vmax-->
@@ -3582,18 +3582,18 @@
 						<max_eccentric_velocity_force_multiplier>1.3999999999999999</max_eccentric_velocity_force_multiplier>
 					</ForceVelocityCurve>
 					<!--Passive-force-length curve.-->
-					<FiberForceLengthCurve name="bifemsh_r_FiberForceLengthCurve">
+					<FiberForceLengthCurve name="bfsh_r_FiberForceLengthCurve">
 						<!--Fiber strain at zero force-->
 						<strain_at_zero_force>0</strain_at_zero_force>
 						<!--Fiber strain at a tension of 1 normalized force-->
 						<strain_at_one_norm_force>0.69999999999999996</strain_at_one_norm_force>
 					</FiberForceLengthCurve>
 					<!--Tendon-force-length curve.-->
-					<TendonForceLengthCurve name="bifemsh_r_TendonForceLengthCurve">
+					<TendonForceLengthCurve name="bfsh_r_TendonForceLengthCurve">
 						<!--All properties of this object have their default values.-->
 					</TendonForceLengthCurve>
 				</Millard2012EquilibriumMuscle>
-				<Millard2012EquilibriumMuscle name="med_gas_r">
+				<Millard2012EquilibriumMuscle name="gasmed_r">
 					<!--The set of points defining the path of the actuator.-->
 					<GeometryPath name="geometrypath">
 						<!--The set of points defining the path-->
@@ -3659,7 +3659,7 @@
 					<!--Activation lower bound.-->
 					<minimum_activation>0.01</minimum_activation>
 					<!--Active-force-length curve.-->
-					<ActiveForceLengthCurve name="med_gas_r_ActiveForceLengthCurve">
+					<ActiveForceLengthCurve name="gasmed_r_ActiveForceLengthCurve">
 						<!--Normalized fiber length where the steep ascending limb starts-->
 						<min_norm_active_fiber_length>0.25</min_norm_active_fiber_length>
 						<!--Normalized fiber length where the steep ascending limb transitions to the shallow ascending limb-->
@@ -3672,7 +3672,7 @@
 						<minimum_value>0</minimum_value>
 					</ActiveForceLengthCurve>
 					<!--Force-velocity curve.-->
-					<ForceVelocityCurve name="med_gas_r_ForceVelocityCurve">
+					<ForceVelocityCurve name="gasmed_r_ForceVelocityCurve">
 						<!--Curve slope at the maximum normalized concentric (shortening) velocity (normalized velocity of -1)-->
 						<concentric_slope_at_vmax>0</concentric_slope_at_vmax>
 						<!--Curve slope just before reaching concentric_slope_at_vmax-->
@@ -3687,18 +3687,18 @@
 						<max_eccentric_velocity_force_multiplier>1.3999999999999999</max_eccentric_velocity_force_multiplier>
 					</ForceVelocityCurve>
 					<!--Passive-force-length curve.-->
-					<FiberForceLengthCurve name="med_gas_r_FiberForceLengthCurve">
+					<FiberForceLengthCurve name="gasmed_r_FiberForceLengthCurve">
 						<!--Fiber strain at zero force-->
 						<strain_at_zero_force>0</strain_at_zero_force>
 						<!--Fiber strain at a tension of 1 normalized force-->
 						<strain_at_one_norm_force>0.69999999999999996</strain_at_one_norm_force>
 					</FiberForceLengthCurve>
 					<!--Tendon-force-length curve.-->
-					<TendonForceLengthCurve name="med_gas_r_TendonForceLengthCurve">
+					<TendonForceLengthCurve name="gasmed_r_TendonForceLengthCurve">
 						<!--All properties of this object have their default values.-->
 					</TendonForceLengthCurve>
 				</Millard2012EquilibriumMuscle>
-				<Millard2012EquilibriumMuscle name="glut_max2_r">
+				<Millard2012EquilibriumMuscle name="glmax2_r">
 					<!--The set of points defining the path of the actuator.-->
 					<GeometryPath name="geometrypath">
 						<!--The set of points defining the path-->
@@ -3768,7 +3768,7 @@
 					<!--Activation lower bound.-->
 					<minimum_activation>0.01</minimum_activation>
 					<!--Active-force-length curve.-->
-					<ActiveForceLengthCurve name="glut_max2_r_ActiveForceLengthCurve">
+					<ActiveForceLengthCurve name="glmax2_r_ActiveForceLengthCurve">
 						<!--Normalized fiber length where the steep ascending limb starts-->
 						<min_norm_active_fiber_length>0.25</min_norm_active_fiber_length>
 						<!--Normalized fiber length where the steep ascending limb transitions to the shallow ascending limb-->
@@ -3781,7 +3781,7 @@
 						<minimum_value>0</minimum_value>
 					</ActiveForceLengthCurve>
 					<!--Force-velocity curve.-->
-					<ForceVelocityCurve name="glut_max2_r_ForceVelocityCurve">
+					<ForceVelocityCurve name="glmax2_r_ForceVelocityCurve">
 						<!--Curve slope at the maximum normalized concentric (shortening) velocity (normalized velocity of -1)-->
 						<concentric_slope_at_vmax>0</concentric_slope_at_vmax>
 						<!--Curve slope just before reaching concentric_slope_at_vmax-->
@@ -3796,14 +3796,14 @@
 						<max_eccentric_velocity_force_multiplier>1.3999999999999999</max_eccentric_velocity_force_multiplier>
 					</ForceVelocityCurve>
 					<!--Passive-force-length curve.-->
-					<FiberForceLengthCurve name="glut_max2_r_FiberForceLengthCurve">
+					<FiberForceLengthCurve name="glmax2_r_FiberForceLengthCurve">
 						<!--Fiber strain at zero force-->
 						<strain_at_zero_force>0</strain_at_zero_force>
 						<!--Fiber strain at a tension of 1 normalized force-->
 						<strain_at_one_norm_force>0.69999999999999996</strain_at_one_norm_force>
 					</FiberForceLengthCurve>
 					<!--Tendon-force-length curve.-->
-					<TendonForceLengthCurve name="glut_max2_r_TendonForceLengthCurve">
+					<TendonForceLengthCurve name="glmax2_r_TendonForceLengthCurve">
 						<!--All properties of this object have their default values.-->
 					</TendonForceLengthCurve>
 				</Millard2012EquilibriumMuscle>
@@ -3916,7 +3916,7 @@
 						<!--All properties of this object have their default values.-->
 					</TendonForceLengthCurve>
 				</Millard2012EquilibriumMuscle>
-				<Millard2012EquilibriumMuscle name="rect_fem_r">
+				<Millard2012EquilibriumMuscle name="recfem_r">
 					<!--The set of points defining the path of the actuator.-->
 					<GeometryPath name="geometrypath">
 						<!--The set of points defining the path-->
@@ -3992,7 +3992,7 @@
 					<!--Activation lower bound.-->
 					<minimum_activation>0.01</minimum_activation>
 					<!--Active-force-length curve.-->
-					<ActiveForceLengthCurve name="rect_fem_r_ActiveForceLengthCurve">
+					<ActiveForceLengthCurve name="recfem_r_ActiveForceLengthCurve">
 						<!--Normalized fiber length where the steep ascending limb starts-->
 						<min_norm_active_fiber_length>0.25</min_norm_active_fiber_length>
 						<!--Normalized fiber length where the steep ascending limb transitions to the shallow ascending limb-->
@@ -4005,7 +4005,7 @@
 						<minimum_value>0</minimum_value>
 					</ActiveForceLengthCurve>
 					<!--Force-velocity curve.-->
-					<ForceVelocityCurve name="rect_fem_r_ForceVelocityCurve">
+					<ForceVelocityCurve name="recfem_r_ForceVelocityCurve">
 						<!--Curve slope at the maximum normalized concentric (shortening) velocity (normalized velocity of -1)-->
 						<concentric_slope_at_vmax>0</concentric_slope_at_vmax>
 						<!--Curve slope just before reaching concentric_slope_at_vmax-->
@@ -4020,14 +4020,14 @@
 						<max_eccentric_velocity_force_multiplier>1.3999999999999999</max_eccentric_velocity_force_multiplier>
 					</ForceVelocityCurve>
 					<!--Passive-force-length curve.-->
-					<FiberForceLengthCurve name="rect_fem_r_FiberForceLengthCurve">
+					<FiberForceLengthCurve name="recfem_r_FiberForceLengthCurve">
 						<!--Fiber strain at zero force-->
 						<strain_at_zero_force>0</strain_at_zero_force>
 						<!--Fiber strain at a tension of 1 normalized force-->
 						<strain_at_one_norm_force>0.69999999999999996</strain_at_one_norm_force>
 					</FiberForceLengthCurve>
 					<!--Tendon-force-length curve.-->
-					<TendonForceLengthCurve name="rect_fem_r_TendonForceLengthCurve">
+					<TendonForceLengthCurve name="recfem_r_TendonForceLengthCurve">
 						<!--All properties of this object have their default values.-->
 					</TendonForceLengthCurve>
 				</Millard2012EquilibriumMuscle>
@@ -4216,7 +4216,7 @@
 						<!--All properties of this object have their default values.-->
 					</TendonForceLengthCurve>
 				</Millard2012EquilibriumMuscle>
-				<Millard2012EquilibriumMuscle name="tib_ant_r">
+				<Millard2012EquilibriumMuscle name="tibant_r">
 					<!--The set of points defining the path of the actuator.-->
 					<GeometryPath name="geometrypath">
 						<!--The set of points defining the path-->
@@ -4277,7 +4277,7 @@
 					<!--Activation lower bound.-->
 					<minimum_activation>0.01</minimum_activation>
 					<!--Active-force-length curve.-->
-					<ActiveForceLengthCurve name="tib_ant_r_ActiveForceLengthCurve">
+					<ActiveForceLengthCurve name="tibant_r_ActiveForceLengthCurve">
 						<!--Normalized fiber length where the steep ascending limb starts-->
 						<min_norm_active_fiber_length>0.25</min_norm_active_fiber_length>
 						<!--Normalized fiber length where the steep ascending limb transitions to the shallow ascending limb-->
@@ -4290,7 +4290,7 @@
 						<minimum_value>0</minimum_value>
 					</ActiveForceLengthCurve>
 					<!--Force-velocity curve.-->
-					<ForceVelocityCurve name="tib_ant_r_ForceVelocityCurve">
+					<ForceVelocityCurve name="tibant_r_ForceVelocityCurve">
 						<!--Curve slope at the maximum normalized concentric (shortening) velocity (normalized velocity of -1)-->
 						<concentric_slope_at_vmax>0</concentric_slope_at_vmax>
 						<!--Curve slope just before reaching concentric_slope_at_vmax-->
@@ -4305,18 +4305,18 @@
 						<max_eccentric_velocity_force_multiplier>1.3999999999999999</max_eccentric_velocity_force_multiplier>
 					</ForceVelocityCurve>
 					<!--Passive-force-length curve.-->
-					<FiberForceLengthCurve name="tib_ant_r_FiberForceLengthCurve">
+					<FiberForceLengthCurve name="tibant_r_FiberForceLengthCurve">
 						<!--Fiber strain at zero force-->
 						<strain_at_zero_force>0</strain_at_zero_force>
 						<!--Fiber strain at a tension of 1 normalized force-->
 						<strain_at_one_norm_force>0.69999999999999996</strain_at_one_norm_force>
 					</FiberForceLengthCurve>
 					<!--Tendon-force-length curve.-->
-					<TendonForceLengthCurve name="tib_ant_r_TendonForceLengthCurve">
+					<TendonForceLengthCurve name="tibant_r_TendonForceLengthCurve">
 						<!--All properties of this object have their default values.-->
 					</TendonForceLengthCurve>
 				</Millard2012EquilibriumMuscle>
-				<Millard2012EquilibriumMuscle name="vas_int_r">
+				<Millard2012EquilibriumMuscle name="vasint_r">
 					<!--The set of points defining the path of the actuator.-->
 					<GeometryPath name="geometrypath">
 						<!--The set of points defining the path-->
@@ -4392,7 +4392,7 @@
 					<!--Activation lower bound.-->
 					<minimum_activation>0.01</minimum_activation>
 					<!--Active-force-length curve.-->
-					<ActiveForceLengthCurve name="vas_int_r_ActiveForceLengthCurve">
+					<ActiveForceLengthCurve name="vasint_r_ActiveForceLengthCurve">
 						<!--Normalized fiber length where the steep ascending limb starts-->
 						<min_norm_active_fiber_length>0.25</min_norm_active_fiber_length>
 						<!--Normalized fiber length where the steep ascending limb transitions to the shallow ascending limb-->
@@ -4405,7 +4405,7 @@
 						<minimum_value>0</minimum_value>
 					</ActiveForceLengthCurve>
 					<!--Force-velocity curve.-->
-					<ForceVelocityCurve name="vas_int_r_ForceVelocityCurve">
+					<ForceVelocityCurve name="vasint_r_ForceVelocityCurve">
 						<!--Curve slope at the maximum normalized concentric (shortening) velocity (normalized velocity of -1)-->
 						<concentric_slope_at_vmax>0</concentric_slope_at_vmax>
 						<!--Curve slope just before reaching concentric_slope_at_vmax-->
@@ -4420,18 +4420,18 @@
 						<max_eccentric_velocity_force_multiplier>1.3999999999999999</max_eccentric_velocity_force_multiplier>
 					</ForceVelocityCurve>
 					<!--Passive-force-length curve.-->
-					<FiberForceLengthCurve name="vas_int_r_FiberForceLengthCurve">
+					<FiberForceLengthCurve name="vasint_r_FiberForceLengthCurve">
 						<!--Fiber strain at zero force-->
 						<strain_at_zero_force>0</strain_at_zero_force>
 						<!--Fiber strain at a tension of 1 normalized force-->
 						<strain_at_one_norm_force>0.69999999999999996</strain_at_one_norm_force>
 					</FiberForceLengthCurve>
 					<!--Tendon-force-length curve.-->
-					<TendonForceLengthCurve name="vas_int_r_TendonForceLengthCurve">
+					<TendonForceLengthCurve name="vasint_r_TendonForceLengthCurve">
 						<!--All properties of this object have their default values.-->
 					</TendonForceLengthCurve>
 				</Millard2012EquilibriumMuscle>
-				<Millard2012EquilibriumMuscle name="bifemsh_l">
+				<Millard2012EquilibriumMuscle name="bfsh_l">
 					<!--The set of points defining the path of the actuator.-->
 					<GeometryPath name="geometrypath">
 						<!--The set of points defining the path-->
@@ -4489,7 +4489,7 @@
 					<!--Activation lower bound.-->
 					<minimum_activation>0.01</minimum_activation>
 					<!--Active-force-length curve.-->
-					<ActiveForceLengthCurve name="bifemsh_l_ActiveForceLengthCurve">
+					<ActiveForceLengthCurve name="bfsh_l_ActiveForceLengthCurve">
 						<!--Normalized fiber length where the steep ascending limb starts-->
 						<min_norm_active_fiber_length>0.25</min_norm_active_fiber_length>
 						<!--Normalized fiber length where the steep ascending limb transitions to the shallow ascending limb-->
@@ -4502,7 +4502,7 @@
 						<minimum_value>0</minimum_value>
 					</ActiveForceLengthCurve>
 					<!--Force-velocity curve.-->
-					<ForceVelocityCurve name="bifemsh_l_ForceVelocityCurve">
+					<ForceVelocityCurve name="bfsh_l_ForceVelocityCurve">
 						<!--Curve slope at the maximum normalized concentric (shortening) velocity (normalized velocity of -1)-->
 						<concentric_slope_at_vmax>0</concentric_slope_at_vmax>
 						<!--Curve slope just before reaching concentric_slope_at_vmax-->
@@ -4517,18 +4517,18 @@
 						<max_eccentric_velocity_force_multiplier>1.3999999999999999</max_eccentric_velocity_force_multiplier>
 					</ForceVelocityCurve>
 					<!--Passive-force-length curve.-->
-					<FiberForceLengthCurve name="bifemsh_l_FiberForceLengthCurve">
+					<FiberForceLengthCurve name="bfsh_l_FiberForceLengthCurve">
 						<!--Fiber strain at zero force-->
 						<strain_at_zero_force>0</strain_at_zero_force>
 						<!--Fiber strain at a tension of 1 normalized force-->
 						<strain_at_one_norm_force>0.69999999999999996</strain_at_one_norm_force>
 					</FiberForceLengthCurve>
 					<!--Tendon-force-length curve.-->
-					<TendonForceLengthCurve name="bifemsh_l_TendonForceLengthCurve">
+					<TendonForceLengthCurve name="bfsh_l_TendonForceLengthCurve">
 						<!--All properties of this object have their default values.-->
 					</TendonForceLengthCurve>
 				</Millard2012EquilibriumMuscle>
-				<Millard2012EquilibriumMuscle name="med_gas_l">
+				<Millard2012EquilibriumMuscle name="gasmed_l">
 					<!--The set of points defining the path of the actuator.-->
 					<GeometryPath name="geometrypath">
 						<!--The set of points defining the path-->
@@ -4594,7 +4594,7 @@
 					<!--Activation lower bound.-->
 					<minimum_activation>0.01</minimum_activation>
 					<!--Active-force-length curve.-->
-					<ActiveForceLengthCurve name="med_gas_l_ActiveForceLengthCurve">
+					<ActiveForceLengthCurve name="gasmed_l_ActiveForceLengthCurve">
 						<!--Normalized fiber length where the steep ascending limb starts-->
 						<min_norm_active_fiber_length>0.25</min_norm_active_fiber_length>
 						<!--Normalized fiber length where the steep ascending limb transitions to the shallow ascending limb-->
@@ -4607,7 +4607,7 @@
 						<minimum_value>0</minimum_value>
 					</ActiveForceLengthCurve>
 					<!--Force-velocity curve.-->
-					<ForceVelocityCurve name="med_gas_l_ForceVelocityCurve">
+					<ForceVelocityCurve name="gasmed_l_ForceVelocityCurve">
 						<!--Curve slope at the maximum normalized concentric (shortening) velocity (normalized velocity of -1)-->
 						<concentric_slope_at_vmax>0</concentric_slope_at_vmax>
 						<!--Curve slope just before reaching concentric_slope_at_vmax-->
@@ -4622,18 +4622,18 @@
 						<max_eccentric_velocity_force_multiplier>1.3999999999999999</max_eccentric_velocity_force_multiplier>
 					</ForceVelocityCurve>
 					<!--Passive-force-length curve.-->
-					<FiberForceLengthCurve name="med_gas_l_FiberForceLengthCurve">
+					<FiberForceLengthCurve name="gasmed_l_FiberForceLengthCurve">
 						<!--Fiber strain at zero force-->
 						<strain_at_zero_force>0</strain_at_zero_force>
 						<!--Fiber strain at a tension of 1 normalized force-->
 						<strain_at_one_norm_force>0.69999999999999996</strain_at_one_norm_force>
 					</FiberForceLengthCurve>
 					<!--Tendon-force-length curve.-->
-					<TendonForceLengthCurve name="med_gas_l_TendonForceLengthCurve">
+					<TendonForceLengthCurve name="gasmed_l_TendonForceLengthCurve">
 						<!--All properties of this object have their default values.-->
 					</TendonForceLengthCurve>
 				</Millard2012EquilibriumMuscle>
-				<Millard2012EquilibriumMuscle name="glut_max2_l">
+				<Millard2012EquilibriumMuscle name="glmax2_l">
 					<!--The set of points defining the path of the actuator.-->
 					<GeometryPath name="geometrypath">
 						<!--The set of points defining the path-->
@@ -4703,7 +4703,7 @@
 					<!--Activation lower bound.-->
 					<minimum_activation>0.01</minimum_activation>
 					<!--Active-force-length curve.-->
-					<ActiveForceLengthCurve name="glut_max2_l_ActiveForceLengthCurve">
+					<ActiveForceLengthCurve name="glmax2_l_ActiveForceLengthCurve">
 						<!--Normalized fiber length where the steep ascending limb starts-->
 						<min_norm_active_fiber_length>0.25</min_norm_active_fiber_length>
 						<!--Normalized fiber length where the steep ascending limb transitions to the shallow ascending limb-->
@@ -4716,7 +4716,7 @@
 						<minimum_value>0</minimum_value>
 					</ActiveForceLengthCurve>
 					<!--Force-velocity curve.-->
-					<ForceVelocityCurve name="glut_max2_l_ForceVelocityCurve">
+					<ForceVelocityCurve name="glmax2_l_ForceVelocityCurve">
 						<!--Curve slope at the maximum normalized concentric (shortening) velocity (normalized velocity of -1)-->
 						<concentric_slope_at_vmax>0</concentric_slope_at_vmax>
 						<!--Curve slope just before reaching concentric_slope_at_vmax-->
@@ -4731,14 +4731,14 @@
 						<max_eccentric_velocity_force_multiplier>1.3999999999999999</max_eccentric_velocity_force_multiplier>
 					</ForceVelocityCurve>
 					<!--Passive-force-length curve.-->
-					<FiberForceLengthCurve name="glut_max2_l_FiberForceLengthCurve">
+					<FiberForceLengthCurve name="glmax2_l_FiberForceLengthCurve">
 						<!--Fiber strain at zero force-->
 						<strain_at_zero_force>0</strain_at_zero_force>
 						<!--Fiber strain at a tension of 1 normalized force-->
 						<strain_at_one_norm_force>0.69999999999999996</strain_at_one_norm_force>
 					</FiberForceLengthCurve>
 					<!--Tendon-force-length curve.-->
-					<TendonForceLengthCurve name="glut_max2_l_TendonForceLengthCurve">
+					<TendonForceLengthCurve name="glmax2_l_TendonForceLengthCurve">
 						<!--All properties of this object have their default values.-->
 					</TendonForceLengthCurve>
 				</Millard2012EquilibriumMuscle>
@@ -4851,7 +4851,7 @@
 						<!--All properties of this object have their default values.-->
 					</TendonForceLengthCurve>
 				</Millard2012EquilibriumMuscle>
-				<Millard2012EquilibriumMuscle name="rect_fem_l">
+				<Millard2012EquilibriumMuscle name="recfem_l">
 					<!--The set of points defining the path of the actuator.-->
 					<GeometryPath name="geometrypath">
 						<!--The set of points defining the path-->
@@ -4927,7 +4927,7 @@
 					<!--Activation lower bound.-->
 					<minimum_activation>0.01</minimum_activation>
 					<!--Active-force-length curve.-->
-					<ActiveForceLengthCurve name="rect_fem_l_ActiveForceLengthCurve">
+					<ActiveForceLengthCurve name="recfem_l_ActiveForceLengthCurve">
 						<!--Normalized fiber length where the steep ascending limb starts-->
 						<min_norm_active_fiber_length>0.25</min_norm_active_fiber_length>
 						<!--Normalized fiber length where the steep ascending limb transitions to the shallow ascending limb-->
@@ -4940,7 +4940,7 @@
 						<minimum_value>0</minimum_value>
 					</ActiveForceLengthCurve>
 					<!--Force-velocity curve.-->
-					<ForceVelocityCurve name="rect_fem_l_ForceVelocityCurve">
+					<ForceVelocityCurve name="recfem_l_ForceVelocityCurve">
 						<!--Curve slope at the maximum normalized concentric (shortening) velocity (normalized velocity of -1)-->
 						<concentric_slope_at_vmax>0</concentric_slope_at_vmax>
 						<!--Curve slope just before reaching concentric_slope_at_vmax-->
@@ -4955,14 +4955,14 @@
 						<max_eccentric_velocity_force_multiplier>1.3999999999999999</max_eccentric_velocity_force_multiplier>
 					</ForceVelocityCurve>
 					<!--Passive-force-length curve.-->
-					<FiberForceLengthCurve name="rect_fem_l_FiberForceLengthCurve">
+					<FiberForceLengthCurve name="recfem_l_FiberForceLengthCurve">
 						<!--Fiber strain at zero force-->
 						<strain_at_zero_force>0</strain_at_zero_force>
 						<!--Fiber strain at a tension of 1 normalized force-->
 						<strain_at_one_norm_force>0.69999999999999996</strain_at_one_norm_force>
 					</FiberForceLengthCurve>
 					<!--Tendon-force-length curve.-->
-					<TendonForceLengthCurve name="rect_fem_l_TendonForceLengthCurve">
+					<TendonForceLengthCurve name="recfem_l_TendonForceLengthCurve">
 						<!--All properties of this object have their default values.-->
 					</TendonForceLengthCurve>
 				</Millard2012EquilibriumMuscle>
@@ -5151,7 +5151,7 @@
 						<!--All properties of this object have their default values.-->
 					</TendonForceLengthCurve>
 				</Millard2012EquilibriumMuscle>
-				<Millard2012EquilibriumMuscle name="tib_ant_l">
+				<Millard2012EquilibriumMuscle name="tibant_l">
 					<!--The set of points defining the path of the actuator.-->
 					<GeometryPath name="geometrypath">
 						<!--The set of points defining the path-->
@@ -5212,7 +5212,7 @@
 					<!--Activation lower bound.-->
 					<minimum_activation>0.01</minimum_activation>
 					<!--Active-force-length curve.-->
-					<ActiveForceLengthCurve name="tib_ant_l_ActiveForceLengthCurve">
+					<ActiveForceLengthCurve name="tibant_l_ActiveForceLengthCurve">
 						<!--Normalized fiber length where the steep ascending limb starts-->
 						<min_norm_active_fiber_length>0.25</min_norm_active_fiber_length>
 						<!--Normalized fiber length where the steep ascending limb transitions to the shallow ascending limb-->
@@ -5225,7 +5225,7 @@
 						<minimum_value>0</minimum_value>
 					</ActiveForceLengthCurve>
 					<!--Force-velocity curve.-->
-					<ForceVelocityCurve name="tib_ant_l_ForceVelocityCurve">
+					<ForceVelocityCurve name="tibant_l_ForceVelocityCurve">
 						<!--Curve slope at the maximum normalized concentric (shortening) velocity (normalized velocity of -1)-->
 						<concentric_slope_at_vmax>0</concentric_slope_at_vmax>
 						<!--Curve slope just before reaching concentric_slope_at_vmax-->
@@ -5240,18 +5240,18 @@
 						<max_eccentric_velocity_force_multiplier>1.3999999999999999</max_eccentric_velocity_force_multiplier>
 					</ForceVelocityCurve>
 					<!--Passive-force-length curve.-->
-					<FiberForceLengthCurve name="tib_ant_l_FiberForceLengthCurve">
+					<FiberForceLengthCurve name="tibant_l_FiberForceLengthCurve">
 						<!--Fiber strain at zero force-->
 						<strain_at_zero_force>0</strain_at_zero_force>
 						<!--Fiber strain at a tension of 1 normalized force-->
 						<strain_at_one_norm_force>0.69999999999999996</strain_at_one_norm_force>
 					</FiberForceLengthCurve>
 					<!--Tendon-force-length curve.-->
-					<TendonForceLengthCurve name="tib_ant_l_TendonForceLengthCurve">
+					<TendonForceLengthCurve name="tibant_l_TendonForceLengthCurve">
 						<!--All properties of this object have their default values.-->
 					</TendonForceLengthCurve>
 				</Millard2012EquilibriumMuscle>
-				<Millard2012EquilibriumMuscle name="vas_int_l">
+				<Millard2012EquilibriumMuscle name="vasint_l">
 					<!--The set of points defining the path of the actuator.-->
 					<GeometryPath name="geometrypath">
 						<!--The set of points defining the path-->
@@ -5327,7 +5327,7 @@
 					<!--Activation lower bound.-->
 					<minimum_activation>0.01</minimum_activation>
 					<!--Active-force-length curve.-->
-					<ActiveForceLengthCurve name="vas_int_l_ActiveForceLengthCurve">
+					<ActiveForceLengthCurve name="vasint_l_ActiveForceLengthCurve">
 						<!--Normalized fiber length where the steep ascending limb starts-->
 						<min_norm_active_fiber_length>0.25</min_norm_active_fiber_length>
 						<!--Normalized fiber length where the steep ascending limb transitions to the shallow ascending limb-->
@@ -5340,7 +5340,7 @@
 						<minimum_value>0</minimum_value>
 					</ActiveForceLengthCurve>
 					<!--Force-velocity curve.-->
-					<ForceVelocityCurve name="vas_int_l_ForceVelocityCurve">
+					<ForceVelocityCurve name="vasint_l_ForceVelocityCurve">
 						<!--Curve slope at the maximum normalized concentric (shortening) velocity (normalized velocity of -1)-->
 						<concentric_slope_at_vmax>0</concentric_slope_at_vmax>
 						<!--Curve slope just before reaching concentric_slope_at_vmax-->
@@ -5355,14 +5355,14 @@
 						<max_eccentric_velocity_force_multiplier>1.3999999999999999</max_eccentric_velocity_force_multiplier>
 					</ForceVelocityCurve>
 					<!--Passive-force-length curve.-->
-					<FiberForceLengthCurve name="vas_int_l_FiberForceLengthCurve">
+					<FiberForceLengthCurve name="vasint_l_FiberForceLengthCurve">
 						<!--Fiber strain at zero force-->
 						<strain_at_zero_force>0</strain_at_zero_force>
 						<!--Fiber strain at a tension of 1 normalized force-->
 						<strain_at_one_norm_force>0.69999999999999996</strain_at_one_norm_force>
 					</FiberForceLengthCurve>
 					<!--Tendon-force-length curve.-->
-					<TendonForceLengthCurve name="vas_int_l_TendonForceLengthCurve">
+					<TendonForceLengthCurve name="vasint_l_TendonForceLengthCurve">
 						<!--All properties of this object have their default values.-->
 					</TendonForceLengthCurve>
 				</Millard2012EquilibriumMuscle>
@@ -5404,7 +5404,7 @@
 					<!--Name of the generalized coordinate to which the actuator applies.-->
 					<coordinate>pelvis_tilt</coordinate>
 					<!--The maximum generalized force produced by this actuator.-->
-					<optimal_force>100</optimal_force>
+					<optimal_force>55</optimal_force>
 				</CoordinateActuator>
                 <CoordinateActuator name="reserve_pelvis_list">
 					<!--Minimum allowed value for control signal. Used primarily when solving for control values.-->
@@ -5414,7 +5414,7 @@
 					<!--Name of the generalized coordinate to which the actuator applies.-->
 					<coordinate>pelvis_list</coordinate>
 					<!--The maximum generalized force produced by this actuator.-->
-					<optimal_force>50</optimal_force>
+					<optimal_force>30</optimal_force>
 				</CoordinateActuator>
                 <CoordinateActuator name="reserve_pelvis_rotation">
 					<!--Minimum allowed value for control signal. Used primarily when solving for control values.-->
@@ -5424,7 +5424,7 @@
 					<!--Name of the generalized coordinate to which the actuator applies.-->
 					<coordinate>pelvis_rotation</coordinate>
 					<!--The maximum generalized force produced by this actuator.-->
-					<optimal_force>25</optimal_force>
+					<optimal_force>15</optimal_force>
 				</CoordinateActuator>
                 <CoordinateActuator name="reserve_pelvis_tx">
 					<!--Minimum allowed value for control signal. Used primarily when solving for control values.-->
@@ -5434,7 +5434,7 @@
 					<!--Name of the generalized coordinate to which the actuator applies.-->
 					<coordinate>pelvis_tx</coordinate>
 					<!--The maximum generalized force produced by this actuator.-->
-					<optimal_force>100</optimal_force>
+					<optimal_force>60</optimal_force>
 				</CoordinateActuator>
                 <CoordinateActuator name="reserve_pelvis_ty">
 					<!--Minimum allowed value for control signal. Used primarily when solving for control values.-->
@@ -5454,7 +5454,7 @@
 					<!--Name of the generalized coordinate to which the actuator applies.-->
 					<coordinate>pelvis_tz</coordinate>
 					<!--The maximum generalized force produced by this actuator.-->
-					<optimal_force>50</optimal_force>
+					<optimal_force>35</optimal_force>
 				</CoordinateActuator>
                 <CoordinateActuator name="reserve_hip_flexion_r">
 					<!--Minimum allowed value for control signal. Used primarily when solving for control values.-->
@@ -5464,7 +5464,7 @@
 					<!--Name of the generalized coordinate to which the actuator applies.-->
 					<coordinate>hip_flexion_r</coordinate>
 					<!--The maximum generalized force produced by this actuator.-->
-					<optimal_force>35</optimal_force>
+					<optimal_force>25</optimal_force>
 				</CoordinateActuator>
                 <CoordinateActuator name="reserve_hip_flexion_l">
 					<!--Minimum allowed value for control signal. Used primarily when solving for control values.-->
@@ -5474,7 +5474,7 @@
 					<!--Name of the generalized coordinate to which the actuator applies.-->
 					<coordinate>hip_flexion_l</coordinate>
 					<!--The maximum generalized force produced by this actuator.-->
-					<optimal_force>35</optimal_force>
+					<optimal_force>1</optimal_force>
 				</CoordinateActuator>
                 <CoordinateActuator name="reserve_hip_adduction_r">
 					<!--Minimum allowed value for control signal. Used primarily when solving for control values.-->

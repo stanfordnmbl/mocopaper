@@ -51,6 +51,7 @@ class MotionTrackingWalking(MocoPaperResult):
         # modelProcessorCMC.append(osim.ModOpAddReserves(50, 1))
         modelProcessorCMC.append(
             osim.ModOpTendonComplianceDynamicsModeDGF('explicit'))
+        # modelProcessorCMC.append(osim.ModOpScaleTendonSlackLength(0.96))
 
         cmcModel = modelProcessorCMC.process()
         cmcModel.initSystem()
@@ -59,6 +60,7 @@ class MotionTrackingWalking(MocoPaperResult):
             muscle = osim.DeGrooteFregly2016Muscle.safeDownCast(
                 muscles.get(int(imusc)))
             muscle.set_fiber_damping(0)
+            #muscle.set_clamp_normalized_tendon_length(True)
 
         tasks = osim.CMC_TaskSet()
         for coord in cmcModel.getCoordinateSet():
@@ -74,11 +76,6 @@ class MotionTrackingWalking(MocoPaperResult):
 
         cmcModel.printToXML("resources/Rajagopal2016/"
                             "subject_walk_armless_for_cmc.osim")
-
-        for imusc in np.arange(muscles.getSize()):
-            muscle = osim.DeGrooteFregly2016Muscle.safeDownCast(
-                muscles.get(int(imusc)))
-            muscle.set_tendon_compliance_dynamics_mode('implicit')
 
         # Add external loads to MocoTrack model.
         ext_loads_xml = "resources/Rajagopal2016/grf_walk.xml"
@@ -157,10 +154,10 @@ class MotionTrackingWalking(MocoPaperResult):
         inverse.setKinematics(coordinates)
         inverse.set_initial_time(self.initial_time)
         inverse.set_final_time(self.final_time)
-        inverse.set_mesh_interval(0.02)
+        inverse.set_mesh_interval(0.05)
         inverse.set_kinematics_allow_extra_columns(True)
         inverse.set_tolerance(1e-3)
-        inverse.set_reserves_weight(50.0)
+        # inverse.set_reserves_weight(10.0)
         # 8 minutes
         if self.inverse:
             solution = inverse.solve()

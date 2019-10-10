@@ -197,6 +197,9 @@ class MotionTrackingWalking(MocoPaperResult):
 
         track.set_track_reference_position_derivatives(True)
 
+        # TODO: Use MocoInverse solution as initial guess for MocoTrack.
+        track.set_apply_tracked_states_to_guess(True)
+
         # Initial time, final time, and mesh interval.
         track.set_initial_time(self.initial_time)
         track.set_final_time(self.final_time)

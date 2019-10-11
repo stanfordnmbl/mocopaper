@@ -41,8 +41,8 @@ class MotionTrackingWalking(MocoPaperResult):
         # Create CMC model first.
         # TODO: try 18 muscles first for CMC.
         modelProcessorCMC = osim.ModelProcessor(
-            "resources/Rajagopal2016/subject_walk_armless_18musc.osim")
-            # "resources/Rajagopal2016/subject_walk_armless_80musc.osim")
+            # "resources/Rajagopal2016/subject_walk_armless_18musc.osim")
+            "resources/Rajagopal2016/subject_walk_armless_80musc.osim")
         modelProcessorCMC.append(osim.ModOpReplaceJointsWithWelds(
             ['subtalar_r', 'mtp_r', 'subtalar_l', 'mtp_l']))
         modelProcessorCMC.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())
@@ -157,7 +157,7 @@ class MotionTrackingWalking(MocoPaperResult):
         inverse.set_mesh_interval(0.05)
         inverse.set_kinematics_allow_extra_columns(True)
         inverse.set_tolerance(1e-3)
-        # inverse.set_reserves_weight(10.0)
+        inverse.set_reserves_weight(10.0)
         # 8 minutes
         if self.inverse:
             solution = inverse.solve()

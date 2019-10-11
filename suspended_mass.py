@@ -154,7 +154,7 @@ class SuspendedMass(MocoPaperResult):
 
         return solution
 
-    def generate_results(self):
+    def generate_results(self, args):
         predict_solution, time_stepping = self.predict(True)
         predict_solution.write('results/suspended_mass_prediction_solution.sto')
         time_stepping.write('results/suspended_mass_time_stepping.sto')
@@ -163,7 +163,7 @@ class SuspendedMass(MocoPaperResult):
         track_solution_p = self.track(predict_solution, 4)
         track_solution_p.write('results/suspended_mass_track_p_solution.sto')
 
-    def report_results(self):
+    def report_results(self, args):
         pl.figure()
         fig = plt.figure(figsize=(5.2, 2.7))
         grid = gridspec.GridSpec(3, 4)

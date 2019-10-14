@@ -155,9 +155,12 @@ class MotionTrackingWalking(MocoPaperResult):
         inverse.setKinematics(coordinates)
         inverse.set_initial_time(self.initial_time)
         inverse.set_final_time(self.final_time)
-        inverse.set_mesh_interval(0.05)
+        inverse.set_mesh_interval(0.02)
         inverse.set_kinematics_allow_extra_columns(True)
         inverse.set_tolerance(1e-3)
+        inverse.set_auxiliary_derivatives_weight(0.01)
+        inverse.set_auxiliary_derivatives_bound(5)
+
         # inverse.set_reserves_weight(10.0)
         # 8 minutes
         if self.inverse:

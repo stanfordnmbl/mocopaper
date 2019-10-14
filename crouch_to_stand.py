@@ -91,7 +91,7 @@ class CrouchToStand(MocoPaperResult):
 
         return solution
 
-    def predict_assisted(self):
+    def assisted_model(self):
         model = self.muscle_driven_model()
         device = osim.SpringGeneralizedForce('knee_angle_r')
         device.setName('spring')
@@ -99,6 +99,10 @@ class CrouchToStand(MocoPaperResult):
         device.setRestLength(0)
         device.setViscosity(0)
         model.addForce(device)
+        return model
+
+    def predict_assisted(self):
+        model = self.assisted_model()
 
         moco = self.create_study(model)
         problem = moco.updProblem()
@@ -304,3 +308,18 @@ class CrouchToStand(MocoPaperResult):
         with open('results/'
                   'crouch_to_stand_predict_assisted_duration.txt', 'w') as f:
             f.write(f'{sol_predict_assisted_duration:.1f}')
+
+        model = self.muscle_driven_model()
+        report = osim.report.Report(self.muscle_driven_model(),
+                                    self.predict_solution_file)
+        report.generate()
+
+        # table = osim.analyze(model,
+        #                      osim.MocoTrajectory(self.predict_solution_file),
+        #              ['.*normalized_fiber_length'])
+        # osim.STOFileAdapter.write(table,
+        #                           'crouch_to_stand_norm_fiber_length.sto')
+
+        report = osim.report.Report(self.assisted_model(),
+                                    self.predict_assisted_solution_file)
+        report.generate()

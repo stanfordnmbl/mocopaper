@@ -21,6 +21,10 @@ class CrouchToStand(MocoPaperResult):
         moco.set_write_solution("results/")
         solver = moco.initCasADiSolver()
         solver.set_multibody_dynamics_mode('implicit')
+        solver.set_minimize_implicit_multibody_accelerations(True)
+        solver.set_implicit_multibody_accelerations_weight(0.001)
+        solver.set_minimize_implicit_auxiliary_derivatives(True)
+        solver.set_implicit_auxiliary_derivatives_weight(0.001)
         solver.set_num_mesh_intervals(50)
         solver.set_optim_convergence_tolerance(1e-3)
         solver.set_optim_constraint_tolerance(1e-3)
@@ -50,7 +54,7 @@ class CrouchToStand(MocoPaperResult):
         model.finalizeConnections()
         osim.DeGrooteFregly2016Muscle.replaceMuscles(model)
         for muscle in model.getMuscles():
-            muscle.set_ignore_tendon_compliance(True)
+            # muscle.set_ignore_tendon_compliance(True)
             muscle.set_max_isometric_force(2 * muscle.get_max_isometric_force())
             dgf = osim.DeGrooteFregly2016Muscle.safeDownCast(muscle)
             # dgf.set_active_force_width_scale(1.5)
@@ -66,7 +70,7 @@ class CrouchToStand(MocoPaperResult):
         problem = moco.updProblem()
         problem.addGoal(osim.MocoControlGoal('effort'))
         problem.addGoal(osim.MocoInitialActivationGoal('init_activation'))
-        problem.addGoal(osim.MocoFinalTimeGoal('time', 0.1))
+        problem.addGoal(osim.MocoFinalTimeGoal('time', 0.5))
 
         solver = osim.MocoCasADiSolver.safeDownCast(moco.updSolver())
         solver.resetProblem(problem)
@@ -80,6 +84,7 @@ class CrouchToStand(MocoPaperResult):
                 guess.setState(
                     '%s/normalized_tendon_force' % muscle.getAbsolutePathString(),
                     osim.createVectorLinspace(N, 0.1, 0.1))
+        solver.setGuess(guess)
 
         solution = moco.solve()
         solution.write(self.predict_solution_file)
@@ -98,6 +103,8 @@ class CrouchToStand(MocoPaperResult):
         moco = self.create_study(model)
         problem = moco.updProblem()
         problem.addGoal(osim.MocoControlGoal('effort'))
+        problem.addGoal(osim.MocoInitialActivationGoal('init_activation'))
+        problem.addGoal(osim.MocoFinalTimeGoal('time', 0.5))
 
         problem.addParameter(
             osim.MocoParameter('stiffness', '/forceset/spring',
@@ -105,6 +112,17 @@ class CrouchToStand(MocoPaperResult):
 
         solver = osim.MocoCasADiSolver.safeDownCast(moco.updSolver())
         solver.resetProblem(problem)
+
+        guess = solver.createGuess()
+
+        N = guess.getNumTimes()
+        for muscle in model.getMuscles():
+            dgf = osim.DeGrooteFregly2016Muscle.safeDownCast(muscle)
+            if not dgf.get_ignore_tendon_compliance():
+                guess.setState(
+                    '%s/normalized_tendon_force' % muscle.getAbsolutePathString(),
+                    osim.createVectorLinspace(N, 0.1, 0.1))
+        solver.setGuess(guess)
 
         solver.set_parameters_require_initsystem(False)
         solution = moco.solve()

@@ -460,25 +460,13 @@ class MotionTrackingWalking(MocoPaperResult):
         #     ax.spines['bottom'].set_position('zero')
         #     utilities.publication_spines(ax)
 
-        # TODO: Compare to EMG.
-        # muscles = [
-        #     ((0, 0), 'glut_max2', 'gluteus maximus', 'GMAX'),
-        #     ((0, 1), 'psoas', 'psoas', ''),
-        #     ((1, 0), 'semimem', 'semimembranosus', 'MH'),
-        #     ((0, 2), 'rect_fem', 'rectus femoris', 'RF'),
-        #     ((1, 1), 'bifemsh', 'biceps femoris short head', 'BF'),
-        #     ((1, 2), 'vas_int', 'vastus lateralis', 'VL'),
-        #     ((2, 0), 'med_gas', 'medial gastrocnemius', 'GAS'),
-        #     ((2, 1), 'soleus', 'soleus', 'SOL'),
-        #     ((2, 2), 'tib_ant', 'tibialis anterior', 'TA'),
-        # ]
         muscles = [
             ((0, 0), 'glmax2', 'gluteus maximus', 'GMAX'),
             ((0, 1), 'psoas', 'psoas', ''),
             ((1, 0), 'semimem', 'semimembranosus', 'MH'),
             ((0, 2), 'recfem', 'rectus femoris', 'RF'),
             ((1, 1), 'bfsh', 'biceps femoris short head', 'BF'),
-            ((1, 2), 'vasint', 'vastus lateralis', 'VL'),
+            ((1, 2), 'vasint', 'vastus intermedius', 'VL'),
             ((2, 0), 'gasmed', 'medial gastrocnemius', 'GAS'),
             ((2, 1), 'soleus', 'soleus', 'SOL'),
             ((2, 2), 'tibant', 'tibialis anterior', 'TA'),

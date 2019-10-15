@@ -179,7 +179,8 @@
         \mbox{subject to}
          \quad & \dot{q} = u \\
          & M(q, p)\dot{u} + G(q, p)^T \lambda = f_{\mathrm{app}}(t, y, x, p) - \mathrlap{f_{\mathrm{bias}}(q, u, p)}  & \textrm{multibody} \\
-         & \dot{z}(t) = f_{\mathrm{aux}}(t, y, x, \lambda, p) & \textrm{auxiliary} \\
+         & \dot{z}_\textrm{ex}(t) = f_{\dot{z},\textrm{ex}}(t, y, x, \lambda, p) & \textrm{auxiliary} \\
+         & 0 = f_{\dot{z},\textrm{im}}(t, y, \dot{z}_{\textrm{im}}, x, \lambda, p) \\
          & 0 = \phi(q, p) & \textrm{holonomic} \\
          & 0 = \nu(q, u, p) & \textrm{non-holonomic} \\
          & 0 = \alpha(q, u, \dot{u}, p) & \textrm{acceleration} \\
@@ -210,22 +211,23 @@
         & \quad\quad\quad S_{c,j} = \int_{t_0}^{t_f} s_{c,j}(t, \hat{q}, \hat{u}, z, x, \lambda, p)~dt\\
         \mbox{subject to} \quad &
          M(\hat{q}, p)\hat{\dot{u}} + G(\hat{q}, p)^T \lambda = f_{\textrm{app}}(t, \hat{q}, \hat{u}, z, x, p) - \mathrlap{f_{\textrm{bias}}(\hat{q}, \hat{u}, p)} & \textrm{multi.} \\
-         & \dot{z}(t) = f_{\textrm{aux}}(t, \hat{q}, \hat{u}, z, x, \lambda, p) & \textrm{auxiliary} \\
-         & V_{L,k} \leq V_k(t_0, t_f, \hat{q}_0, \hat{q}_f, \hat{u}_0, \hat{u}_f, z_0, z_f, x_{0}, x_{f}, \lambda_0, \mathrlap{\lambda_f, p, S_{e,k}) \leq V_{U,k}} \\
+        & \dot{z}_{\textrm{ex}}(t) = f_{\dot{z},\textrm{ex}}(t, \hat{q}, \hat{u}, z, x, \lambda, p) & \textrm{auxiliary} \\
+        & 0 = f_{\dot{z},\textrm{im}}(t, \hat{q}, \hat{u}, z, \dot{z}_\textrm{im}, x, \lambda, p) \\
+        & V_{L,k} \leq V_k(t_0, t_f, \hat{q}_0, \hat{q}_f, \hat{u}_0, \hat{u}_f, z_0, z_f, x_{0}, x_{f}, \lambda_0, \mathrlap{\lambda_f, p, S_{e,k}) \leq V_{U,k}} \\
         & \quad\quad\quad S_{e,k} = \int_{t_0}^{t_f} s_{e,k}(t, \hat{q}, \hat{u}, z, x, \lambda, p)~dt & \textrm{endpoint} \\
-         & \quad\quad\quad k = 1, \ldots, K \\
+        & \quad\quad\quad k = 1, \ldots, K \\
         & g_{L} \leq g(t, \hat{q}, \hat{u}, z, x, \lambda, p) \leq g_{U} & \textrm{endpoint} \\
-         & z_{0,L} \leq z_0 \leq z_{0,U} & \textrm{initial states} \\
-         & x_{0,L} \leq x_0 \leq x_{0,U} & \textrm{initial controls}\\
-         & z_{f,L} \leq z_f \leq z_{f,U} & \textrm{final states} \\
-         & x_{f,L} \leq x_f \leq x_{f,U} & \textrm{final controls} \\
-         \mbox{with respect to} \quad
-         & t_0 \in [t_{0,L}, t_{0,U}] & \textrm{initial time} \\
-         & t_f \in [t_{f,L}, t_{f,U}] & \textrm{final time} \\
-         & z \in [z_{L}, z_{U}] & \textrm{auxiliary states} \\
-         & x \in [x_{L}, x_{U}] & \textrm{controls} \\
-         & \lambda & \textrm{multipliers} \\
-         & p \in [p_{L}, p_{U}]. & \textrm{parameters}
+        & z_{0,L} \leq z_0 \leq z_{0,U} & \textrm{initial states} \\
+        & x_{0,L} \leq x_0 \leq x_{0,U} & \textrm{initial controls}\\
+        & z_{f,L} \leq z_f \leq z_{f,U} & \textrm{final states} \\
+        & x_{f,L} \leq x_f \leq x_{f,U} & \textrm{final controls} \\
+        \mbox{with respect to} \quad
+        & t_0 \in [t_{0,L}, t_{0,U}] & \textrm{initial time} \\
+        & t_f \in [t_{f,L}, t_{f,U}] & \textrm{final time} \\
+        & z \in [z_{L}, z_{U}] & \textrm{auxiliary states} \\
+        & x \in [x_{L}, x_{U}] & \textrm{controls} \\
+        & \lambda & \textrm{multipliers} \\
+        & p \in [p_{L}, p_{U}]. & \textrm{parameters}
     \end{aligned}
 \end{align}
 }
@@ -244,7 +246,7 @@
 
 \newcommand{\trapfuncs}{
 \begin{align}
-    f_{\textrm{mb}}(t, y, x, \lambda, p) &=
+    f_{\dot{u}}(t, y, x, \lambda, p) &=
           M(q, p)^{-1}\big[(f_{\textrm{app}}(t, y, x, p) - f_{\textrm{bias}}(q, u, p) - G(q, p)^T \lambda\big], \\
     \textrm{trap}_i(F(\eta, p)) &= \frac{1}{2} h_i (F(\eta_{i-1}, p) + F(\eta_i, p)),
 \end{align}
@@ -259,8 +261,10 @@
          & \quad\quad\quad S_{c,j} = \sum_{i=1}^{n} \textrm{trap}_i(s_{c,j}(t, y, x, \lambda, p)) \\
         \mbox{subject to} \quad
          & q_i = q_{i-1} + \textrm{trap}_i(u) && i = 1, \ldots, n \\
-         & u_i = u_{i-1} + \textrm{trap}_i(f_{\textrm{mb}}(t, y, x, \lambda, p))  && i = 1, \ldots, n \\
-         & z_i = z_{i-1} + \textrm{trap}_i(f_{\textrm{aux}}(t, y, x, \lambda, p)) && i = 1, \ldots, n \\
+         & u_i = u_{i-1} + \textrm{trap}_i(f_{\dot{u}}(t, y, x, \lambda, p))  && i = 1, \ldots, n \\
+         & z_{\textrm{ex},i} = z_{\textrm{ex},i-1} + \textrm{trap}_i(f_{\dot{z},\textrm{ex}}(t, y, x, \lambda, p)) && i = 1, \ldots, n \\
+         & z_{\textrm{im},i} = z_{\textrm{im},i-1} + \textrm{trap}_i(\zeta) && i = 1, \ldots, n \\
+         & 0 = f_{\dot{z},\textrm{im}}(t_i, y_i, \zeta_i, x_i, \lambda_i, p) && i = 0, \ldots, n \\
          & 0 = \phi(q_i)  && i = 0, \ldots, n\\
          & V_{L,k} \leq V_k(t_0, t_f, y_0, y_f, x_{0}, x_{f}, \lambda_0, \mathrlap{\lambda_f, p, S_{e,k}) \leq V_{U,k}} \\
          & \quad\quad\quad S_{e,k} = \sum_{i=1}^{n} \textrm{trap}_i(s_{e,k}(t, y, x, \lambda, p)) \\
@@ -272,6 +276,7 @@
          & y_0 \in [y_{0,L}, y_{0,U}] \\
          & y_i \in [y_{L}, y_{U}] && i = 1, \ldots, n - 1\\
          & y_n \in [y_{f,L}, y_{f,U}] \\
+         & \zeta_i \in [\zeta_{L}, \zeta_{U}] && i = 0, \ldots, n \\
          & x_0 \in [x_{0,L}, x_{0,U}] \\
          & x_i \in [x_{L}, x_{U}] && i = 1, \ldots, n - 1\\
          & x_n \in [x_{f,L}, x_{f,U}] \\
@@ -285,11 +290,11 @@
 \begin{align}
     \begin{aligned}
     \mbox{subject to} \quad
-         & u_i = u_{i-1} + \textrm{trap}_i(\zeta)  && i = 1, \ldots, n \\
-         & M(q_i, p)\zeta_i + G(q_i, p)^T \lambda_i =
+         & u_i = u_{i-1} + \textrm{trap}_i(\upsilon)  && i = 1, \ldots, n \\
+         & M(q_i, p)\upsilon_i + G(q_i, p)^T \lambda_i =
           f_{\textrm{app},i} - f_{\textrm{bias},i} && i = 0, \ldots, n \\
     \mbox{with respect to} \quad
-         & \zeta_i \in [-\zeta_{B}, \zeta_{B}] && i = 0, \ldots, n.\\
+         & \upsilon_i \in [-\upsilon_{B}, \upsilon_{B}] && i = 0, \ldots, n.\\
     \end{aligned}
 \end{align}
 }
@@ -325,10 +330,13 @@
         \mbox{subject to} \quad
          & \bar{q}_i = \textrm{hermite}_i(q, u) + G(\bar{q}_i, p)^T \bar{\gamma}_i && i = 1, \ldots, n \\
          & q_i = q_{i-1} + \textrm{simpson}_i(u) && i = 1, \ldots, n \\
-         & \bar{u}_i = \textrm{hermite}_i(u, f_{\textrm{mb}}(t, y, x, \lambda, p)) && i = 1, \ldots, n \\
-         & u_i = u_{i-1} + \textrm{simpson}_i(f_{\textrm{mb}}(t, y, x, \lambda, p))  && i = 1, \ldots, n \\
-         & \bar{z}_i = \textrm{hermite}_i(z, f_{\textrm{aux}}(t, y, x, \lambda, p)) && i = 1, \ldots, n \\
-         & z_i = z_{i-1} + \textrm{simpson}_i(f_{\textrm{aux}}(t, y, x, \lambda, p)) && i = 1, \ldots, n \\
+         & \bar{u}_i = \textrm{hermite}_i(u, f_{\dot{u}}(t, y, x, \lambda, p)) && i = 1, \ldots, n \\
+         & u_i = u_{i-1} + \textrm{simpson}_i(f_{\dot{u}}(t, y, x, \lambda, p))  && i = 1, \ldots, n \\
+         & \bar{z}_{\textrm{ex},i} = \textrm{hermite}_i(z_{\textrm{ex}}, f_{\dot{z},\textrm{ex}}(t, y, x, \lambda, p)) && i = 1, \ldots, n \\
+         & z_{\textrm{ex},i} = z_{\textrm{ex},i-1} + \textrm{simpson}_i(f_{\dot{z},\textrm{ex}}(t, y, x, \lambda, p)) && i = 1, \ldots, n \\
+         & \bar{z}_{\textrm{im},i} = \textrm{hermite}_i(z_{\textrm{im}}, \zeta) && i = 1, \ldots, n \\
+         & z_{\textrm{im},i} = z_{\textrm{im},i-1} + \textrm{simpson}_i(\zeta) && i = 1, \ldots, n \\
+         & 0 = f_{\dot{z},\textrm{im}}(t_i, y_i, \zeta_i, x_i, \lambda_i, p) && i = 0, \ldots, n \\
          & \bar{x}_i = (x_{i-1} + x_i)/2 && i = 1, \ldots, n \\
          & 0 = \phi(q_i)  && i = 0, \ldots, n\\
          & 0 = \dot{\phi}(q_i, u_i, p) && i = 0, \ldots, n\\
@@ -344,6 +352,8 @@
          & y_i \in [y_{L}, y_{U}] && i = 1, \ldots, n - 1 \\
          & \bar{y}_i \in [y_{L}, y_{U}] && i = 1, \ldots, n \\
          & y_n \in [y_{f,L}, y_{f,U}] \\
+         & \zeta_i \in [\zeta_{L}, \zeta_{U}] && i = 0, \ldots, n \\
+         & \bar{\zeta}_i \in [\zeta_{L}, \zeta_{U}] && i = 1, \ldots, n \\
          & x_0 \in [x_{0,L}, x_{0,U}] \\
          & x_i \in [x_{L}, x_{U}] && i = 1, \ldots, n - 1 \\
          & \bar{x}_i \in [x_{L}, x_{U}] && i = 1, \ldots, n \\
@@ -359,7 +369,7 @@
 \newcommand{\hermitesimpsonkincon}{
     \begin{align}
          0 &= \dot{\phi}(q, u, p) = G(q, p) u,\\
-         0 &= \ddot{\phi}(t, y, x, \lambda, p) = G(q, p) f_{\textrm{mb}}(t, y, x, \lambda, p) + \dot{G}(q, p) u.
+         0 &= \ddot{\phi}(t, y, x, \lambda, p) = G(q, p) f_{\dot{u}}(t, y, x, \lambda, p) + \dot{G}(q, p) u.
     \end{align}
 }
 
@@ -367,17 +377,17 @@
 \begin{align}
     \begin{aligned}
     \mbox{subject to} \quad
-         & \bar{u}_i = \textrm{hermite}_i(u, \zeta) && i = 1, \ldots, n \\
-         & u_i = u_{i-1} + \textrm{simpson}_i(\zeta)  && i = 1, \ldots, n \\
-         & M(q_i, p)\zeta_i + G(q_i, p)^T \lambda_i =
+         & \bar{u}_i = \textrm{hermite}_i(u, \upsilon) && i = 1, \ldots, n \\
+         & u_i = u_{i-1} + \textrm{simpson}_i(\upsilon)  && i = 1, \ldots, n \\
+         & M(q_i, p)\upsilon_i + G(q_i, p)^T \lambda_i =
           f_{\textrm{app},i} -
             f_{\textrm{bias},i} && i = 0, \ldots, n \\
-         & M(\bar{q}_i, p)\bar{\zeta}_i + G(\bar{q}_i, p)^T \bar{\lambda}_i =
+         & M(\bar{q}_i, p)\bar{\upsilon}_i + G(\bar{q}_i, p)^T \bar{\lambda}_i =
           \bar{f}_{\textrm{app},i} -
             \bar{f}_{\textrm{bias},i} && i = 1, \ldots, n \\
     \mbox{with respect to} \quad
-         & \zeta_i \in [-\zeta_{B}, \zeta_{B}] && i = 0, \ldots, n \\
-         & \bar{\zeta}_i \in [-\zeta_{B}, \zeta_{B}] && i = 1, \ldots, n.
+         & \upsilon_i \in [-\upsilon_{B}, \upsilon_{B}] && i = 0, \ldots, n \\
+         & \bar{\upsilon}_i \in [-\upsilon_{B}, \upsilon_{B}] && i = 1, \ldots, n.
     \end{aligned}
 \end{align}
 }
@@ -531,7 +541,7 @@ Mathematically, a \textit{MocoProblem} describes the optimization problem Eq (1)
 
 \ocp
 
-The variables must obey the system’s multibody dynamics (involving the mass matrix $M$; applied forces $f_\mathrm{app}$, from gravity, muscles, etc.; and centripetal and Coriolis terms $f_\mathrm{bias}$) and auxiliary dynamics $f_\mathrm{aux}$. The system may contain kinematic constraints at the position level (e.g., to prescribe the location of the patella based on the knee angle), $\phi$, velocity level, $\nu$, or acceleration level, $\alpha$. When kinematic constraints exist, we introduce time-dependent Lagrange multiplier variables $\lambda$ to enforce the constraints with forces applied in directions determined by the kinematic constraint Jacobian $G$.
+The variables must obey the system’s multibody dynamics (involving the mass matrix $M$; applied forces $f_\mathrm{app}$, from gravity, muscles, etc.; and centripetal and Coriolis terms $f_\mathrm{bias}$) and auxiliary dynamics $f_{\dot{z}}$. The system may contain kinematic constraints at the position level (e.g., to prescribe the location of the patella based on the knee angle), $\phi$, velocity level, $\nu$, or acceleration level, $\alpha$. When kinematic constraints exist, we introduce time-dependent Lagrange multiplier variables $\lambda$ to enforce the constraints with forces applied in directions determined by the kinematic constraint Jacobian $G$.
 
 Additionally, the variables must obey algebraic (non-differential) path constraints $g$ over the motion, with static bounds $g_L$ and $g_U$; and endpoint constraints $V_k$ with bounds $V_{L,k}$ and $V_{U,k}$. The cost terms and endpoint constraints may depend on initial and final time, states, controls, kinematic constraint multipliers (required for joint reactions), static parameters, and an integral, $S_\mathrm{c,j}$ or $S_\mathrm{e,k}$, over the motion.
 
@@ -623,11 +633,11 @@ The result of the trapezoidal transcription, with multibody dynamics expressed a
 
 In this form, the problem can be solved directly by an NLP solver.
 
-When expressing the multibody dynamics implicitly, we remove the constraint involving $f_\mathrm{mb}$, introduce generalized accelerations as an algebraic (control) variable $\zeta$, and enforce multibody dynamics in “inverse dynamics” form:
+When expressing the multibody dynamics implicitly, we remove the constraint involving $f_{\dot{u}}$, introduce generalized accelerations as an algebraic (control) variable $\upsilon$, and enforce multibody dynamics in “inverse dynamics” form:
 
 \trapimplicit
 
-The constant $\zeta_B$ is a large positive number (1000 by default).
+The constant $\upsilon_B$ is a large positive number (1000 by default).
 
 The dynamic, kinematic, and path constraints are enforced at a set of discrete time points, so the quadratic spline approximation to the continuous variables may violate the original continuous-time constraints between the discrete time points. For this reason, a mesh with more points leads to a more accurate solution.
 
@@ -650,7 +660,7 @@ For conciseness, we define the following functions:
 
 where $\mathrm{hermite}_i()$ represents the Hermite interpolant and $\mathrm{simpson}_i()$ represents the Simpson integration rule. Again, $F$ is a function for mesh interval $i$, and $\eta$ represents any subset of continuous variables.
 
-Using the explicit multibody dynamics function $f_{\textrm{mb}}$ defined previously, Hermite-Simpson transcription results in the following NLP:
+Using the explicit multibody dynamics function $f_{\dot{u}}$ defined previously, Hermite-Simpson transcription results in the following NLP:
 
 \hermitesimpsonnlp
 
@@ -662,7 +672,7 @@ The explicit multibody dynamics function is used here where $ \dot{u} $ would ap
 
 Algebraic constraints are not enforced at the midpoints of the mesh intervals, but exhibit fourth-order accuracy at these points~\cite{Posa:2016}.
 
-For implicit multibody dynamics, we again remove the constraints involving $f_\mathrm{mb}$ and introduce generalized accelerations as an algebraic variable $\zeta$ to enforce multibody dynamics in “inverse dynamics” form:
+For implicit multibody dynamics, we again remove the constraints involving $f_{\dot{u}}$ and introduce generalized accelerations as an algebraic variable $\upsilon$ to enforce multibody dynamics in “inverse dynamics” form:
 
 \hermitesimpsonimplicit
 

@@ -46,6 +46,7 @@ class MotionTrackingWalking(MocoPaperResult):
             ['subtalar_r', 'mtp_r', 'subtalar_l', 'mtp_l']))
         modelProcessor.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())
         modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
+        modelProcessor.append(osim.ModOpAddReserves(10))
         # modelProcessor.append(osim.ModOpScaleTendonSlackLength(0.99))
         # modelProcessor.append(osim.ModOpIgnoreTendonCompliance())
         
@@ -62,10 +63,8 @@ class MotionTrackingWalking(MocoPaperResult):
         
 
         # Create model for CMC:
-        #   - weak, unbounded reserves
         #   - explicit tendon compliance mode
         modelProcessorCMC = osim.ModelProcessor(baseModel)
-        modelProcessorCMC.append(osim.ModOpAddReserves(10))
         cmcModel = modelProcessorCMC.process()
         cmcModel.initSystem()
         muscles = cmcModel.updMuscles()
@@ -73,6 +72,8 @@ class MotionTrackingWalking(MocoPaperResult):
             muscle = osim.DeGrooteFregly2016Muscle.safeDownCast(
                 muscles.get(int(imusc)))
             muscle.set_tendon_compliance_dynamics_mode('explicit')
+            muscle.set_clamp_normalized_tendon_length(True)
+            # muscle.set_minimum_normalized_tendon_length(1.02)
 
         tasks = osim.CMC_TaskSet()
         for coord in cmcModel.getCoordinateSet():
@@ -90,7 +91,6 @@ class MotionTrackingWalking(MocoPaperResult):
                             "subject_walk_armless_for_cmc.osim")
 
         # Create direct collocation model:
-        #   - strong, bounded reserves (minimized in problem)
         #   - implicit tendon compliance mode (default)
         #   - add external loads
         ext_loads_xml = "resources/Rajagopal2016/grf_walk.xml"
@@ -100,8 +100,6 @@ class MotionTrackingWalking(MocoPaperResult):
                 muscles.get(int(imusc)))
             muscle.set_tendon_compliance_dynamics_mode('implicit')
         modelProcessorDC = osim.ModelProcessor(baseModel)
-        # modelProcessorDC.append(osim.ModOpAddReserves(200, 1, True))
-        modelProcessorDC.append(osim.ModOpAddReserves(10))
         modelProcessorDC.append(osim.ModOpAddExternalLoads(ext_loads_xml))
 
         return modelProcessorDC

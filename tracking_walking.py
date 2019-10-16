@@ -40,40 +40,22 @@ class MotionTrackingWalking(MocoPaperResult):
 
         # Create base model without reserves.
         modelProcessor = osim.ModelProcessor(
-            # "resources/Rajagopal2016/subject_walk_armless_18musc.osim")
-            "resources/Rajagopal2016/subject_walk_armless_80musc_test.osim")
+            "resources/Rajagopal2016/subject_walk_armless_80musc.osim")
         modelProcessor.append(osim.ModOpReplaceJointsWithWelds(
             ['subtalar_r', 'mtp_r', 'subtalar_l', 'mtp_l']))
         modelProcessor.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())
         modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
         modelProcessor.append(osim.ModOpAddReserves(10))
-        # modelProcessor.append(osim.ModOpScaleTendonSlackLength(0.99))
-        # modelProcessor.append(osim.ModOpIgnoreTendonCompliance())
-        
-        # Only enable tendon compliance for soleus and gastroc muscles.
+        modelProcessor.append(osim.ModOpIgnoreTendonCompliance())
+
         baseModel = modelProcessor.process()
-        baseModel.initSystem()
-        muscles = baseModel.updMuscles()
-        for imusc in np.arange(muscles.getSize()):
-            muscle = muscles.get(int(imusc))
-            if 'gas' in muscle.getName() or 'soleus' in muscle.getName():
-                muscle.set_ignore_tendon_compliance(False)
-            else:
-                muscle.set_ignore_tendon_compliance(True)
-        
 
         # Create model for CMC:
         #   - explicit tendon compliance mode
         modelProcessorCMC = osim.ModelProcessor(baseModel)
+        modelProcessorCMC.append(
+            osim.ModOpTendonComplianceDynamicsModeDGF('explicit'))
         cmcModel = modelProcessorCMC.process()
-        cmcModel.initSystem()
-        muscles = cmcModel.updMuscles()
-        for imusc in np.arange(muscles.getSize()):
-            muscle = osim.DeGrooteFregly2016Muscle.safeDownCast(
-                muscles.get(int(imusc)))
-            muscle.set_tendon_compliance_dynamics_mode('explicit')
-            muscle.set_clamp_normalized_tendon_length(True)
-            # muscle.set_minimum_normalized_tendon_length(1.02)
 
         tasks = osim.CMC_TaskSet()
         for coord in cmcModel.getCoordinateSet():
@@ -91,15 +73,22 @@ class MotionTrackingWalking(MocoPaperResult):
                             "subject_walk_armless_for_cmc.osim")
 
         # Create direct collocation model:
-        #   - implicit tendon compliance mode (default)
+        #   - implicit tendon compliance mode
         #   - add external loads
-        ext_loads_xml = "resources/Rajagopal2016/grf_walk.xml"
+
+        # Only enable tendon compliance for soleus and gastroc muscles.
+        baseModel.initSystem()
         muscles = baseModel.updMuscles()
         for imusc in np.arange(muscles.getSize()):
-            muscle = osim.DeGrooteFregly2016Muscle.safeDownCast(
-                muscles.get(int(imusc)))
-            muscle.set_tendon_compliance_dynamics_mode('implicit')
+            muscle = muscles.get(int(imusc))
+            if 'gas' in muscle.getName() or 'soleus' in muscle.getName():
+                muscle.set_ignore_tendon_compliance(False)
+
         modelProcessorDC = osim.ModelProcessor(baseModel)
+        modelProcessorDC.append(
+            osim.ModOpTendonComplianceDynamicsModeDGF('implicit'))
+
+        ext_loads_xml = "resources/Rajagopal2016/grf_walk.xml"
         modelProcessorDC.append(osim.ModOpAddExternalLoads(ext_loads_xml))
 
         return modelProcessorDC

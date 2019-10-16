@@ -45,18 +45,13 @@ class MotionTrackingWalking(MocoPaperResult):
             ['subtalar_r', 'mtp_r', 'subtalar_l', 'mtp_l']))
         modelProcessor.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())
         modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
-        modelProcessor.append(osim.ModOpAddReserves(1))
-        # modelProcessor.append(osim.ModOpScaleTendonSlackLength(0.99))
-        # modelProcessor.append(osim.ModOpIgnoreTendonCompliance())
-        
-        # Only enable tendon compliance for soleus and gastroc muscles.
+        modelProcessor.append(osim.ModOpIgnoreTendonCompliance())
+        modelProcessor.append(osim.ModOpAddReserves(1, 5, True))   
         baseModel = modelProcessor.process()
 
-        # Create model for CMC:
-        #   - explicit tendon compliance mode
+        # Create model for CMC
+        # - ignore tendon compliance
         modelProcessorCMC = osim.ModelProcessor(baseModel)
-        modelProcessorCMC.append(
-            osim.ModOpTendonComplianceDynamicsModeDGF('explicit'))
         cmcModel = modelProcessorCMC.process()
         tasks = osim.CMC_TaskSet()
         for coord in cmcModel.getCoordinateSet():
@@ -164,7 +159,7 @@ class MotionTrackingWalking(MocoPaperResult):
         inverse.set_final_time(self.final_time)
         inverse.set_mesh_interval(0.05)
         inverse.set_kinematics_allow_extra_columns(True)
-        inverse.set_tolerance(1e-3)
+        inverse.set_tolerance(1e-2)
         # inverse.set_reserves_weight(10.0)
         # 8 minutes
         if self.inverse:

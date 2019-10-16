@@ -53,13 +53,13 @@ class MotionTrackingWalking(MocoPaperResult):
         # Only enable tendon compliance for soleus and gastroc muscles.
         baseModel = modelProcessor.process()
         baseModel.initSystem()
-        muscles = baseModel.updMuscles()
-        for imusc in np.arange(muscles.getSize()):
-            muscle = muscles.get(int(imusc))
-            if 'gas' in muscle.getName() or 'soleus' in muscle.getName():
-                muscle.set_ignore_tendon_compliance(False)
-            else:
-                muscle.set_ignore_tendon_compliance(True)
+        # muscles = baseModel.updMuscles()
+        # for imusc in np.arange(muscles.getSize()):
+        #     muscle = muscles.get(int(imusc))
+        #     if 'gas' in muscle.getName() or 'soleus' in muscle.getName():
+        #         muscle.set_ignore_tendon_compliance(False)
+        #     else:
+        #         muscle.set_ignore_tendon_compliance(True)
         
 
         # Create model for CMC:
@@ -71,8 +71,10 @@ class MotionTrackingWalking(MocoPaperResult):
         for imusc in np.arange(muscles.getSize()):
             muscle = osim.DeGrooteFregly2016Muscle.safeDownCast(
                 muscles.get(int(imusc)))
-            muscle.set_tendon_compliance_dynamics_mode('explicit')
-            muscle.set_clamp_normalized_tendon_length(True)
+            # muscle.set_tendon_compliance_dynamics_mode('explicit')
+            # muscle.set_clamp_normalized_tendon_length(True)
+            muscle.set_ignore_tendon_compliance(True)
+
             # muscle.set_minimum_normalized_tendon_length(1.02)
 
         tasks = osim.CMC_TaskSet()
@@ -99,6 +101,11 @@ class MotionTrackingWalking(MocoPaperResult):
             muscle = osim.DeGrooteFregly2016Muscle.safeDownCast(
                 muscles.get(int(imusc)))
             muscle.set_tendon_compliance_dynamics_mode('implicit')
+            if 'gas' in muscle.getName() or 'soleus' in muscle.getName():
+                muscle.set_ignore_tendon_compliance(False)
+            else:
+                muscle.set_ignore_tendon_compliance(True)
+
         modelProcessorDC = osim.ModelProcessor(baseModel)
         modelProcessorDC.append(osim.ModOpAddExternalLoads(ext_loads_xml))
 

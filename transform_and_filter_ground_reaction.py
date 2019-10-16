@@ -6,7 +6,6 @@ import numpy as np
 from scipy.signal import butter, filtfilt
 
 import pylab as pl
-pl.matplotlib.use('TkAgg')
 
 from utilities import ANCFile, \
     remove_fields_from_structured_ndarray, ndarray2storage, \

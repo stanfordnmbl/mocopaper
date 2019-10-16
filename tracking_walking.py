@@ -108,11 +108,9 @@ class MotionTrackingWalking(MocoPaperResult):
 
         modelProcessorDC = osim.ModelProcessor(baseModel)
         modelProcessorDC.append(osim.ModOpAddExternalLoads(ext_loads_xml))
-
         return modelProcessorDC
 
     def parse_args(self, args):
-
         self.cmc = False
         self.track = False
         self.inverse = False
@@ -122,6 +120,8 @@ class MotionTrackingWalking(MocoPaperResult):
             self.track = True
             self.inverse = True
             self.knee = True
+            return
+        print('Received arguments {}'.format(args))
         if 'cmc' in args:
             self.cmc = True
         if 'track' in args:
@@ -216,6 +216,7 @@ class MotionTrackingWalking(MocoPaperResult):
         track.setModel(modelProcessor)
         track.setStatesReference(coordinates)
         track.set_states_global_tracking_weight(0.05)
+        track.set_control_effort_weight(1.0)
 
         # This setting allows extra data columns contained in the states
         # reference that don't correspond to model coordinates.
@@ -223,10 +224,19 @@ class MotionTrackingWalking(MocoPaperResult):
 
         track.set_track_reference_position_derivatives(True)
 
+        # TODO: Use MocoInverse solution as initial guess for MocoTrack.
+        track.set_apply_tracked_states_to_guess(True)
+
+        track.set_bound_kinematic_states(True)
+        track.set_state_bound_range_rotational(np.deg2rad(10))
+        track.set_state_bound_range_translational(0.10)
+        # TODO implicit?
+        # TODO penalize accelerations?
+
         # Initial time, final time, and mesh interval.
         track.set_initial_time(self.initial_time)
         track.set_final_time(self.final_time)
-        track.set_mesh_interval(0.01)
+        track.set_mesh_interval(0.02)
 
         moco = track.initialize()
         moco.set_write_solution("results/")
@@ -240,7 +250,11 @@ class MotionTrackingWalking(MocoPaperResult):
         problem.addGoal(osim.MocoInitialActivationGoal('init_activation'))
 
         solver = osim.MocoCasADiSolver.safeDownCast(moco.updSolver())
-        solver.set_optim_convergence_tolerance(1e-4)
+        solver.set_optim_convergence_tolerance(1e-3)
+        solver.set_implicit_multibody_acceleration_bounds(
+            osim.MocoBounds(-50, 50))
+        solver.set_implicit_auxiiary_derivative_bounds(
+            osim.MocoBounds(-100, 100))
 
         # Solve and visualize.
         moco.printToXML('motion_tracking_walking.omoco')
@@ -254,7 +268,9 @@ class MotionTrackingWalking(MocoPaperResult):
         if shift:
             shifted_time, shifted_y = self.shift(time, y)
         else:
-            raise Exception("Unsupported.")
+            duration = self.final_time - self.initial_time
+            shifted_time, shifted_y = self.shift(time, y,
+                                                 starting_time=self.initial_time + 0.5 * duration)
 
         # TODO is this correct?
         duration = self.final_time - self.initial_time
@@ -352,7 +368,7 @@ class MotionTrackingWalking(MocoPaperResult):
         if self.knee:
             sol_inverse_jr_table = osim.TimeSeriesTable(self.mocoinverse_jointreaction_solution_file)
             inverse_jr_duration = sol_inverse_jr_table.getTableMetaDataString('solver_duration')
-            inverse_jr_duration = float(inverse_jr_duration) / 60.0 / 60.0
+            inverse_jr_duration = float(inverse_jr_duration) / 60.0
             print('inverse joint reaction duration ', inverse_jr_duration)
             with open('results/'
                       'motion_tracking_walking_inverse_jr_duration.txt', 'w') as f:
@@ -480,25 +496,13 @@ class MotionTrackingWalking(MocoPaperResult):
         #     ax.spines['bottom'].set_position('zero')
         #     utilities.publication_spines(ax)
 
-        # TODO: Compare to EMG.
-        # muscles = [
-        #     ((0, 0), 'glut_max2', 'gluteus maximus', 'GMAX'),
-        #     ((0, 1), 'psoas', 'psoas', ''),
-        #     ((1, 0), 'semimem', 'semimembranosus', 'MH'),
-        #     ((0, 2), 'rect_fem', 'rectus femoris', 'RF'),
-        #     ((1, 1), 'bifemsh', 'biceps femoris short head', 'BF'),
-        #     ((1, 2), 'vas_int', 'vastus lateralis', 'VL'),
-        #     ((2, 0), 'med_gas', 'medial gastrocnemius', 'GAS'),
-        #     ((2, 1), 'soleus', 'soleus', 'SOL'),
-        #     ((2, 2), 'tib_ant', 'tibialis anterior', 'TA'),
-        # ]
         muscles = [
             ((0, 0), 'glmax2', 'gluteus maximus', 'GMAX'),
             ((0, 1), 'psoas', 'psoas', ''),
             ((1, 0), 'semimem', 'semimembranosus', 'MH'),
             ((0, 2), 'recfem', 'rectus femoris', 'RF'),
             ((1, 1), 'bfsh', 'biceps femoris short head', 'BF'),
-            ((1, 2), 'vasint', 'vastus lateralis', 'VL'),
+            ((1, 2), 'vasint', 'vastus intermedius', 'VL'),
             ((2, 0), 'gasmed', 'medial gastrocnemius', 'GAS'),
             ((2, 1), 'soleus', 'soleus', 'SOL'),
             ((2, 2), 'tibant', 'tibialis anterior', 'TA'),
@@ -529,7 +533,7 @@ class MotionTrackingWalking(MocoPaperResult):
                           linewidth=2)
             if self.cmc and len(muscle[3]) > 0:
                 self.plot(ax, emg['time'], emg[muscle[3]] * np.max(cmc_activ),
-                          # shift=False,
+                          shift=False,
                           fill=True,
                           color='lightgray')
             if muscle[0][0] == 0 and muscle[0][1] == 0:
@@ -571,7 +575,7 @@ class MotionTrackingWalking(MocoPaperResult):
         fig.savefig('figures/motion_tracking_walking.pdf')
         fig.savefig('figures/motion_tracking_walking.png', dpi=600)
 
-        if self.cmc:
+        if self.cmc and self.inverse:
             mocosol_cmc = sol_inverse.clone()
             mocosol_cmc.insertStatesTrajectory(sol_cmc, True)
             inv_sol_rms = \

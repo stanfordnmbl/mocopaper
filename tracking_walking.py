@@ -191,6 +191,7 @@ class MotionTrackingWalking(MocoPaperResult):
         track.setModel(modelProcessor)
         track.setStatesReference(coordinates)
         track.set_states_global_tracking_weight(0.05)
+        track.set_control_effort_weight(1.0)
 
         # This setting allows extra data columns contained in the states
         # reference that don't correspond to model coordinates.
@@ -201,10 +202,16 @@ class MotionTrackingWalking(MocoPaperResult):
         # TODO: Use MocoInverse solution as initial guess for MocoTrack.
         track.set_apply_tracked_states_to_guess(True)
 
+        track.set_bound_kinematic_states(True)
+        track.set_state_bound_range_rotational(np.deg2rad(10))
+        track.set_state_bound_range_translational(0.10)
+        # TODO implicit?
+        # TODO penalize accelerations?
+
         # Initial time, final time, and mesh interval.
         track.set_initial_time(self.initial_time)
         track.set_final_time(self.final_time)
-        track.set_mesh_interval(0.01)
+        track.set_mesh_interval(0.02)
 
         moco = track.initialize()
         moco.set_write_solution("results/")
@@ -218,7 +225,11 @@ class MotionTrackingWalking(MocoPaperResult):
         problem.addGoal(osim.MocoInitialActivationGoal('init_activation'))
 
         solver = osim.MocoCasADiSolver.safeDownCast(moco.updSolver())
-        solver.set_optim_convergence_tolerance(1e-4)
+        solver.set_optim_convergence_tolerance(1e-3)
+        solver.set_implicit_multibody_acceleration_bounds(
+            osim.MocoBounds(-50, 50))
+        solver.set_implicit_auxiiary_derivative_bounds(
+            osim.MocoBounds(-100, 100))
 
         # Solve and visualize.
         moco.printToXML('motion_tracking_walking.omoco')

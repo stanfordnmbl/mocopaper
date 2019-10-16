@@ -152,6 +152,8 @@ class MotionTrackingWalking(MocoPaperResult):
         if self.cmc:
             cmc.run()
 
+        # MocoInverse
+        # -----------
         inverse = osim.MocoInverse()
         inverse.setModel(modelProcessor)
         inverse.setKinematics(coordinates)
@@ -159,13 +161,15 @@ class MotionTrackingWalking(MocoPaperResult):
         inverse.set_final_time(self.final_time)
         inverse.set_mesh_interval(0.05)
         inverse.set_kinematics_allow_extra_columns(True)
-        inverse.set_tolerance(1e-2)
-        # inverse.set_reserves_weight(10.0)
+        inverse.set_convergence_tolerance(1e-2)
+        # inverse.set_reserves_weight(100.0)
         # 8 minutes
         if self.inverse:
             solution = inverse.solve()
             solution.getMocoSolution().write(self.mocoinverse_solution_file)
 
+        # MocoInverse, minimize joint reactions
+        # -------------------------------------
         study = inverse.initialize()
         reaction_r = osim.MocoJointReactionGoal('reaction_r', 0.1)
         reaction_r.setJointPath('/jointset/walker_knee_r')
@@ -179,8 +183,6 @@ class MotionTrackingWalking(MocoPaperResult):
 
 
         solver = osim.MocoCasADiSolver.safeDownCast(study.updSolver())
-        # TODO: try 1e-2 for MocoInverse without JR minimization.
-        solver.set_optim_convergence_tolerance(1e-2)
 
         # 50 minutes.
         if self.knee:
@@ -220,6 +222,8 @@ class MotionTrackingWalking(MocoPaperResult):
         moco.set_write_solution("results/")
 
         problem = moco.updProblem()
+
+        problem.updPhase().setDefaultSpeedBounds(osim.MocoBounds(-10, 10))
         effort = osim.MocoControlGoal.safeDownCast(
             problem.updGoal("control_effort"))
         effort.setWeightForControlPattern('.*reserve_.*', 50)

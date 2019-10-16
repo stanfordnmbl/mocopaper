@@ -199,14 +199,16 @@ class SuspendedMass(MocoPaperResult):
             f.write(f'{track_p_rms:.3f}')
 
         ax = fig.add_subplot(grid[:, 0:2])
+
+        initial_alpha = 0.1
         ax.plot([-self.width, self.xinit],
-                [0, self.yinit], color='tab:red', alpha=0.3,
+                [0, self.yinit], color='tab:red', alpha=initial_alpha,
                 linewidth=3)
         ax.plot([0, self.xinit],
-                [0, self.yinit], color='tab:red', alpha=0.3,
+                [0, self.yinit], color='tab:red', alpha=initial_alpha,
                 linewidth=3)
         ax.plot([self.width, self.xinit],
-                [0, self.yinit], color='tab:red', alpha=0.3,
+                [0, self.yinit], color='tab:red', alpha=initial_alpha,
                 linewidth=3)
 
         ax.plot([-self.width, self.xfinal],
@@ -218,8 +220,14 @@ class SuspendedMass(MocoPaperResult):
         ax.plot([self.width, self.xfinal],
                 [0, self.yfinal], color='tab:red',
                 linewidth=3)
-        ax.plot([-1.1 * self.width, 1.1 * self.width], [0.005, 0.005], color='k',
-                linewidth=3)
+        ax.plot([-1.1 * self.width, 1.1 * self.width], [0.004, 0.004], color='k',
+                linewidth=2.5)
+
+        ax.plot([-self.width, 0, self.width],
+                np.zeros(3),
+                linestyle='',
+                markersize=4,
+                marker='o', color='black')
 
         ax.annotate('', xy=(0, -0.85 * self.width), xycoords='data',
                     xytext=(0, -0.7 * self.width),
@@ -246,9 +254,13 @@ class SuspendedMass(MocoPaperResult):
                     linestyle='-', linewidth=1,
                     label='MocoTrack, $x^4$')
         plt.annotate('initial', (self.xinit, self.yinit),
-                     xytext=(self.xinit - 0.02, self.yinit - 0.03))
+                     xytext=(self.xinit - 0.02, self.yinit - 0.03),
+                     color='tab:red',
+                     alpha=0.5)
         plt.annotate('final', (self.xfinal, self.yfinal),
-                     xytext=(self.xfinal + 0.008, self.yfinal - 0.03))
+                     xytext=(self.xfinal + 0.008, self.yfinal - 0.03),
+                     color='tab:red',
+                     )
         ax.plot([self.xinit, self.xfinal],
                 [self.yinit, self.yfinal],
                 color='k', marker='o',

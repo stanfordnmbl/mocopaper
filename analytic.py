@@ -7,7 +7,7 @@ from moco_paper_result import MocoPaperResult
 class Analytic(MocoPaperResult):
     def __init__(self):
         self.solution_file = 'results/analytic_solution.sto'
-    def generate_results(self):
+    def generate_results(self, args):
         model = osim.Model()
         body = osim.Body("b", 1, osim.Vec3(0), osim.Inertia(0))
         model.addBody(body)
@@ -40,7 +40,7 @@ class Analytic(MocoPaperResult):
         solution = moco.solve()
         solution.write(self.solution_file)
 
-    def report_results(self):
+    def report_results(self, args):
         solution = osim.MocoTrajectory(self.solution_file)
         time = solution.getTimeMat()
 

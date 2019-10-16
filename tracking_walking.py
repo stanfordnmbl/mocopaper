@@ -45,7 +45,7 @@ class MotionTrackingWalking(MocoPaperResult):
             ['subtalar_r', 'mtp_r', 'subtalar_l', 'mtp_l']))
         modelProcessor.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())
         modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
-        modelProcessor.append(osim.ModOpAddReserves(10))
+        modelProcessor.append(osim.ModOpAddReserves(1, 300))
         modelProcessor.append(osim.ModOpIgnoreTendonCompliance())
 
         baseModel = modelProcessor.process()
@@ -397,7 +397,7 @@ class MotionTrackingWalking(MocoPaperResult):
 
         if self.knee:
             report = osim.report.Report(model,
-                                        self.mocoinverse_jointreaction_solution_file)
+                                        mocoinverse_jr_solution_file)
             report.generate()
 
         if self.track:
@@ -509,7 +509,7 @@ class MotionTrackingWalking(MocoPaperResult):
                 cmc_activ = toarray(sol_cmc.getDependentColumn(activation_path))
                 self.plot(ax, time_cmc,
                           cmc_activ,
-                          linewidth=3,
+                          linewidth=2,
                           label='CMC',
                           )
             if self.track:

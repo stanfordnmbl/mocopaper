@@ -46,21 +46,12 @@ class MotionTrackingWalking(MocoPaperResult):
             ['subtalar_r', 'mtp_r', 'subtalar_l', 'mtp_l']))
         modelProcessor.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())
         modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
-        modelProcessor.append(osim.ModOpAddReserves(10))
+        modelProcessor.append(osim.ModOpAddReserves(1))
         # modelProcessor.append(osim.ModOpScaleTendonSlackLength(0.99))
         # modelProcessor.append(osim.ModOpIgnoreTendonCompliance())
         
         # Only enable tendon compliance for soleus and gastroc muscles.
         baseModel = modelProcessor.process()
-        baseModel.initSystem()
-        # muscles = baseModel.updMuscles()
-        # for imusc in np.arange(muscles.getSize()):
-        #     muscle = muscles.get(int(imusc))
-        #     if 'gas' in muscle.getName() or 'soleus' in muscle.getName():
-        #         muscle.set_ignore_tendon_compliance(False)
-        #     else:
-        #         muscle.set_ignore_tendon_compliance(True)
-        
 
         # Create model for CMC:
         #   - explicit tendon compliance mode
@@ -74,8 +65,6 @@ class MotionTrackingWalking(MocoPaperResult):
             # muscle.set_tendon_compliance_dynamics_mode('explicit')
             # muscle.set_clamp_normalized_tendon_length(True)
             muscle.set_ignore_tendon_compliance(True)
-
-            # muscle.set_minimum_normalized_tendon_length(1.02)
 
         tasks = osim.CMC_TaskSet()
         for coord in cmcModel.getCoordinateSet():
@@ -96,6 +85,7 @@ class MotionTrackingWalking(MocoPaperResult):
         #   - implicit tendon compliance mode (default)
         #   - add external loads
         ext_loads_xml = "resources/Rajagopal2016/grf_walk.xml"
+        baseModel.initSystem()
         muscles = baseModel.updMuscles()
         for imusc in np.arange(muscles.getSize()):
             muscle = osim.DeGrooteFregly2016Muscle.safeDownCast(
@@ -182,7 +172,7 @@ class MotionTrackingWalking(MocoPaperResult):
         inverse.set_mesh_interval(0.05)
         inverse.set_kinematics_allow_extra_columns(True)
         inverse.set_tolerance(1e-3)
-        # inverse.set_reserves_weight(100.0)
+        # inverse.set_reserves_weight(10.0)
         # 8 minutes
         if self.inverse:
             solution = inverse.solve()

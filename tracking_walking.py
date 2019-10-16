@@ -49,6 +49,12 @@ class MotionTrackingWalking(MocoPaperResult):
         modelProcessor.append(osim.ModOpIgnoreTendonCompliance())
 
         baseModel = modelProcessor.process()
+        baseModel.initSystem()
+        muscles = baseModel.updMuscles()
+        for imusc in np.arange(muscles.getSize()):
+            muscle = osim.DeGrooteFregly2016Muscle.safeDownCast(
+                muscles.get(int(imusc)))
+            muscle.set_fiber_damping(0)
 
         # Create model for CMC:
         #   - explicit tendon compliance mode
@@ -56,12 +62,6 @@ class MotionTrackingWalking(MocoPaperResult):
         modelProcessorCMC.append(
             osim.ModOpTendonComplianceDynamicsModeDGF('explicit'))
         cmcModel = modelProcessorCMC.process()
-        cmcModel.initSystem()
-        muscles = cmcModel.updMuscles()
-        for imusc in np.arange(muscles.getSize()):
-            muscle = osim.DeGrooteFregly2016Muscle.safeDownCast(
-                muscles.get(int(imusc)))
-            muscle.set_fiber_damping(0)
 
         tasks = osim.CMC_TaskSet()
         for coord in cmcModel.getCoordinateSet():
@@ -171,7 +171,7 @@ class MotionTrackingWalking(MocoPaperResult):
         inverse.set_mesh_interval(0.05)
         inverse.set_kinematics_allow_extra_columns(True)
         inverse.set_tolerance(1e-3)
-        inverse.set_reserves_weight(100.0)
+        # inverse.set_reserves_weight(100.0)
         # 8 minutes
         if self.inverse:
             solution = inverse.solve()
@@ -216,9 +216,9 @@ class MotionTrackingWalking(MocoPaperResult):
         # TODO: Use MocoInverse solution as initial guess for MocoTrack.
         track.set_apply_tracked_states_to_guess(True)
 
-        track.set_bound_kinematic_states(True)
-        track.set_state_bound_range_rotational(np.deg2rad(10))
-        track.set_state_bound_range_translational(0.10)
+        # track.set_bound_kinematic_states(True)
+        # track.set_state_bound_range_rotational(np.deg2rad(10))
+        # track.set_state_bound_range_translational(0.10)
         # TODO implicit?
         # TODO penalize accelerations?
 
@@ -242,7 +242,7 @@ class MotionTrackingWalking(MocoPaperResult):
         solver.set_optim_convergence_tolerance(1e-3)
         solver.set_implicit_multibody_acceleration_bounds(
             osim.MocoBounds(-50, 50))
-        solver.set_implicit_auxiiary_derivative_bounds(
+        solver.set_implicit_auxiliary_derivative_bounds(
             osim.MocoBounds(-100, 100))
 
         # Solve and visualize.
@@ -391,12 +391,18 @@ class MotionTrackingWalking(MocoPaperResult):
         model.initSystem()
         print(f'Degrees of freedom: {model.getCoordinateSet().getSize()}')
 
+        if self.inverse:
+            report = osim.report.Report(model, self.mocoinverse_solution_file)
+            report.generate()
 
-        # report = osim.report.Report(model, self.mocotrack_solution_file)
-        # report.generate()
-        #
-        # report = osim.report.Report(model, self.mocoinverse_solution_file)
-        # report.generate()
+        if self.knee:
+            report = osim.report.Report(model,
+                                        self.mocoinverse_jointreaction_solution_file)
+            report.generate()
+
+        if self.track:
+            report = osim.report.Report(model, self.mocotrack_solution_file)
+            report.generate()
 
         # TODO: slight shift in CMC solution might be due to how we treat
         # percent gait cycle and the fact that CMC is missing 0.02 seconds.
@@ -511,8 +517,8 @@ class MotionTrackingWalking(MocoPaperResult):
                           label='MocoTrack',
                           linewidth=2)
             if self.inverse:
-                self.plot(ax, time_inverse,
-                          sol_inverse.getStateMat(activation_path),
+                inverse_activ = sol_inverse.getStateMat(activation_path)
+                self.plot(ax, time_inverse, inverse_activ,
                           label='MocoInverse',
                           linewidth=2)
             if self.knee:
@@ -520,8 +526,9 @@ class MotionTrackingWalking(MocoPaperResult):
                           sol_inverse_jointreaction.getStateMat(activation_path),
                           label='MocoInverse, knee',
                           linewidth=2)
-            if self.cmc and len(muscle[3]) > 0:
-                self.plot(ax, emg['time'], emg[muscle[3]] * np.max(cmc_activ),
+            if self.inverse and len(muscle[3]) > 0:
+                self.plot(ax, emg['time'],
+                          emg[muscle[3]] * np.max(inverse_activ),
                           shift=False,
                           fill=True,
                           color='lightgray')

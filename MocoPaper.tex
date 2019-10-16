@@ -182,11 +182,10 @@
          & \dot{z}(t) = f_{\mathrm{aux}}(t, y, x, \lambda, p) & \textrm{auxiliary} \\
          & 0 = \phi(q, p) & \textrm{kinematic constraints} \\
          & V_{L,k} \leq V_k(t_0, t_f, y_0, \mathrlap{y_f, x_{0}, x_{f}, \lambda_0, \lambda_f, p, S_{e,k}) \leq V_{U,k}} & \textrm{endpoint} \\
-         & \quad\quad S_{e,k} = \mathrlap{\int_{t_0}^{t_f} s_{e,k}(t, y, x, \lambda, p)\,dt \quad\quad k = 1, \ldots, K}\\
+         & \quad\quad S_{e,k} = \mathrlap{\int_{t_0}^{t_f} s_{e,k}(t, y, x, \lambda, p)\,dt \quad k = 1, \ldots, K}\\
          & g_{L} \leq g(t, y, x, \lambda, p) \leq g_{U} & \textrm{path} \\
          & y_{0,L} \leq y_0 \leq y_{0,U} \quad\quad y_{f,L} \leq y_f \leq y_{f,U} & \textrm{initial and final states} \\
          & x_{0,L} \leq x_0 \leq x_{0,U} \quad\quad x_{f,L} \leq x_f \leq x_{f,U} & \textrm{initial and final controls} \\
-        \\
          \mbox{with respect to} \quad
          & t_0 \in [t_{0,L}, t_{0,U}] & \textrm{initial time} \\
          & t_f \in [t_{f,L}, t_{f,U}] & \textrm{final time} \\
@@ -202,19 +201,16 @@
 \newcommand{\prescribed}{
 \begin{align}
     \begin{aligned}
-        \mbox{minimize} \quad & \sum_j w_j J_{j}(t_0, t_f, \hat{q}_0, \hat{q}_f, \hat{u}_0, \hat{u}_f, z_0, z_f, x_{0}, x_{f}, \lambda_0, \mathrlap{\lambda_f, p, S_{c,j})} & \textrm{costs} \\
-        & \quad\quad\quad S_{c,j} = \int_{t_0}^{t_f} s_{c,j}(t, \hat{q}, \hat{u}, z, x, \lambda, p)~dt\\
+        \mbox{minimize} \quad & \sum_j w_j J_{j}(t_0, t_f, \hat{q}_0, \hat{q}_f, \hat{u}_0, \hat{u}_f, \mathrlap{z_0, z_f, x_{0}, x_{f}, \lambda_0, \lambda_f, p, S_{c,j})} & \textrm{costs} \\
+        & \quad\quad S_{c,j} = \int_{t_0}^{t_f} s_{c,j}(t, \hat{q}, \hat{u}, z, x, \lambda, p)~dt\\
         \mbox{subject to} \quad &
-         M(\hat{q}, p)\hat{\dot{u}} + G(\hat{q}, p)^T \lambda = f_{\textrm{app}}(t, \hat{q}, \hat{u}, z, x, p) - \mathrlap{f_{\textrm{bias}}(\hat{q}, \hat{u}, p)} & \textrm{multi.} \\
+         M(\hat{q}, p)\hat{\dot{u}} + G(\hat{q}, p)^T \lambda = \mathrlap{f_{\textrm{app}}(t, \hat{q}, \hat{u}, z, x, p) - f_{\textrm{bias}}(\hat{q}, \hat{u}, p)} & \textrm{multi.} \\
          & \dot{z}(t) = f_{\textrm{aux}}(t, \hat{q}, \hat{u}, z, x, \lambda, p) & \textrm{auxiliary} \\
-         & V_{L,k} \leq V_k(t_0, t_f, \hat{q}_0, \hat{q}_f, \hat{u}_0, \hat{u}_f, z_0, z_f, x_{0}, x_{f}, \lambda_0, \mathrlap{\lambda_f, p, S_{e,k}) \leq V_{U,k}} \\
-        & \quad\quad\quad S_{e,k} = \int_{t_0}^{t_f} s_{e,k}(t, \hat{q}, \hat{u}, z, x, \lambda, p)~dt & \textrm{endpoint} \\
-         & \quad\quad\quad k = 1, \ldots, K \\
+         & V_{L,k} \leq V_k(t_0, t_f, \hat{q}_0, \hat{q}_f, \hat{u}_0, \hat{u}_f, z_0, \mathrlap{z_f, x_{0}, x_{f}, \lambda_0, \lambda_f, p, S_{e,k}) \leq V_{U,k}} \\
+        & \quad\quad \mathrlap{S_{e,k} = \int_{t_0}^{t_f} s_{e,k}(t, \hat{q}, \hat{u}, z, x, \lambda, p)~dt \quad k = 1, \ldots, K} & \textrm{endpoint} \\
         & g_{L} \leq g(t, \hat{q}, \hat{u}, z, x, \lambda, p) \leq g_{U} & \textrm{endpoint} \\
-         & z_{0,L} \leq z_0 \leq z_{0,U} & \textrm{initial states} \\
-         & x_{0,L} \leq x_0 \leq x_{0,U} & \textrm{initial controls}\\
-         & z_{f,L} \leq z_f \leq z_{f,U} & \textrm{final states} \\
-         & x_{f,L} \leq x_f \leq x_{f,U} & \textrm{final controls} \\
+         & z_{0,L} \leq z_0 \leq z_{0,U} \quad\quad z_{f,L} \leq z_f \leq z_{f,U} & \textrm{initial and final states} \\
+         & x_{0,L} \leq x_0 \leq x_{0,U} \quad\quad x_{f,L} \leq x_f \leq x_{f,U}& \textrm{initial and final controls}\\
          \mbox{with respect to} \quad
          & t_0 \in [t_{0,L}, t_{0,U}] & \textrm{initial time} \\
          & t_f \in [t_{f,L}, t_{f,U}] & \textrm{final time} \\
@@ -250,17 +246,16 @@
 \begin{align}
     \begin{aligned}
         \mbox{minimize} \quad
-         & \sum_j w_j J_{j}(t_0, t_f, y_0, y_n, x_{0}, x_{n}, \lambda_0, \mathrlap{\lambda_n, p, S_{c,j})
+         & \sum_j w_j J_{j}(t_0, t_f, y_0, y_n, x_{0}, x_{n}, \lambda_0, \lambda_n, p, \mathrlap{S_{c,j})
           + w_{\lambda} \sum_{i=1}^{n} \textrm{trap}_i(\|\lambda\|_2^2)}  \\
-         & \quad\quad\quad S_{c,j} = \sum_{i=1}^{n} \textrm{trap}_i(s_{c,j}(t, y, x, \lambda, p)) \\
+         & \quad\quad S_{c,j} = \sum_{i=1}^{n} \textrm{trap}_i(s_{c,j}(t, y, x, \lambda, p)) \\
         \mbox{subject to} \quad
          & q_i = q_{i-1} + \textrm{trap}_i(u) && i = 1, \ldots, n \\
          & u_i = u_{i-1} + \textrm{trap}_i(f_{\textrm{mb}}(t, y, x, \lambda, p))  && i = 1, \ldots, n \\
          & z_i = z_{i-1} + \textrm{trap}_i(f_{\textrm{aux}}(t, y, x, \lambda, p)) && i = 1, \ldots, n \\
          & 0 = \phi(q_i)  && i = 0, \ldots, n\\
          & V_{L,k} \leq V_k(t_0, t_f, y_0, y_f, x_{0}, x_{f}, \lambda_0, \mathrlap{\lambda_f, p, S_{e,k}) \leq V_{U,k}} \\
-         & \quad\quad\quad S_{e,k} = \sum_{i=1}^{n} \textrm{trap}_i(s_{e,k}(t, y, x, \lambda, p)) \\
-         & \quad\quad\quad k = 1, \ldots, K \\
+         & \quad\quad S_{e,k} = \sum_{i=1}^{n} \textrm{trap}_i(s_{e,k}(t, y, x, \lambda, p)) && k = 1, \ldots, K \\
          & g_{L} \leq g(t_i, y_i, x_{i}, p) \leq g_{U}  && i = 0, \ldots, n\\
          \mbox{with respect to} \quad
          & t_0 \in [t_{0,L}, t_{0,U}] \\
@@ -315,9 +310,9 @@
 \begin{align}
     \begin{aligned}
         \mbox{minimize} \quad
-         & \sum_j w_j J_{c,j}(t_0, t_f, y_0, y_n, x_{0}, x_{n}, \lambda_0, \mathrlap{\lambda_n, p, S_{c,j})
+         & \sum_j w_j J_{c,j}(t_0, t_f, y_0, y_n, x_{0}, x_{n}, \lambda_0, \lambda_n, p, \mathrlap{S_{c,j})
          + w_{\lambda} \sum_{i=1}^{n} \textrm{simpson}_i(\|\lambda\|_2^2)}  \\
-         & \quad\quad\quad S_{c,j} = \sum_{i=1}^{n} \textrm{simpson}_i(s_{c,j}(t, y, x, \lambda, p)) \\
+         & \quad\quad S_{c,j} = \sum_{i=1}^{n} \textrm{simpson}_i(s_{c,j}(t, y, x, \lambda, p)) \\
         \mbox{subject to} \quad
          & \bar{q}_i = \textrm{hermite}_i(q, u) + G(\bar{q}_i, p)^T \bar{\gamma}_i && i = 1, \ldots, n \\
          & q_i = q_{i-1} + \textrm{simpson}_i(u) && i = 1, \ldots, n \\
@@ -329,9 +324,8 @@
          & 0 = \phi(q_i)  && i = 0, \ldots, n\\
          & 0 = \dot{\phi}(q_i, u_i, p) && i = 0, \ldots, n\\
          & 0 = \ddot{\phi}(t_i, y_i, x_i, \lambda_i, p) && i = 0, \ldots, n\\
-         & V_{L,k} \leq V_k(t_0, t_f, y_0, y_f, x_{0}, x_{f}, \lambda_0, \mathrlap{\lambda_f, p, S_{e,k}) \leq V_{U,k}} \\
-        & \quad\quad\quad S_{e,k} = \sum_{i=1}^{n} \textrm{simpson}_i(s_{e,k}(t, y, x, \lambda, p)) \\
-        & \quad\quad\quad k = 1, \ldots, K \\
+         & V_{L,k} \leq V_k(t_0, t_f, y_0, y_f, x_{0}, x_{f}, \lambda_0, \lambda_f, p, \mathrlap{S_{e,k}) \leq V_{U,k}} \\
+        & \quad\quad S_{e,k} = \sum_{i=1}^{n} \textrm{simpson}_i(s_{e,k}(t, y, x, \lambda, p)) && k = 1, \ldots, K \\
         & g_{L} \leq g(t_i, y_i, x_{i}, p) \leq g_{U}  && i = 0, \ldots, n\\
          \mbox{with respect to} \quad
          & t_0 \in [t_{0,L}, t_{0,U}] \\

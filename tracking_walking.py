@@ -195,7 +195,6 @@ class MotionTrackingWalking(MocoPaperResult):
 
         # MocoInverse, minimize joint reactions
         # -------------------------------------
-        inverse.set_reserves_weight(50.0)
         study = inverse.initialize()
         reaction_r = osim.MocoJointReactionGoal('reaction_r', 0.1)
         reaction_r.setJointPath('/jointset/walker_knee_r')
@@ -283,7 +282,7 @@ class MotionTrackingWalking(MocoPaperResult):
         # TODO is this correct?
         duration = self.final_time - self.initial_time
         if fill:
-            plt.fill_between(
+            return plt.fill_between(
                 100.0 * shifted_time / duration,
                 shifted_y,
                 np.zeros_like(shifted_y),
@@ -410,19 +409,6 @@ class MotionTrackingWalking(MocoPaperResult):
         model.initSystem()
         print(f'Degrees of freedom: {model.getCoordinateSet().getSize()}')
 
-        if self.inverse:
-            report = osim.report.Report(model, self.mocoinverse_solution_file)
-            report.generate()
-
-        if self.knee and self.inverse:
-            report = osim.report.Report(model,
-                                        mocoinverse_jr_solution_file)
-            report.generate()
-
-        if self.track:
-            report = osim.report.Report(model, self.mocotrack_solution_file)
-            report.generate()
-
         # TODO: slight shift in CMC solution might be due to how we treat
         # percent gait cycle and the fact that CMC is missing 0.02 seconds.
         if self.cmc:
@@ -460,7 +446,7 @@ class MotionTrackingWalking(MocoPaperResult):
                         'jointreaction_joint_moment_breakdown.png',
                         dpi=600)
 
-        fig = plt.figure(figsize=(7.5, 3.5))
+        fig = plt.figure(figsize=(7.5, 3.3))
         gs = gridspec.GridSpec(3, 3)
 
 
@@ -521,51 +507,46 @@ class MotionTrackingWalking(MocoPaperResult):
             ((2, 1), 'soleus', 'soleus', 'SOL'),
             ((2, 2), 'tibant', 'tibialis anterior', 'TA'),
         ]
+        legend_handles = []
         for im, muscle in enumerate(muscles):
             ax = plt.subplot(gs[muscle[0][0], muscle[0][1]])
             activation_path = f'/forceset/{muscle[1]}_{self.side}/activation'
+            legend_handles_musc = []
             if self.cmc:
                 cmc_activ = toarray(sol_cmc.getDependentColumn(activation_path))
-                self.plot(ax, time_cmc,
+                handle, = self.plot(ax, time_cmc,
                           cmc_activ,
                           linewidth=2,
-                          label='CMC',
+                          label='Computed Muscle Control',
                           )
+                legend_handles_musc.append(handle)
             if self.track:
-                self.plot(ax, time_track, sol_track.getStateMat(activation_path),
+                handle, = self.plot(ax, time_track,
+                                    sol_track.getStateMat(activation_path),
                           label='MocoTrack',
                           linewidth=2)
+                legend_handles_musc.append(handle)
             if self.inverse:
                 inverse_activ = sol_inverse.getStateMat(activation_path)
-                self.plot(ax, time_inverse, inverse_activ,
+                handle, = self.plot(ax, time_inverse, inverse_activ,
                           label='MocoInverse',
                           linewidth=2)
+                legend_handles_musc.append(handle)
             if self.knee and self.inverse:
-                self.plot(ax, time_inverse_jointreaction,
+                handle, = self.plot(ax, time_inverse_jointreaction,
                           sol_inverse_jointreaction.getStateMat(activation_path),
                           label='MocoInverse, knee',
                           linewidth=2)
+                legend_handles_musc.append(handle)
             if self.inverse and len(muscle[3]) > 0:
-                self.plot(ax, emg['time'],
+                handle = self.plot(ax, emg['time'],
                           emg[muscle[3]] * np.max(inverse_activ),
                           shift=False,
                           fill=True,
-                          color='lightgray')
-            if muscle[0][0] == 0 and muscle[0][1] == 0:
-                ax.legend(
-                    frameon=False, handlelength=1.,
-                    handletextpad=0.5,
-                    ncol=2,
-                    columnspacing=0.5,
-                    loc='upper center',
-                    # loc='center'
-                )
-            if muscle[0][0] == 1 and muscle[0][1] == 0:
-                from matplotlib.patches import Patch
-                ax.legend(handles=[Patch(facecolor='lightgray', label='EMG')],
-                          frameon=False, handlelength=1.5,
-                          handletextpad=0.5,
-                          loc='upper center')
+                          color='lightgray', label='electromyography')
+                legend_handles_musc.append(handle)
+            if im == 0:
+                legend_handles = legend_handles_musc
             ax.set_ylim(-0.05, 1)
             ax.set_xlim(0, 100)
             if muscle[0][0] < 2:
@@ -584,7 +565,24 @@ class MotionTrackingWalking(MocoPaperResult):
 
             utilities.publication_spines(ax)
 
-        fig.tight_layout(h_pad=1)
+        legend_labels = []
+        if self.cmc:
+            legend_labels.append('Computed Muscle Control')
+        if self.track:
+            legend_labels.append('MocoTrack')
+        if self.inverse:
+            legend_labels.append('MocoInverse')
+        if self.knee:
+            legend_labels.append('MocoInverse, knee')
+        if self.inverse:
+            legend_labels.append('electromyography')
+        plt.figlegend(
+            legend_handles, legend_labels,
+            frameon=False,
+            ncol=5,
+            loc='lower center',
+        )
+        fig.tight_layout(h_pad=1, rect=(0, 0.07, 1, 1), pad=0.4)
 
         fig.savefig('figures/motion_tracking_walking.eps')
         fig.savefig('figures/motion_tracking_walking.pdf')
@@ -662,4 +660,16 @@ class MotionTrackingWalking(MocoPaperResult):
                          model.calcMassCenterPosition(states[0])[0]) / duration
             print(f'Average speed: {avg_speed}')
 
+        if self.inverse:
+            report = osim.report.Report(model, self.mocoinverse_solution_file)
+            report.generate()
+
+        if self.knee and self.inverse:
+            report = osim.report.Report(model,
+                                        mocoinverse_jr_solution_file)
+            report.generate()
+
+        if self.track:
+            report = osim.report.Report(model, self.mocotrack_solution_file)
+            report.generate()
 

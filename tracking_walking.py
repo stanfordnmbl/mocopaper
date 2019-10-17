@@ -195,6 +195,7 @@ class MotionTrackingWalking(MocoPaperResult):
 
         # MocoInverse, minimize joint reactions
         # -------------------------------------
+        inverse.set_reserves_weight(50.0)
         study = inverse.initialize()
         reaction_r = osim.MocoJointReactionGoal('reaction_r', 0.1)
         reaction_r.setJointPath('/jointset/walker_knee_r')
@@ -539,7 +540,7 @@ class MotionTrackingWalking(MocoPaperResult):
                 self.plot(ax, time_inverse, inverse_activ,
                           label='MocoInverse',
                           linewidth=2)
-            if self.knee:
+            if self.knee and self.inverse:
                 self.plot(ax, time_inverse_jointreaction,
                           sol_inverse_jointreaction.getStateMat(activation_path),
                           label='MocoInverse, knee',
@@ -630,7 +631,7 @@ class MotionTrackingWalking(MocoPaperResult):
                       'inverse_max_reserve.txt', 'w') as f:
                 f.write(f'{max_res_inverse:.1f}')
 
-        if self.knee:
+        if self.knee and self.inverse:
             res_inverse_jr = self.calc_reserves(sol_inverse_jointreaction)
             column_labels = res_inverse_jr.getColumnLabels()
             max_res_inverse_jr = -np.inf

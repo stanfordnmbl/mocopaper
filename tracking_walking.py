@@ -452,55 +452,83 @@ class MotionTrackingWalking(MocoPaperResult):
                         'jointreaction_joint_moment_breakdown.png',
                         dpi=600)
 
-        fig = plt.figure(figsize=(7.5, 3.3))
-        gs = gridspec.GridSpec(3, 3)
-
-
         coords = [
+            (f'/jointset/ground_pelvis/pelvis_tx', 'pelvis tx', 1.0),
+            (f'/jointset/ground_pelvis/pelvis_ty', 'pelvis ty', 1.0),
+            (f'/jointset/ground_pelvis/pelvis_tz', 'pelvis tz', 1.0),
+            (f'/jointset/ground_pelvis/pelvis_rotation', 'pelvis rotation', 1.0),
+            (f'/jointset/ground_pelvis/pelvis_list', 'pelvis list', 1.0),
+            (f'/jointset/ground_pelvis/pelvis_tilt', 'pelvis tilt', 1.0),
+            (f'/jointset/back/lumbar_rotation', 'lumbar rotation', 1.0),
+            (f'/jointset/back/lumbar_extension', 'lumbar extension', 1.0),
+            (f'/jointset/back/lumbar_bending', 'lumbar bending', 1.0),
+            (f'/jointset/hip_{self.side}/hip_adduction_{self.side}',
+                'hip adduction', 1.0),
+            (f'/jointset/hip_{self.side}/hip_rotation_{self.side}',
+             'hip rotation', 1.0),
             (
-                f'/jointset/hip_{self.side}/hip_flexion_{self.side}', 'hip flexion',
-                1.0),
+            f'/jointset/hip_{self.side}/hip_flexion_{self.side}', 'hip flexion',
+            1.0),
             (f'/jointset/walker_knee_{self.side}/knee_angle_{self.side}',
              'knee flexion', 1.0),
             (f'/jointset/ankle_{self.side}/ankle_angle_{self.side}',
              'ankle plantarflexion', 1.0),
         ]
         from utilities import toarray
-        # for ic, coord in enumerate(coords):
-        #     ax = plt.subplot(gs[(3 * ic):(3 * (ic + 1)), 0])
-        #
-        #     y_cmc = coord[2] * np.rad2deg(
-        #         toarray(sol_cmc.getDependentColumn(f'{coord[0]}/value')),)
-        #     self.plot(ax, time_cmc, y_cmc, label='CMC', color='k',
-        #               linewidth=3)
-        #
-        #     y_inverse = coord[2] * np.rad2deg(
-        #         sol_inverse.getStateMat(f'{coord[0]}/value'))
-        #     self.plot(ax, time_inverse, y_inverse, label='MocoInverse',
-        #               linewidth=2)
-        #
-        #     ax.plot([0], [0], label='MocoInverse-knee', linewidth=2)
-        #
-        #     y_track = coord[2] * np.rad2deg(
-        #         sol_track.getStateMat(f'{coord[0]}/value'))
-        #     self.plot(ax, time_track, y_track, label='MocoTrack',
-        #               linewidth=1)
-        #
-        #     ax.set_xlim(0, 100)
-        #     if ic == 1:
-        #         ax.legend(frameon=False, handlelength=1.9)
-        #     if ic < len(coords) - 1:
-        #         ax.set_xticklabels([])
-        #     else:
-        #         ax.set_xlabel('time (% gait cycle)')
-        #         ax.get_xaxis().set_label_coords(0.5, 0)
-        #         # The '0' would intersect with the y-axis, so remove it.
-        #         ax.set_xticklabels(['', '20', '40', '60', '80', '100'])
-        #     ax.set_ylabel(f'{coord[1]} (degrees)')
-        #     ax.get_yaxis().set_label_coords(-0.15, 0.5)
-        #
-        #     ax.spines['bottom'].set_position('zero')
-        #     utilities.publication_spines(ax)
+        fig = plt.figure(figsize=(4, 8))
+
+        for ic, coord in enumerate(coords):
+            ax = plt.subplot(7, 2, ic + 1)
+            if self.cmc:
+                y_cmc = coord[2] * np.rad2deg(
+                    toarray(sol_cmc.getDependentColumn(f'{coord[0]}/value')),)
+                self.plot(ax, time_cmc, y_cmc, label='CMC', color='k',
+                          linewidth=2)
+
+            if self.inverse:
+                y_inverse = coord[2] * np.rad2deg(
+                    sol_inverse.getStateMat(f'{coord[0]}/value'))
+                self.plot(ax, time_inverse, y_inverse, label='MocoInverse',
+                          linewidth=2)
+
+            ax.plot([0], [0], label='MocoInverse-knee', linewidth=2)
+
+            if self.track:
+                y_track = coord[2] * np.rad2deg(
+                    sol_track.getStateMat(f'{coord[0]}/value'))
+                self.plot(ax, time_track, y_track, label='MocoTrack',
+                          linewidth=1)
+
+            ax.set_xlim(0, 100)
+            if ic == 1:
+                ax.legend(frameon=False, handlelength=1.9)
+            if ic < len(coords) - 1:
+                ax.set_xticklabels([])
+            else:
+                ax.set_xlabel('time (% gait cycle)')
+                ax.get_xaxis().set_label_coords(0.5, 0)
+                # The '0' would intersect with the y-axis, so remove it.
+                ax.set_xticklabels(['', '20', '40', '60', '80', '100'])
+            ax.set_ylabel(f'{coord[1]} (degrees)')
+            ax.get_yaxis().set_label_coords(-0.15, 0.5)
+
+            ax.spines['bottom'].set_position('zero')
+            utilities.publication_spines(ax)
+
+        fig.tight_layout(h_pad=1)
+        fig.savefig('figures/motion_tracking_walking_kinematics.png', dpi=600)
+
+        fig = plt.figure(figsize=(7.5, 3.3))
+        gs = gridspec.GridSpec(3, 4, width_ratios=[0.8, 1, 1, 1])
+
+        ax = fig.add_subplot(gs[0:3, 0])
+        import cv2
+        # Convert BGR color ordering to RGB.
+        image = cv2.imread('figures/motion_tracking_walking_inverse_model.png')[
+                ..., ::-1]
+        ax.imshow(image)
+        plt.axis('off')
+
 
         muscles = [
             ((0, 0), 'glmax2', 'gluteus maximus', 'GMAX'),
@@ -515,7 +543,7 @@ class MotionTrackingWalking(MocoPaperResult):
         ]
         legend_handles = []
         for im, muscle in enumerate(muscles):
-            ax = plt.subplot(gs[muscle[0][0], muscle[0][1]])
+            ax = plt.subplot(gs[muscle[0][0], muscle[0][1] + 1])
             activation_path = f'/forceset/{muscle[1]}_{self.side}/activation'
             legend_handles_musc = []
             if self.cmc:

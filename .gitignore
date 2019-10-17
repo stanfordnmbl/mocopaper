@@ -245,3 +245,4 @@ out.log
 /resources/Rajagopal2016/subject_walk_armless_for_cmc.osim
 /motion_tracking_walking_cmc_tasks.xml
 
+!/figures/motion_tracking_walking_inverse_model.png

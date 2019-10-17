@@ -80,12 +80,18 @@ class MotionTrackingWalking(MocoPaperResult):
 
         tasks = osim.CMC_TaskSet()
         for coord in cmcModel.getCoordinateSet():
-            if not coord.getName().endswith('_beta'):
+            cname = coord.getName()
+            if not cname.endswith('_beta'):
                 task = osim.CMC_Joint()
-                task.setName(coord.getName())
-                task.setCoordinateName(coord.getName())
-                task.setKP(100, 1, 1)
-                task.setKV(20, 1, 1)
+                task.setName(cname)
+                task.setCoordinateName(cname)
+                if 'ankle' in cname: #  or 'pelvis_tilt' in cname:
+                    # task.setWeight(100, 0, 0)
+                    task.setKP(5 * 100, 1, 1)
+                    task.setKV(5 * 20, 1, 1)
+                else:
+                    task.setKP(100, 1, 1)
+                    task.setKV(20, 1, 1)
                 task.setActive(True, False, False)
                 tasks.cloneAndAppend(task)
         tasks.printToXML('motion_tracking_walking_cmc_tasks.xml')

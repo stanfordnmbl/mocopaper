@@ -412,7 +412,7 @@ class MotionTrackingWalking(MocoPaperResult):
             report = osim.report.Report(model, self.mocoinverse_solution_file)
             report.generate()
 
-        if self.knee:
+        if self.knee and self.inverse:
             report = osim.report.Report(model,
                                         mocoinverse_jr_solution_file)
             report.generate()

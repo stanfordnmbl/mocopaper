@@ -378,7 +378,7 @@ class MotionTrackingWalking(MocoPaperResult):
             sol_inverse = osim.MocoTrajectory(self.mocoinverse_solution_file)
             time_inverse = sol_inverse.getTimeMat()
 
-        if self.knee:
+        if self.knee and self.inverse:
             sol_inverse_jointreaction = \
                 osim.MocoTrajectory(self.mocoinverse_jointreaction_solution_file)
             sol_inverse_jointreaction.insertStatesTrajectory(

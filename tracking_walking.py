@@ -46,13 +46,14 @@ class MotionTrackingWalking(MocoPaperResult):
         modelProcessor.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())
         modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
         modelProcessor.append(osim.ModOpIgnoreTendonCompliance())
-        modelProcessor.append(osim.ModOpAddReserves(1, 5, True))   
         baseModel = modelProcessor.process()
 
         # Create model for CMC
         # - ignore tendon compliance
         modelProcessorCMC = osim.ModelProcessor(baseModel)
+        modelProcessorCMC.append(osim.ModOpAddReserves(1))
         cmcModel = modelProcessorCMC.process()
+
         tasks = osim.CMC_TaskSet()
         for coord in cmcModel.getCoordinateSet():
             if not coord.getName().endswith('_beta'):
@@ -79,7 +80,30 @@ class MotionTrackingWalking(MocoPaperResult):
             if 'gas' in muscle.getName() or 'soleus' in muscle.getName():
                 muscle.set_ignore_tendon_compliance(False)
 
+        def add_reserve(model, coord, max_control):
+            actu = osim.CoordinateActuator(coord)
+            if coord.startswith('lumbar'):
+                prefix = 'torque_'
+            elif coord.startswith('pelvis'):
+                prefix = 'residual_'
+            else:
+                prefix = 'reserve_'
+            actu.setName(prefix + coord)
+            actu.setMinControl(-max_control)
+            actu.setMaxControl(max_control)
+            model.addForce(actu)
+        add_reserve(baseModel, 'lumbar_extension', 50)
+        add_reserve(baseModel, 'lumbar_bending', 50)
+        add_reserve(baseModel, 'lumbar_rotation', 20)
+        add_reserve(baseModel, 'pelvis_tilt', 60)
+        add_reserve(baseModel, 'pelvis_list', 30)
+        add_reserve(baseModel, 'pelvis_rotation', 15)
+        add_reserve(baseModel, 'pelvis_tx', 60)
+        add_reserve(baseModel, 'pelvis_ty', 200)
+        add_reserve(baseModel, 'pelvis_tz', 35)
+
         modelProcessorDC = osim.ModelProcessor(baseModel)
+        modelProcessorDC.append(osim.ModOpAddReserves(1, 5, True))
         modelProcessorDC.append(
             osim.ModOpTendonComplianceDynamicsModeDGF('implicit'))
 

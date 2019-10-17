@@ -45,24 +45,14 @@ class MotionTrackingWalking(MocoPaperResult):
             ['subtalar_r', 'mtp_r', 'subtalar_l', 'mtp_l']))
         modelProcessor.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())
         modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
-        modelProcessor.append(osim.ModOpAddReserves(1, 300))
         modelProcessor.append(osim.ModOpIgnoreTendonCompliance())
-
+        modelProcessor.append(osim.ModOpAddReserves(1, 5, True))   
         baseModel = modelProcessor.process()
-        baseModel.initSystem()
-        muscles = baseModel.updMuscles()
-        for imusc in np.arange(muscles.getSize()):
-            muscle = osim.DeGrooteFregly2016Muscle.safeDownCast(
-                muscles.get(int(imusc)))
-            muscle.set_fiber_damping(0)
 
-        # Create model for CMC:
-        #   - explicit tendon compliance mode
+        # Create model for CMC
+        # - ignore tendon compliance
         modelProcessorCMC = osim.ModelProcessor(baseModel)
-        modelProcessorCMC.append(
-            osim.ModOpTendonComplianceDynamicsModeDGF('explicit'))
         cmcModel = modelProcessorCMC.process()
-
         tasks = osim.CMC_TaskSet()
         for coord in cmcModel.getCoordinateSet():
             if not coord.getName().endswith('_beta'):
@@ -81,8 +71,7 @@ class MotionTrackingWalking(MocoPaperResult):
         # Create direct collocation model:
         #   - implicit tendon compliance mode
         #   - add external loads
-
-        # Only enable tendon compliance for soleus and gastroc muscles.
+        ext_loads_xml = "resources/Rajagopal2016/grf_walk.xml"
         baseModel.initSystem()
         muscles = baseModel.updMuscles()
         for imusc in np.arange(muscles.getSize()):

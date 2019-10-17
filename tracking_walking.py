@@ -514,7 +514,7 @@ class MotionTrackingWalking(MocoPaperResult):
             ((1, 0), 'semimem', 'semimembranosus', 'MH'),
             ((0, 2), 'recfem', 'rectus femoris', 'RF'),
             ((1, 1), 'bfsh', 'biceps femoris short head', 'BF'),
-            ((1, 2), 'vasint', 'vastus intermedius', 'VL'),
+            ((1, 2), 'vaslat', 'vastus lateralis', 'VL'),
             ((2, 0), 'gasmed', 'medial gastrocnemius', 'GAS'),
             ((2, 1), 'soleus', 'soleus', 'SOL'),
             ((2, 2), 'tibant', 'tibialis anterior', 'TA'),

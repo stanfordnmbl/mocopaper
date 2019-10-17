@@ -8,7 +8,7 @@ import opensim as osim
 from analytic import Analytic
 from suspended_mass import SuspendedMass
 from tracking_walking import MotionTrackingWalking
-from crouch_to_stand import CrouchToStand
+from squat_to_stand import SquatToStand
 
 # TODO: create a docker container for these results and generating the preprint.
 # TODO fix shift
@@ -25,7 +25,7 @@ if __name__ == "__main__":
         'suspended-mass': SuspendedMass(),
         'tracking-walking': MotionTrackingWalking(),
         # 'predicting-walking': MotionPredictionAndAssistanceWalking(),
-        'crouch-to-stand': CrouchToStand(),
+        'squat-to-stand': SquatToStand(),
    }
 
     parser = argparse.ArgumentParser(description="Generate results for the"

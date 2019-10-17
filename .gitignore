@@ -218,9 +218,9 @@ out.log
 /subject_armless_for_cmc.osim
 /muscle_outputs.sto
 /motion_tracking_walking_inverse_outputs.sto
-!/crouch_to_stand_visualization/crouch_to_stand_visualization.png
-/crouch_to_stand_visualization/crouch_to_stand.mp4
-/crouch_to_stand_visualization/crouch_to_stand.webm
+!/squat_to_stand_visualization/squat_to_stand_visualization.png
+/squat_to_stand_visualization/squat_to_stand.mp4
+/squat_to_stand_visualization/squat_to_stand.webm
 !/figures/MocoDiagram.png
 !/figures/Moco*Diagram.png
 *.batch

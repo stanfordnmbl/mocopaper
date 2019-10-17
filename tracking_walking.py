@@ -226,8 +226,8 @@ class MotionTrackingWalking(MocoPaperResult):
         track.setName("motion_tracking_walking")
         track.setModel(modelProcessor)
         track.setStatesReference(coordinates)
-        track.set_states_global_tracking_weight(0.05)
-        track.set_control_effort_weight(1.0)
+        track.set_states_global_tracking_weight(1.0)
+        track.set_control_effort_weight(0.01)
 
         # This setting allows extra data columns contained in the states
         # reference that don't correspond to model coordinates.
@@ -247,7 +247,7 @@ class MotionTrackingWalking(MocoPaperResult):
         # Initial time, final time, and mesh interval.
         track.set_initial_time(self.initial_time)
         track.set_final_time(self.final_time)
-        track.set_mesh_interval(0.02)
+        track.set_mesh_interval(0.05)
 
         moco = track.initialize()
         moco.set_write_solution("results/")
@@ -257,8 +257,8 @@ class MotionTrackingWalking(MocoPaperResult):
         problem.updPhase().setDefaultSpeedBounds(osim.MocoBounds(-10, 10))
         effort = osim.MocoControlGoal.safeDownCast(
             problem.updGoal("control_effort"))
-        effort.setWeightForControlPattern('.*reserve_.*', 50)
-        effort.setWeightForControlPattern('.*reserve_pelvis_.*', 10)
+        # effort.setWeightForControlPattern('.*reserve_.*', 10)
+        # effort.setWeightForControlPattern('.*reserve_pelvis_.*', 10)
 
         problem.addGoal(osim.MocoInitialActivationGoal('init_activation'))
 

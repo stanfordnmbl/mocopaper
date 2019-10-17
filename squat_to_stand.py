@@ -9,12 +9,12 @@ from moco_paper_result import MocoPaperResult
 
 import utilities
 
-class CrouchToStand(MocoPaperResult):
+class SquatToStand(MocoPaperResult):
     def __init__(self):
         self.predict_solution_file = \
-            'results/crouch_to_stand_predict_solution.sto'
+            'results/squat_to_stand_predict_solution.sto'
         self.predict_assisted_solution_file = \
-            'results/crouch_to_stand_predict_assisted_solution.sto'
+            'results/squat_to_stand_predict_assisted_solution.sto'
 
     def create_study(self, model):
         moco = osim.MocoStudy()
@@ -174,8 +174,8 @@ class CrouchToStand(MocoPaperResult):
         ax = fig.add_subplot(grid[0:4, 0:2])
         import cv2
         # Convert BGR color ordering to RGB.
-        image = cv2.imread('crouch_to_stand_visualization/'
-                           'crouch_to_stand_visualization.png')[...,::-1]
+        image = cv2.imread('squat_to_stand_visualization/'
+                           'squat_to_stand_visualization.png')[...,::-1]
         ax.imshow(image)
         plt.axis('off')
 
@@ -250,7 +250,7 @@ class CrouchToStand(MocoPaperResult):
         #     self.muscle_driven_model())
 
         print(f'Stiffness: {stiffness}')
-        with open('results/crouch_to_stand_stiffness.txt', 'w') as f:
+        with open('results/squat_to_stand_stiffness.txt', 'w') as f:
             f.write(f'{stiffness:.0f}')
         plot_solution(predict_solution, 'unassisted', color='k')
         plot_solution(predict_assisted_solution, 'assisted')
@@ -259,8 +259,8 @@ class CrouchToStand(MocoPaperResult):
         fig.tight_layout() # w_pad=0.2)
 
         muscle_axes[0].legend(frameon=False, handlelength=1,
-                             bbox_to_anchor=(-1.0, 0.5),
-                             loc='center',
+                             # bbox_to_anchor=(-1.0, 0.5),
+                             # loc='center',
                              )
 
         # knee_angle = predict_assisted_solution.getStateMat(
@@ -273,7 +273,7 @@ class CrouchToStand(MocoPaperResult):
         # axright.spines['top'].set_visible(False)
         # axright.spines['bottom'].set_visible(False)
 
-        fig.savefig('figures/crouch_to_stand.png', dpi=600)
+        fig.savefig('figures/squat_to_stand.png', dpi=600)
 
 
         # fig = utilities.plot_joint_moment_breakdown(self.muscle_driven_model(),
@@ -281,7 +281,7 @@ class CrouchToStand(MocoPaperResult):
         #                             ['/jointset/hip_r/hip_flexion_r',
         #                              '/jointset/knee_r/knee_angle_r',
         #                              '/jointset/ankle_r/ankle_angle_r'])
-        # fig.savefig('figures/crouch_to_stand_joint_moment_contribution.png',
+        # fig.savefig('figures/squat_to_stand_joint_moment_contribution.png',
         #             dpi=600)
         # fig = utilities.plot_joint_moment_breakdown(self.muscle_driven_model(),
         #                             predict_assisted_solution,
@@ -289,7 +289,7 @@ class CrouchToStand(MocoPaperResult):
         #                              '/jointset/knee_r/knee_angle_r',
         #                              '/jointset/ankle_r/ankle_angle_r'],
         #                             )
-        # fig.savefig('figures/crouch_to_stand_assisted_'
+        # fig.savefig('figures/squat_to_stand_assisted_'
         #             'joint_moment_contribution.png',
         #             dpi=600)
 
@@ -298,7 +298,7 @@ class CrouchToStand(MocoPaperResult):
         sol_predict_duration = float(sol_predict_duration) / 60.0
         print('prediction duration ', sol_predict_duration)
         with open('results/'
-                  'crouch_to_stand_predict_duration.txt', 'w') as f:
+                  'squat_to_stand_predict_duration.txt', 'w') as f:
             f.write(f'{sol_predict_duration:.1f}')
 
         sol_predict_assisted_table = osim.TimeSeriesTable(self.predict_assisted_solution_file)
@@ -306,7 +306,7 @@ class CrouchToStand(MocoPaperResult):
         sol_predict_assisted_duration = float(sol_predict_assisted_duration) / 60.0
         print('prediction assisted duration ', sol_predict_assisted_duration)
         with open('results/'
-                  'crouch_to_stand_predict_assisted_duration.txt', 'w') as f:
+                  'squat_to_stand_predict_assisted_duration.txt', 'w') as f:
             f.write(f'{sol_predict_assisted_duration:.1f}')
 
         model = self.muscle_driven_model()
@@ -318,7 +318,7 @@ class CrouchToStand(MocoPaperResult):
         #                      osim.MocoTrajectory(self.predict_solution_file),
         #              ['.*normalized_fiber_length'])
         # osim.STOFileAdapter.write(table,
-        #                           'crouch_to_stand_norm_fiber_length.sto')
+        #                           'squat_to_stand_norm_fiber_length.sto')
 
         report = osim.report.Report(self.assisted_model(),
                                     self.predict_assisted_solution_file)

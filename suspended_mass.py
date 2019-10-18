@@ -172,7 +172,6 @@ class SuspendedMass(MocoPaperResult):
         track_solution_p.write('results/suspended_mass_track_p_solution.sto')
 
     def report_results(self, args):
-        pl.figure()
         predict_solution = osim.MocoTrajectory(
             'results/suspended_mass_prediction_solution.sto')
         time_stepping = osim.MocoTrajectory(
@@ -204,8 +203,8 @@ class SuspendedMass(MocoPaperResult):
                   'track_p_activation_rms.txt', 'w') as f:
             f.write(f'{track_p_rms:.3f}')
 
-        fig = plt.figure(figsize=(7.5, 2.7))
-        grid = gridspec.GridSpec(3, 3)
+        fig = plt.figure(figsize=(5.2, 2.7))
+        grid = gridspec.GridSpec(3, 4)
 
         # ax = fig.add_subplot(grid[:, 0])
         # ax.text(0, 0, suspended_mass_code, fontsize=8)

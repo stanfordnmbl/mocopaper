@@ -617,10 +617,19 @@ class MotionTrackingWalking(MocoPaperResult):
                                                                  'states',
                                                                  '.*activation')
 
-            print('CMC MocoInverse activation RMS: ', inv_sol_rms)
+            peak_inverse_activation = -np.inf
+            for state_name in sol_inverse.getStateNames():
+                if state_name.endswith('activation'):
+                    column = sol_inverse.getStateMat(state_name)
+                    peak_inverse_activation = np.max([peak_inverse_activation,
+                                                      np.max(column)])
+
+            inv_sol_rms_pcent = 100.0 * inv_sol_rms / peak_inverse_activation
+            print(f'Peak MocoInverse activation: {peak_inverse_activation}')
+            print('CMC MocoInverse activation RMS: ', inv_sol_rms_pcent)
             with open('results/motion_tracking_walking_'
                       'inverse_cmc_rms.txt', 'w') as f:
-                f.write(f'{inv_sol_rms:.3f}')
+                f.write(f'{inv_sol_rms_pcent:.0f}')
 
         if self.track:
             res_track = self.calc_reserves(sol_track)

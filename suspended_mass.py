@@ -181,6 +181,11 @@ class SuspendedMass(MocoPaperResult):
         track_p_solution = osim.MocoTrajectory(
             'results/suspended_mass_track_p_solution.sto')
 
+        peak_left = np.max(predict_solution.getStateMat('/forceset/left/activation'))
+        peak_middle = np.max(predict_solution.getStateMat('/forceset/middle/activation'))
+        peak_right = np.max(predict_solution.getStateMat('/forceset/right/activation'))
+        peak_predicted_activation = np.max([peak_left, peak_middle, peak_right])
+
         time_stepping_rms = time_stepping.compareContinuousVariablesRMSPattern(
             predict_solution,
             'states', '/jointset.*value$')
@@ -191,17 +196,19 @@ class SuspendedMass(MocoPaperResult):
 
         track_rms = track_solution.compareContinuousVariablesRMSPattern(
             predict_solution, 'states', '/forceset.*activation$')
-        print(f'track rms: {track_rms}')
+        track_rms_pcent = 100.0 * track_rms / peak_predicted_activation
+        print(f'track rms percentage of peak activation: {track_rms_pcent}')
         with open('results/suspended_mass_'
                   'track_activation_rms.txt', 'w') as f:
-            f.write(f'{track_rms:.4f}')
+            f.write(f'{track_rms_pcent:.2f}')
 
         track_p_rms = track_p_solution.compareContinuousVariablesRMSPattern(
             predict_solution, 'states', '/forceset.*activation$')
-        print(f'track p=4 rms: {track_p_rms}')
+        track_p_rms_pcent = 100.0 * track_p_rms / peak_predicted_activation
+        print(f'track p=4 rms: {track_p_rms_pcent}')
         with open('results/suspended_mass_'
                   'track_p_activation_rms.txt', 'w') as f:
-            f.write(f'{track_p_rms:.3f}')
+            f.write(f'{track_p_rms_pcent:.0f}')
 
         fig = plt.figure(figsize=(5.2, 2.7))
         grid = gridspec.GridSpec(3, 4)

@@ -9,6 +9,23 @@ import opensim as osim
 from moco_paper_result import MocoPaperResult
 
 import utilities
+suspended_mass_code = \
+"""import org.opensim.modeling.*;
+study = osim.MocoStudy():
+problem = study.updProblem();
+problem.setModel(createSuspendedMassModel());
+problem.setTimeBounds(0, [0.4, 0.8]);
+problem.setStateInfo("/jointset/tx/tx/value", ...
+        [-0.2, 0.2], -0.14, 0.14);
+problem.setStateInfo("/jointset/ty/ty/value", ...
+        [-0.4, 0], -0.2, 0.15);
+problem.setStateInfoPattern("/jointset/.*/speed", [-15, 15], 0, 0);
+problem.setStateInfoPattern("/forceset/.*/activation", [0, 1], 0):
+problem.setControlInfoPattern("/forceset/.*", [0, 1]);
+problem.addGoal(osim.MocoControlGoal("effort"));
+problem.addGoal(osim.MocoFinalTimeGoal("time", 0.01));
+solution = study.solve()
+"""
 
 class SuspendedMass(MocoPaperResult):
     width = 0.2
@@ -78,18 +95,9 @@ class SuspendedMass(MocoPaperResult):
                              self.xinit, self.xfinal)
         problem.setStateInfo("/jointset/ty/ty/value", [-2 * self.width, 0],
                              self.yinit, self.yfinal)
-        problem.setStateInfo("/jointset/tx/tx/speed", [-15, 15], 0, 0)
-        problem.setStateInfo("/jointset/ty/ty/speed", [-15, 15], 0, 0)
-        problem.setStateInfo("/forceset/left/activation", [0, 1], 0)
-        problem.setStateInfo("/forceset/middle/activation", [0, 1], 0)
-        problem.setStateInfo("/forceset/right/activation", [0, 1], 0)
-        problem.setControlInfo("/forceset/left", [0, 1])
-        problem.setControlInfo("/forceset/middle", [0, 1])
-        problem.setControlInfo("/forceset/right", [0, 1])
-
-        solver = study.initCasADiSolver()
-        solver.set_num_mesh_intervals(100)
-
+        problem.setStateInfoPattern("/jointset/.*/speed", [-15, 15], 0, 0)
+        problem.setStateInfoPattern("/forceset/.*/activation", [0, 1], 0)
+        problem.setControlInfoPattern("/forceset/.*", [0, 1])
         return study
 
     def predict(self, run_time_stepping=False, exponent=2):
@@ -164,9 +172,6 @@ class SuspendedMass(MocoPaperResult):
         track_solution_p.write('results/suspended_mass_track_p_solution.sto')
 
     def report_results(self, args):
-        pl.figure()
-        fig = plt.figure(figsize=(5.2, 2.7))
-        grid = gridspec.GridSpec(3, 4)
         predict_solution = osim.MocoTrajectory(
             'results/suspended_mass_prediction_solution.sto')
         time_stepping = osim.MocoTrajectory(
@@ -198,6 +203,17 @@ class SuspendedMass(MocoPaperResult):
                   'track_p_activation_rms.txt', 'w') as f:
             f.write(f'{track_p_rms:.3f}')
 
+        fig = plt.figure(figsize=(5.2, 2.7))
+        grid = gridspec.GridSpec(3, 4)
+
+        # ax = fig.add_subplot(grid[:, 0])
+        # ax.text(0, 0, suspended_mass_code, fontsize=8)
+        # utilities.publication_spines(ax)
+        # ax.spines['left'].set_visible(False)
+        # ax.spines['bottom'].set_visible(False)
+        # ax.set_xticks([])
+        # ax.set_yticks([])
+        #
         ax = fig.add_subplot(grid[:, 0:2])
 
         initial_alpha = 0.1

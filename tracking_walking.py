@@ -81,19 +81,15 @@ class MotionTrackingWalking(MocoPaperResult):
         tasks = osim.CMC_TaskSet()
         for coord in cmcModel.getCoordinateSet():
             cname = coord.getName()
-            if not cname.endswith('_beta'):
-                task = osim.CMC_Joint()
-                task.setName(cname)
-                task.setCoordinateName(cname)
-                if 'ankle' in cname: #  or 'pelvis_tilt' in cname:
-                    # task.setWeight(100, 0, 0)
-                    task.setKP(5 * 100, 1, 1)
-                    task.setKV(5 * 20, 1, 1)
-                else:
-                    task.setKP(100, 1, 1)
-                    task.setKV(20, 1, 1)
-                task.setActive(True, False, False)
-                tasks.cloneAndAppend(task)
+            if cname.endswith('_beta'):
+                continue
+            task = osim.CMC_Joint()
+            task.setName(cname)
+            task.setCoordinateName(cname)
+            task.setKP(400, 1, 1)
+            task.setKV(80, 1, 1)
+            task.setActive(True, False, False)
+            tasks.cloneAndAppend(task)
         tasks.printToXML('motion_tracking_walking_cmc_tasks.xml')
 
         cmcModel.printToXML("resources/Rajagopal2016/"
@@ -515,8 +511,8 @@ class MotionTrackingWalking(MocoPaperResult):
             ax.spines['bottom'].set_position('zero')
             utilities.publication_spines(ax)
 
-        fig.tight_layout(h_pad=1)
         fig.savefig('figures/motion_tracking_walking_kinematics.png', dpi=600)
+
 
         fig = plt.figure(figsize=(7.5, 3.3))
         gs = gridspec.GridSpec(3, 4, width_ratios=[0.8, 1, 1, 1])

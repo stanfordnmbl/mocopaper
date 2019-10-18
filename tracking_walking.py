@@ -537,46 +537,48 @@ class MotionTrackingWalking(MocoPaperResult):
             ((2, 1), 'soleus', 'soleus', 'SOL'),
             ((2, 2), 'tibant', 'tibialis anterior', 'TA'),
         ]
-        legend_handles = []
+        legend_handles_and_labels = []
         for im, muscle in enumerate(muscles):
             ax = plt.subplot(gs[muscle[0][0], muscle[0][1] + 1])
             activation_path = f'/forceset/{muscle[1]}_{self.side}/activation'
-            legend_handles_musc = []
+            legend_musc = []
+            if self.inverse:
+                inverse_activ = sol_inverse.getStateMat(activation_path)
+            if self.inverse and len(muscle[3]) > 0:
+                handle = self.plot(ax, emg['time'],
+                                   emg[muscle[3]] * np.max(inverse_activ),
+                                   shift=False,
+                                   fill=True,
+                                   color='lightgray', label='electromyography')
+                legend_musc.append((handle, 'electromyography'))
             if self.cmc:
                 cmc_activ = toarray(sol_cmc.getDependentColumn(activation_path))
                 handle, = self.plot(ax, time_cmc,
                           cmc_activ,
-                          linewidth=2,
+                          linewidth=1,
+                          color='black',
                           label='Computed Muscle Control',
                           )
-                legend_handles_musc.append(handle)
-            if self.track:
-                handle, = self.plot(ax, time_track,
-                                    sol_track.getStateMat(activation_path),
-                          label='MocoTrack',
-                          linewidth=2)
-                legend_handles_musc.append(handle)
+                legend_musc.append((handle, 'Computed Muscle Control'))
             if self.inverse:
-                inverse_activ = sol_inverse.getStateMat(activation_path)
                 handle, = self.plot(ax, time_inverse, inverse_activ,
                           label='MocoInverse',
-                          linewidth=2)
-                legend_handles_musc.append(handle)
+                          linewidth=2, zorder=2)
+                legend_musc.append((handle, 'MocoInverse'))
             if self.knee and self.inverse:
                 handle, = self.plot(ax, time_inverse_jointreaction,
                           sol_inverse_jointreaction.getStateMat(activation_path),
                           label='MocoInverse, knee',
-                          linewidth=2)
-                legend_handles_musc.append(handle)
-            if self.inverse and len(muscle[3]) > 0:
-                handle = self.plot(ax, emg['time'],
-                          emg[muscle[3]] * np.max(inverse_activ),
-                          shift=False,
-                          fill=True,
-                          color='lightgray', label='electromyography')
-                legend_handles_musc.append(handle)
+                          linewidth=1, zorder=3)
+                legend_musc.append((handle, 'MocoInverse, knee'))
+            if self.track:
+                handle, = self.plot(ax, time_track,
+                                    sol_track.getStateMat(activation_path),
+                                    label='MocoTrack',
+                                    linewidth=2, zorder=1)
+                legend_musc.append((handle, 'MocoTrack'))
             if im == 0:
-                legend_handles = legend_handles_musc
+                legend_handles_and_labels = legend_musc
             ax.set_ylim(-0.05, 1)
             ax.set_xlim(0, 100)
             if muscle[0][0] < 2:
@@ -595,19 +597,8 @@ class MotionTrackingWalking(MocoPaperResult):
 
             utilities.publication_spines(ax)
 
-        legend_labels = []
-        if self.cmc:
-            legend_labels.append('Computed Muscle Control')
-        if self.track:
-            legend_labels.append('MocoTrack')
-        if self.inverse:
-            legend_labels.append('MocoInverse')
-        if self.knee:
-            legend_labels.append('MocoInverse, knee')
-        if self.inverse:
-            legend_labels.append('electromyography')
-        plt.figlegend(
-            legend_handles, legend_labels,
+        legend_handles, legend_labels = zip(*legend_handles_and_labels)
+        plt.figlegend(legend_handles, legend_labels,
             frameon=False,
             ncol=5,
             loc='lower center',

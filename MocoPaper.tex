@@ -262,15 +262,12 @@
          & \quad\quad S_{e,k} = \sum_{i=1}^{n} \textrm{trap}_i(s_{e,k}(t, y, x, \lambda, p)) && k = 1, \ldots, K \\
          & g_{L} \leq g(t_i, y_i, x_{i}, p) \leq g_{U}  && i = 0, \ldots, n\\
          \mbox{with respect to} \quad
-         & t_0 \in [t_{0,L}, t_{0,U}] \\
-         & t_n \in [t_{f,L}, t_{f,U}] \\
-         & y_0 \in [y_{0,L}, y_{0,U}] \\
+         & t_0 \in [t_{0,L}, t_{0,U}] \quad\quad t_n \in [t_{f,L}, t_{f,U}] \\
+         & y_0 \in [y_{0,L}, y_{0,U}] \quad\quad y_n \in [y_{f,L}, y_{f,U}] \\
          & y_i \in [y_{L}, y_{U}] && i = 1, \ldots, n - 1\\
-         & y_n \in [y_{f,L}, y_{f,U}] \\
          & \zeta_i \in [\zeta_{L}, \zeta_{U}] && i = 0, \ldots, n \\
-         & x_0 \in [x_{0,L}, x_{0,U}] \\
+         & x_0 \in [x_{0,L}, x_{0,U}] \quad\quad x_n \in [x_{f,L}, x_{f,U}] \\
          & x_i \in [x_{L}, x_{U}] && i = 1, \ldots, n - 1\\
-         & x_n \in [x_{f,L}, x_{f,U}] \\
          & \lambda_i \in [\lambda_L, \lambda_U] && i = 0, \ldots, n \\
          & p \in [p_{L}, p_{U}].
     \end{aligned}
@@ -336,18 +333,15 @@
         & \quad\quad S_{e,k} = \sum_{i=1}^{n} \textrm{simpson}_i(s_{e,k}(t, y, x, \lambda, p)) && k = 1, \ldots, K \\
         & g_{L} \leq g(t_i, y_i, x_{i}, p) \leq g_{U}  && i = 0, \ldots, n\\
          \mbox{with respect to} \quad
-         & t_0 \in [t_{0,L}, t_{0,U}] \\
-         & t_n \in [t_{f,L}, t_{f,U}] \\
-         & y_0 \in [y_{0,L}, y_{0,U}] \\
+         & t_0 \in [t_{0,L}, t_{0,U}] \quad\quad t_n \in [t_{f,L}, t_{f,U}] \\
+         & y_0 \in [y_{0,L}, y_{0,U}] \quad\quad y_n \in [y_{f,L}, y_{f,U}] \\
          & y_i \in [y_{L}, y_{U}] && i = 1, \ldots, n - 1 \\
          & \bar{y}_i \in [y_{L}, y_{U}] && i = 1, \ldots, n \\
-         & y_n \in [y_{f,L}, y_{f,U}] \\
          & \zeta_i \in [\zeta_{L}, \zeta_{U}] && i = 0, \ldots, n \\
          & \bar{\zeta}_i \in [\zeta_{L}, \zeta_{U}] && i = 1, \ldots, n \\
-         & x_0 \in [x_{0,L}, x_{0,U}] \\
+         & x_0 \in [x_{0,L}, x_{0,U}] \quad\quad x_n \in [x_{f,L}, x_{f,U}] \\
          & x_i \in [x_{L}, x_{U}] && i = 1, \ldots, n - 1 \\
          & \bar{x}_i \in [x_{L}, x_{U}] && i = 1, \ldots, n \\
-         & x_n \in [x_{f,L}, x_{f,U}] \\
          & \lambda_i \in [\lambda_L, \lambda_U] && i = 0, \ldots, n \\
          & \bar{\lambda}_i \in [\lambda_L, \lambda_U] && i = 1, \ldots, n \\
          & \bar{\gamma}_i \in [\bar{\gamma}_L, \bar{\gamma}_U] && i = 1, \ldots, n \\

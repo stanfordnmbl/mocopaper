@@ -255,6 +255,13 @@ class SquatToStand(MocoPaperResult):
         plot_solution(predict_solution, 'unassisted', color='k')
         plot_solution(predict_assisted_solution, 'assisted')
 
+        kinematics_rms = predict_solution.compareContinuousVariablesRMSPattern(
+            predict_assisted_solution, 'states', '/jointset.*value$')
+        kinematics_rms_deg = np.rad2deg(kinematics_rms)
+        print('RMS difference in joint angles between conditions (degrees): '
+              f'{kinematics_rms_deg}')
+        with open('results/squat_to_stand_kinematics_rms.txt', 'w') as f:
+            f.write(f'{kinematics_rms_deg:.1f}')
 
         fig.tight_layout() # w_pad=0.2)
 

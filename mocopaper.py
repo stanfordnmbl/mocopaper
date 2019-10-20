@@ -50,6 +50,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    print(f'OpenSim Moco {osim.GetMocoVersionAndDate()}')
+
     for result_name, result_object in results.items():
         if args.results is None or result_name in args.results:
             if args.generate:

@@ -50,6 +50,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    print(f'OpenSim Moco {osim.GetMocoVersionAndDate()}')
+
     for requested in args.results:
         if not requested in results.keys():
             raise RuntimeError(f"Result {requested} not recognized.")

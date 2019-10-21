@@ -97,5 +97,5 @@ COPY . /mocopaper
 
 WORKDIR /mocopaper
 
-ENTRYPOINT ["python3", "moco_article_results.py"]
+ENTRYPOINT ["python3", "mocopaper.py"]
 

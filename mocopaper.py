@@ -52,6 +52,9 @@ if __name__ == "__main__":
 
     print(f'OpenSim Moco {osim.GetMocoVersionAndDate()}')
 
+    for requested in args.results:
+        if not requested in results.keys():
+            raise RuntimeError(f"Result {requested} not recognized.")
     for result_name, result_object in results.items():
         if args.results is None or result_name in args.results:
             if args.generate:

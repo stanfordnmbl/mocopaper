@@ -9,6 +9,13 @@ from moco_paper_result import MocoPaperResult
 
 import utilities
 
+# TODO: Get rid of 2*Fmax
+# TODO: Improve wrapping surfaces for such deep flexion (Lai's model?).
+# TODO: Check the moment arm of the glutes: might be too small.
+# TODO: I think the glutes are generating lots of passive force.
+# TODO: Check passive forces: maybe this is why they're not turning on.
+
+
 class SquatToStand(MocoPaperResult):
     def __init__(self):
         self.predict_solution_file = \
@@ -33,13 +40,25 @@ class SquatToStand(MocoPaperResult):
         problem = moco.updProblem()
         problem.setModelCopy(model)
         problem.setTimeBounds(0, [0.1, 2])
-        # problem.setTimeBounds(0, 1)
+        # Initial squat pose is based on
+        # https://simtk.org/projects/aredsimulation
+        # Simulation Files/ISS_ARED_Initial_States.sto; t = 1.0 seconds;
+        # Given that our model is planar, we adjust the squat so that the
+        # system's center of mass is over the feet.
+        # This avoid excessive tib ant activity simply to prevent the model
+        # from falling backwards, which is unrealistic.
+        squat_lumbar = np.deg2rad(-22)
+        problem.setStateInfo('/jointset/back/lumbar_extension/value',
+                             [1.5 * squat_lumbar, 0.5], squat_lumbar, 0)
+        squat_hip = np.deg2rad(-98)
         problem.setStateInfo('/jointset/hip_r/hip_flexion_r/value',
-                             [-2, 0.5], -2, 0)
+                             [1.5 * squat_hip, 0.5], squat_hip, 0)
+        squat_knee = np.deg2rad(-104)
         problem.setStateInfo('/jointset/knee_r/knee_angle_r/value',
-                             [-2, 0], -2, 0)
+                             [1.5 * squat_knee, 0], squat_knee, 0)
+        squat_ankle = np.deg2rad(-30)
         problem.setStateInfo('/jointset/ankle_r/ankle_angle_r/value',
-                             [-0.5, 0.7], -0.5, 0)
+                             [1.5 * squat_ankle, 0.5], squat_ankle, 0)
         problem.setStateInfoPattern('/jointset/.*/speed', [], 0, 0)
 
         # for muscle in model.getMuscles():
@@ -54,13 +73,13 @@ class SquatToStand(MocoPaperResult):
         model.finalizeConnections()
         osim.DeGrooteFregly2016Muscle.replaceMuscles(model)
         for muscle in model.getMuscles():
-            # muscle.set_ignore_tendon_compliance(True)
-            muscle.set_max_isometric_force(2 * muscle.get_max_isometric_force())
+            muscle.set_max_isometric_force(
+                1.5 * muscle.get_max_isometric_force())
             dgf = osim.DeGrooteFregly2016Muscle.safeDownCast(muscle)
-            # dgf.set_active_force_width_scale(1.5)
+            dgf.set_ignore_passive_fiber_force(True)
             dgf.set_tendon_compliance_dynamics_mode('implicit')
-            if muscle.getName() == 'soleus_r':
-                dgf.set_ignore_passive_fiber_force(True)
+            # if muscle.getName() == 'soleus_r':
+            #     dgf.set_ignore_passive_fiber_force(True)
         model.printToXML("resources/sitToStand_3dof9musc_dgf.osim")
         return model
 
@@ -70,7 +89,7 @@ class SquatToStand(MocoPaperResult):
         problem = moco.updProblem()
         problem.addGoal(osim.MocoControlGoal('effort'))
         problem.addGoal(osim.MocoInitialActivationGoal('init_activation'))
-        problem.addGoal(osim.MocoFinalTimeGoal('time', 0.5))
+        problem.addGoal(osim.MocoFinalTimeGoal('time'))
 
         solver = osim.MocoCasADiSolver.safeDownCast(moco.updSolver())
         solver.resetProblem(problem)
@@ -88,6 +107,7 @@ class SquatToStand(MocoPaperResult):
 
         solution = moco.solve()
         solution.write(self.predict_solution_file)
+        # moco.visualize(solution)
 
         return solution
 
@@ -108,7 +128,7 @@ class SquatToStand(MocoPaperResult):
         problem = moco.updProblem()
         problem.addGoal(osim.MocoControlGoal('effort'))
         problem.addGoal(osim.MocoInitialActivationGoal('init_activation'))
-        problem.addGoal(osim.MocoFinalTimeGoal('time', 0.5))
+        problem.addGoal(osim.MocoFinalTimeGoal('time'))
 
         problem.addParameter(
             osim.MocoParameter('stiffness', '/forceset/spring',
@@ -155,17 +175,24 @@ class SquatToStand(MocoPaperResult):
             '/jointset/ankle_r/ankle_angle_r/value': -1.0,
         }
 
+        # TODO: Should be 3 muscles, all extensors.
         muscles = [
-            # ((0, 3), 'glut_max2', 'gluteus maximus'),
-            ((0, 2), 'psoas', 'iliopsoas'),
-            # ('semimem', 'hamstrings'),
-            ((1, 2), 'rect_fem', 'rectus femoris'),
-            # ('bifemsh', 'biceps femoris short head'),
-            ((2, 2), 'vas_int', 'vasti'),
-            # ((2, 2), 'med_gas', 'gastrocnemius'),
-            # ('soleus', 'soleus'),
-            ((3, 2), 'tib_ant', 'tibialis anterior'),
+            ((0, 2), 'glut_max2', 'gluteus maximus'),
+            ((1, 2), 'psoas', 'iliopsoas'),
+            ((2, 2), 'semimem', 'hamstrings'),
+            ((3, 2), 'vas_int', 'vasti'),
         ]
+        # muscles = [
+        #     # ((0, 3), 'glut_max2', 'gluteus maximus'),
+        #     ((0, 2), 'psoas', 'iliopsoas'),
+        #     # ('semimem', 'hamstrings'),
+        #     ((1, 2), 'rect_fem', 'rectus femoris'),
+        #     # ('bifemsh', 'biceps femoris short head'),
+        #     ((2, 2), 'vas_int', 'vasti'),
+        #     # ((2, 2), 'med_gas', 'gastrocnemius'),
+        #     # ('soleus', 'soleus'),
+        #     ((3, 2), 'tib_ant', 'tibialis anterior'),
+        # ]
         # grid = plt.GridSpec(9, 2, hspace=0.7,
         #                     left=0.1, right=0.98, bottom=0.07, top=0.96,
         #                     )

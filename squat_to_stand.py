@@ -36,6 +36,7 @@ class SquatToStand(MocoPaperResult):
         solver.set_optim_convergence_tolerance(1e-3)
         solver.set_optim_constraint_tolerance(1e-3)
         solver.set_optim_finite_difference_scheme('forward')
+        # solver.set_output_interval(10)
 
         problem = moco.updProblem()
         problem.setModelCopy(model)
@@ -103,6 +104,11 @@ class SquatToStand(MocoPaperResult):
                 guess.setState(
                     '%s/normalized_tendon_force' % muscle.getAbsolutePathString(),
                     osim.createVectorLinspace(N, 0.1, 0.1))
+            guess.setState(
+                '%s/activation' % muscle.getAbsolutePathString(),
+                osim.createVectorLinspace(N, 0.05, 0.05))
+            guess.setControl(muscle.getAbsolutePathString(),
+                osim.createVectorLinspace(N, 0.05, 0.05))
         solver.setGuess(guess)
 
         solution = moco.solve()
@@ -146,6 +152,11 @@ class SquatToStand(MocoPaperResult):
                 guess.setState(
                     '%s/normalized_tendon_force' % muscle.getAbsolutePathString(),
                     osim.createVectorLinspace(N, 0.1, 0.1))
+            guess.setState(
+                '%s/activation' % muscle.getAbsolutePathString(),
+                osim.createVectorLinspace(N, 0.05, 0.05))
+            guess.setControl(muscle.getAbsolutePathString(),
+                             osim.createVectorLinspace(N, 0.05, 0.05))
         solver.setGuess(guess)
 
         solver.set_parameters_require_initsystem(False)

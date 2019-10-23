@@ -70,18 +70,19 @@ class SquatToStand(MocoPaperResult):
         return moco
 
     def muscle_driven_model(self):
-        model = osim.Model('resources/sitToStand_3dof9musc.osim')
+        model = osim.Model('resources/sitToStand_4dof9musc.osim')
         model.finalizeConnections()
         osim.DeGrooteFregly2016Muscle.replaceMuscles(model)
         for muscle in model.getMuscles():
+            # Missing a leg: double the forces.
             muscle.set_max_isometric_force(
-                1.5 * muscle.get_max_isometric_force())
+                2.0 * muscle.get_max_isometric_force())
             dgf = osim.DeGrooteFregly2016Muscle.safeDownCast(muscle)
             dgf.set_ignore_passive_fiber_force(True)
             dgf.set_tendon_compliance_dynamics_mode('implicit')
             # if muscle.getName() == 'soleus_r':
             #     dgf.set_ignore_passive_fiber_force(True)
-        model.printToXML("resources/sitToStand_3dof9musc_dgf.osim")
+        model.printToXML("resources/sitToStand_4dof9musc_dgf.osim")
         return model
 
     def predict(self):
@@ -290,7 +291,7 @@ class SquatToStand(MocoPaperResult):
         print(f'Stiffness: {stiffness}')
         with open('results/squat_to_stand_stiffness.txt', 'w') as f:
             f.write(f'{stiffness:.0f}')
-        plot_solution(predict_solution, 'unassisted', color='k')
+        plot_solution(predict_solution, 'unassisted', color='gray')
         plot_solution(predict_assisted_solution, 'assisted')
 
         kinematics_rms = predict_solution.compareContinuousVariablesRMSPattern(
@@ -368,3 +369,9 @@ class SquatToStand(MocoPaperResult):
         report = osim.report.Report(self.assisted_model(),
                                     self.predict_assisted_solution_file)
         report.generate()
+
+        model.printOutputInfo()
+        reaction = osim.analyzeSpatialVec(model, predict_solution,
+                               ['.*reaction_on_child'])
+        osim.STOFileAdapterSpatialVec.write(reaction,
+                                  'squat_to_stand_ground_reaction.sto')

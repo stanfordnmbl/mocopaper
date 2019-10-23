@@ -130,7 +130,8 @@ class MotionTrackingWalking(MocoPaperResult):
         if 'cmc' in args:
             self.cmc = True
         if 'track' in args:
-            self.track = True
+            print('Ignoring track.')
+            # self.track = True
         if 'inverse' in args:
             self.inverse = True
         if 'knee' in args:
@@ -233,6 +234,8 @@ class MotionTrackingWalking(MocoPaperResult):
 
         # TODO: Use MocoInverse solution as initial guess for MocoTrack.
         track.set_apply_tracked_states_to_guess(True)
+
+        # TODO: set initial activation/excitation much lower!
 
         # track.set_bound_kinematic_states(True)
         # track.set_state_bound_range_rotational(np.deg2rad(10))
@@ -529,7 +532,8 @@ class MotionTrackingWalking(MocoPaperResult):
         muscles = [
             ((0, 0), 'glmax2', 'gluteus maximus', 'GMAX'),
             ((0, 1), 'psoas', 'psoas', ''),
-            ((1, 0), 'semimem', 'semimembranosus', 'MH'),
+            # TODO: dashed semimem
+            ((1, 0), 'semiten', 'semitendinosus', 'MH'),
             ((0, 2), 'recfem', 'rectus femoris', 'RF'),
             ((1, 1), 'bfsh', 'biceps femoris short head', 'BF'),
             ((1, 2), 'vaslat', 'vastus lateralis', 'VL'),
@@ -544,25 +548,19 @@ class MotionTrackingWalking(MocoPaperResult):
             legend_musc = []
             if self.inverse:
                 inverse_activ = sol_inverse.getStateMat(activation_path)
-            if self.inverse and len(muscle[3]) > 0:
-                handle = self.plot(ax, emg['time'],
-                                   emg[muscle[3]] * np.max(inverse_activ),
-                                   shift=False,
-                                   fill=True,
-                                   color='lightgray', label='electromyography')
-                legend_musc.append((handle, 'electromyography'))
-            if self.cmc:
-                cmc_activ = toarray(sol_cmc.getDependentColumn(activation_path))
-                handle, = self.plot(ax, time_cmc,
-                          cmc_activ,
-                          linewidth=1,
-                          color='black',
-                          label='Computed Muscle Control',
-                          )
-                legend_musc.append((handle, 'Computed Muscle Control'))
+            # if self.cmc:
+            #     cmc_activ = toarray(sol_cmc.getDependentColumn(activation_path))
+            #     handle, = self.plot(ax, time_cmc,
+            #               cmc_activ,
+            #               linewidth=1,
+            #               color='black',
+            #               label='Computed Muscle Control',
+            #               )
+            #     legend_musc.append((handle, 'Computed Muscle Control'))
             if self.inverse:
                 handle, = self.plot(ax, time_inverse, inverse_activ,
                           label='MocoInverse',
+                          color='black',
                           linewidth=2, zorder=2)
                 legend_musc.append((handle, 'MocoInverse'))
             if self.knee and self.inverse:
@@ -577,6 +575,14 @@ class MotionTrackingWalking(MocoPaperResult):
                                     label='MocoTrack',
                                     linewidth=2, zorder=1)
                 legend_musc.append((handle, 'MocoTrack'))
+            if self.inverse and len(muscle[3]) > 0:
+                handle = self.plot(ax, emg['time'],
+                                   emg[muscle[3]] * np.max(inverse_activ),
+                                   shift=False,
+                                   fill=True,
+                                   color='lightgray',
+                                   label='electromyography')
+                legend_musc.append((handle, 'electromyography (normalized; peak matches the peak from MocoInverse)'))
             if im == 0:
                 legend_handles_and_labels = legend_musc
             ax.set_ylim(-0.05, 1)

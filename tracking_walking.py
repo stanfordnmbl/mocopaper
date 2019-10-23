@@ -122,7 +122,7 @@ class MotionTrackingWalking(MocoPaperResult):
         self.knee = False
         if len(args) == 0:
             self.cmc = True
-            self.track = True
+            # self.track = True
             self.inverse = True
             self.knee = True
             return

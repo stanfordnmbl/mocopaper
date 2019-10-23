@@ -370,8 +370,60 @@ class SquatToStand(MocoPaperResult):
                                     self.predict_assisted_solution_file)
         report.generate()
 
-        model.printOutputInfo()
         reaction = osim.analyzeSpatialVec(model, predict_solution,
-                               ['.*reaction_on_child'])
-        osim.STOFileAdapterSpatialVec.write(reaction,
-                                  'squat_to_stand_ground_reaction.sto')
+                               ['/jointset/foot_ground_r\|reaction_on_child'])
+        reaction = reaction.flatten(['_MX', '_MY', '_MZ', '_FX', '_FY', '_FZ'])
+        prefix = '/jointset/foot_ground_r|reaction_on_child'
+        FX = reaction.getDependentColumn(prefix + '_FX')
+        FY = reaction.getDependentColumn(prefix + '_FY')
+        FZ = reaction.getDependentColumn(prefix + '_FZ')
+        MX = reaction.getDependentColumn(prefix + '_MX')
+        MY = reaction.getDependentColumn(prefix + '_MY')
+        MZ = reaction.getDependentColumn(prefix + '_MZ')
+
+        # TODO using incorrect variable names! ref frame!!
+        # X coordinate of the center of pressure.
+        x_cop = np.empty(reaction.getNumRows())
+        z_cop = np.empty(reaction.getNumRows())
+        TY = np.empty(reaction.getNumRows())
+        state = model.initSystem()
+        offset = model.getBodySet().get('calcn_r').getPositionInGround(state)
+        x_offset = offset.get(0)
+        z_offset = offset.get(2)
+        for i in range(reaction.getNumRows()):
+            x = -MZ[i] / FY[i] + x_offset
+            z = MX[i] / FY[i] + z_offset
+            x_cop[i] = x
+            z_cop[i] = z
+            TY[i] = MY[i] - (x - x_offset) * FZ[i] + (z - z_offset) * FX[i]
+
+        # print(f"x_offset = {x_offset}, z_offset = {z_offset}")
+        # print(f"x_cop = {x_cop}")
+        # print(f"z_cop = {z_cop}")
+        # pl.figure()
+        # pl.subplot(3, 1, 1)
+        # pl.plot(reaction.getIndependentColumn(), x_cop)
+        # pl.subplot(3, 1, 2)
+        # pl.plot(reaction.getIndependentColumn(), z_cop)
+        # pl.subplot(3, 1, 3)
+        # pl.plot(x_cop, z_cop)
+        # pl.show()
+
+        zeroMatrix = osim.Matrix(reaction.getNumRows(), 1, 0)
+        zero = osim.Vector(reaction.getNumRows(), 0)
+        external_loads = osim.TimeSeriesTable(reaction.getIndependentColumn(),
+                                              zeroMatrix, ['zero'])
+        external_loads.appendColumn('ground_force_vx', FX)
+        external_loads.appendColumn('ground_force_vy', FY)
+        external_loads.appendColumn('ground_force_vz', FZ)
+        external_loads.appendColumn('ground_force_px', osim.Vector(x_cop))
+        external_loads.appendColumn('ground_force_py', zero)
+        external_loads.appendColumn('ground_force_pz', osim.Vector(z_cop))
+        external_loads.appendColumn('ground_torque_x', zero)
+        external_loads.appendColumn('ground_torque_y', osim.Vector(TY))
+        external_loads.appendColumn('ground_torque_z', zero)
+        osim.STOFileAdapter.write(external_loads,
+                                  'results/squat_to_stand_ground_reaction.mot')
+        # TODO: where is the foot located? maybe we can just, in code, make sure
+        # the COP is in the correct location.
+        # TODO: visualize in the GUI!

@@ -179,7 +179,7 @@
         \mbox{subject to}
          \quad & \dot{q} = u \\
          & M(q, p)\dot{u} + G(q, p)^T \lambda = \mathrlap{f_{\mathrm{app}}(t, y, x, p) - f_{\mathrm{bias}}(q, u, p)}  & \textrm{multibody} \\
-         & \dot{z}_\textrm{ex}(t) = f_{\dot{z},\textrm{ex}}(t, y, x, \lambda, p) & \textrm{auxiliary} \\
+         & \dot{z}_\textrm{ex}(t) = f_{\dot{z},\textrm{ex}}(t, y, x, \lambda, p) & \textrm{auxiliary dynamics} \\
          & 0 = f_{\dot{z},\textrm{im}}(t, y, \dot{z}_{\textrm{im}}, x, \lambda, p) \\
          & 0 = \phi(q, p) & \textrm{kinematic constraints} \\
          & V_{L,k} \leq V_k(t_0, t_f, y_0, \mathrlap{y_f, x_{0}, x_{f}, \lambda_0, \lambda_f, p, S_{e,k}) \leq V_{U,k}} & \textrm{endpoint} \\
@@ -190,9 +190,9 @@
          \mbox{with respect to} \quad
          & t_0 \in [t_{0,L}, t_{0,U}] & \textrm{initial time} \\
          & t_f \in [t_{f,L}, t_{f,U}] & \textrm{final time} \\
-         & y = (q, u, z) \in [y_{L}, y_{U}] & \textrm{states} \\
-         & x \in [x_{L}, x_{U}] & \textrm{controls} \\
-         & \lambda & \textrm{multipliers} \\
+         & y(t) = (q(t), u(t), z(t)) \in [y_{L}, y_{U}] & \textrm{states} \\
+         & x(t) \in [x_{L}, x_{U}] & \textrm{controls} \\
+         & \lambda(t) & \textrm{multipliers} \\
          & p \in [p_{L}, p_{U}] & \textrm{static parameters}
     \end{aligned}
 \end{align}
@@ -206,18 +206,18 @@
         & \quad\quad S_{c,j} = \int_{t_0}^{t_f} s_{c,j}(t, \hat{q}, \hat{u}, z, x, \lambda, p)~dt\\
         \mbox{subject to} \quad &
          M(\hat{q}, p)\hat{\dot{u}} + G(\hat{q}, p)^T \lambda = \mathrlap{f_{\textrm{app}}(t, \hat{q}, \hat{u}, z, x, p) - f_{\textrm{bias}}(\hat{q}, \hat{u}, p)} & \textrm{multi.} \\
-        & \dot{z}_{\textrm{ex}}(t) = f_{\dot{z},\textrm{ex}}(t, \hat{q}, \hat{u}, z, x, \lambda, p) & \textrm{auxiliary} \\
+        & \dot{z}_{\textrm{ex}}(t) = f_{\dot{z},\textrm{ex}}(t, \hat{q}, \hat{u}, z, x, \lambda, p) & \textrm{auxiliary dynamics} \\
         & 0 = f_{\dot{z},\textrm{im}}(t, \hat{q}, \hat{u}, z, \dot{z}_\textrm{im}, x, \lambda, p) \\
         & V_{L,k} \leq V_k(t_0, t_f, \hat{q}_0, \hat{q}_f, \hat{u}_0, \hat{u}_f, z_0, \mathrlap{z_f, x_{0}, x_{f}, \lambda_0, \lambda_f, p, S_{e,k}) \leq V_{U,k}} \\
         & \quad\quad \mathrlap{S_{e,k} = \int_{t_0}^{t_f} s_{e,k}(t, \hat{q}, \hat{u}, z, x, \lambda, p)~dt \quad k = 1, \ldots, K} & \textrm{endpoint} \\
-        & g_{L} \leq g(t, \hat{q}, \hat{u}, z, x, \lambda, p) \leq g_{U} & \textrm{endpoint} \\
-        & z_{0,L} \leq z_0 \leq z_{0,U} \quad\quad z_{f,L} \leq z_f \leq z_{f,U} & \textrm{initial and finalstates} \\
-        & x_{0,L} \leq x_0 \leq x_{0,U} \quad\quad x_{f,L} \leq x_f \leq x_{f,U}& \textrm{initial andfinal controls} \\
+        & g_{L} \leq g(t, \hat{q}, \hat{u}, z, x, \lambda, p) \leq g_{U} & \textrm{path} \\
+        & z_{0,L} \leq z_0 \leq z_{0,U} \quad\quad z_{f,L} \leq z_f \leq z_{f,U} & \textrm{initial and final states} \\
+        & x_{0,L} \leq x_0 \leq x_{0,U} \quad\quad x_{f,L} \leq x_f \leq x_{f,U}& \textrm{initial and final controls} \\
         \mbox{with respect to} \quad
         & t_0 \in [t_{0,L}, t_{0,U}] & \textrm{initial time} \\
         & t_f \in [t_{f,L}, t_{f,U}] & \textrm{final time} \\
-        & z \in [z_{L}, z_{U}] & \textrm{auxiliary states} \\
-        & x \in [x_{L}, x_{U}] & \textrm{controls} \\
+        & z(t) \in [z_{L}, z_{U}] & \textrm{auxiliary states} \\
+        & x(t) \in [x_{L}, x_{U}] & \textrm{controls} \\
         & \lambda & \textrm{multipliers} \\
         & p \in [p_{L}, p_{U}]. & \textrm{parameters}
     \end{aligned}
@@ -257,7 +257,7 @@
          & z_{\textrm{ex},i} = z_{\textrm{ex},i-1} + \textrm{trap}_i(f_{\dot{z},\textrm{ex}}(t, y, x, \lambda, p)) && i = 1, \ldots, n \\
          & z_{\textrm{im},i} = z_{\textrm{im},i-1} + \textrm{trap}_i(\zeta) && i = 1, \ldots, n \\
          & 0 = f_{\dot{z},\textrm{im}}(t_i, y_i, \zeta_i, x_i, \lambda_i, p) && i = 0, \ldots, n \\
-         & 0 = \phi(q_i)  && i = 0, \ldots, n\\
+         & 0 = \phi(q_i, p)  && i = 0, \ldots, n\\
          & V_{L,k} \leq V_k(t_0, t_f, y_0, y_f, x_{0}, x_{f}, \lambda_0, \mathrlap{\lambda_f, p, S_{e,k}) \leq V_{U,k}} \\
          & \quad\quad S_{e,k} = \sum_{i=1}^{n} \textrm{trap}_i(s_{e,k}(t, y, x, \lambda, p)) && k = 1, \ldots, K \\
          & g_{L} \leq g(t_i, y_i, x_{i}, p) \leq g_{U}  && i = 0, \ldots, n\\
@@ -326,9 +326,7 @@
          & z_{\textrm{im},i} = z_{\textrm{im},i-1} + \textrm{simpson}_i(\zeta) && i = 1, \ldots, n \\
          & 0 = f_{\dot{z},\textrm{im}}(t_i, y_i, \zeta_i, x_i, \lambda_i, p) && i = 0, \ldots, n \\
          & \bar{x}_i = (x_{i-1} + x_i)/2 && i = 1, \ldots, n \\
-         & 0 = \phi(q_i)  && i = 0, \ldots, n\\
-         & 0 = \dot{\phi}(q_i, u_i, p) && i = 0, \ldots, n\\
-         & 0 = \ddot{\phi}(t_i, y_i, x_i, \lambda_i, p) && i = 0, \ldots, n\\
+         & 0 = \phi(q_i, p) = \dot{\phi}(q_i, u_i, p) = \ddot{\phi}(t_i, y_i, x_i, \lambda_i, p)  && i = 0, \ldots, n\\
          & V_{L,k} \leq V_k(t_0, t_f, y_0, y_f, x_{0}, x_{f}, \lambda_0, \lambda_f, p, \mathrlap{S_{e,k}) \leq V_{U,k}} \\
         & \quad\quad S_{e,k} = \sum_{i=1}^{n} \textrm{simpson}_i(s_{e,k}(t, y, x, \lambda, p)) && k = 1, \ldots, K \\
         & g_{L} \leq g(t_i, y_i, x_{i}, p) \leq g_{U}  && i = 0, \ldots, n\\
@@ -496,7 +494,7 @@ Moco provides two interfaces: a simple “tool” interface for common problems 
 \begin{figure}[!h]
 \begin{adjustwidth}{-2.25in}{0in} % Comment out/remove adjustwidth environment if table fits in text column.
 \centering
-    \includegraphics{figures/MocoDiagram.png}
+    \includegraphics{figures/MocoStudyDiagram.png}
     \caption{{\bf Overview of Moco.}
 Moco can solve customized optimal control problems (“Customizable optimal control”) using a library of costs, endpoint constraints, and path constraints (“Modules”). Under “Examples,” we list different ways to combine Moco’s modules to solve problems of interest. Users can use the solution of one problem to set the initial guess for a subsequent problem (“Solving problems iteratively”); solving problems iteratively is supported by the \textit{MocoTrajectory} and \textit{MocoSolution} classes (“Trajectory for guesses and solutions”). Moco provides higher-level interfaces for some standard problems (“Tools for standard problems”).}
     \label{mocodiagram}
@@ -715,14 +713,14 @@ To show that Moco can predict motions and optimize parameters of a model, we pre
 \begin{figure}[!h]
     \begin{adjustwidth}{-2.25in}{0in} % Comment out/remove adjustwidth environment if table fits in text column.
         \centering
-        \includegraphics{figures/crouch_to_stand.png}
+        \includegraphics{figures/squat_to_stand.png}
         \caption{{\bf Predicting and assisting a crouch-to-stand motion.}
 We predicted a crouch-to-stand motion with prescribed initial and final poses that minimized sum of squared muscle excitations and final time (black). The predicted joint angles are shown in the first column, and the activations of key muscles are shown in the remaining columns. We then added a torsional spring to the knee and solved for the optimal motion, muscle activations, and spring stiffness (blue). The spring allowed the motion to be completed in less time and allowed vasti activity to decrease substantially.}
         \label{crouchtostand}
     \end{adjustwidth}
 \end{figure}
 
-Next, we added a torsional spring to the knee and solved for the optimal motion, muscle activations, and spring stiffness. The spring was in equilibrium when the knee was extended (knee angle of 0). We used the same cost as in the unassisted case; no motion was tracked. With the assistive device, the motion was achieved with lower muscle activation (the vasti muscle is minimally active) and in a shorter duration. Moco predicted slightly different kinematics with the assistive device, and found an optimal spring stiffness of \input{results/crouch_to_stand_stiffness.txt}\unskip~N-m/rad.
+Next, we added a torsional spring to the knee and solved for the optimal motion, muscle activations, and spring stiffness. The spring was in equilibrium when the knee was extended (knee angle of 0). We used the same cost as in the unassisted case; no motion was tracked. With the assistive device, the motion was achieved with lower muscle activation (the vasti muscle is minimally active) and in a shorter duration. Moco predicted slightly different kinematics with the assistive device, and found an optimal spring stiffness of \input{results/squat_to_stand_stiffness.txt}\unskip~N-m/rad.
 
 Moco’s ability to rapidly predict motions and optimize device parameters makes it an ideal tool for predicting the effects of clinical interventions and designing assistive devices.
 

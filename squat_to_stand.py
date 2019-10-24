@@ -356,9 +356,6 @@ class SquatToStand(MocoPaperResult):
             f.write(f'{sol_predict_assisted_duration:.1f}')
 
         model = self.muscle_driven_model()
-        report = osim.report.Report(self.muscle_driven_model(),
-                                    self.predict_solution_file)
-        report.generate()
 
         # table = osim.analyze(model,
         #                      osim.MocoTrajectory(self.predict_solution_file),
@@ -367,11 +364,19 @@ class SquatToStand(MocoPaperResult):
         #                           'squat_to_stand_norm_fiber_length.sto')
 
         report = osim.report.Report(self.assisted_model(),
-                                    self.predict_assisted_solution_file)
+                                    self.predict_assisted_solution_file,
+                                    ref_files=[self.predict_solution_file])
         report.generate()
 
-        reaction = osim.analyzeSpatialVec(model, predict_solution,
-                               ['/jointset/foot_ground_r\|reaction_on_child'])
+        self.create_ground_reaction_file(model, predict_solution,
+                                         'results/squat_to_stand_ground_reaction.mot')
+        self.create_ground_reaction_file(model, predict_assisted_solution,
+                                         'results/squat_to_stand_assisted_ground_reaction.mot')
+
+        # TODO: visualize in the GUI!
+    def create_ground_reaction_file(self, model, solution, filepath):
+        reaction = osim.analyzeSpatialVec(model, solution,
+                                          ['/jointset/foot_ground_r\|reaction_on_child'])
         reaction = reaction.flatten(['_MX', '_MY', '_MZ', '_FX', '_FY', '_FZ'])
         prefix = '/jointset/foot_ground_r|reaction_on_child'
         FX = reaction.getDependentColumn(prefix + '_FX')
@@ -381,7 +386,6 @@ class SquatToStand(MocoPaperResult):
         MY = reaction.getDependentColumn(prefix + '_MY')
         MZ = reaction.getDependentColumn(prefix + '_MZ')
 
-        # TODO using incorrect variable names! ref frame!!
         # X coordinate of the center of pressure.
         x_cop = np.empty(reaction.getNumRows())
         z_cop = np.empty(reaction.getNumRows())
@@ -422,8 +426,4 @@ class SquatToStand(MocoPaperResult):
         external_loads.appendColumn('ground_torque_x', zero)
         external_loads.appendColumn('ground_torque_y', osim.Vector(TY))
         external_loads.appendColumn('ground_torque_z', zero)
-        osim.STOFileAdapter.write(external_loads,
-                                  'results/squat_to_stand_ground_reaction.mot')
-        # TODO: where is the foot located? maybe we can just, in code, make sure
-        # the COP is in the correct location.
-        # TODO: visualize in the GUI!
+        osim.STOFileAdapter.write(external_loads, filepath)

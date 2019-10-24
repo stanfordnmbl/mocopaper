@@ -246,3 +246,4 @@ out.log
 /motion_tracking_walking_cmc_tasks.xml
 
 !/figures/motion_tracking_walking_inverse_model.png
+/resources/sitToStand_4dof9musc_dgf.osim

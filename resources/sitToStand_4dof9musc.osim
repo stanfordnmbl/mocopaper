@@ -1237,7 +1237,7 @@
 		<!--List of joints that connect the bodies.-->
 		<JointSet name="jointset">
 			<objects>
-                <WeldJoint name="foot_ground_r">
+                <PlanarJoint name="foot_ground_r">
                 	<socket_parent_frame>ground_offset</socket_parent_frame>
 					<socket_child_frame>calcn_r_offset</socket_child_frame>
 					<!--Frames created/added to satisfy this component's connections.-->
@@ -1273,7 +1273,57 @@
 							<orientation>0 0 0</orientation>
 						</PhysicalOffsetFrame>
 					</frames>
-				</WeldJoint>
+					<coordinates>
+						<Coordinate name="foot_rz">
+							<!--The value of this coordinate before any value has been set. Rotational coordinate value is in radians and Translational in meters.-->
+							<default_value>0</default_value>
+							<!--The speed value of this coordinate before any value has been set. Rotational coordinate value is in rad/s and Translational in m/s.-->
+							<default_speed_value>0</default_speed_value>
+							<!--The minimum and maximum values that the coordinate can range between. Rotational coordinate range in radians and Translational in meters.-->
+							<range>-0.5 0.5</range>
+							<!--Flag indicating whether or not the values of the coordinates should be limited to the range, above.-->
+							<clamped>false</clamped>
+							<!--Flag indicating whether or not the values of the coordinates should be constrained to the current (e.g. default) value, above.-->
+							<locked>false</locked>
+							<!--If specified, the coordinate can be prescribed by a function of time. It can be any OpenSim Function with valid second order derivatives.-->
+							<prescribed_function />
+							<!--Flag indicating whether or not the values of the coordinates should be prescribed according to the function above. It is ignored if the no prescribed function is specified.-->
+							<prescribed>false</prescribed>
+						</Coordinate>
+						<Coordinate name="foot_tx">
+							<!--The value of this coordinate before any value has been set. Rotational coordinate value is in radians and Translational in meters.-->
+							<default_value>0</default_value>
+							<!--The speed value of this coordinate before any value has been set. Rotational coordinate value is in rad/s and Translational in m/s.-->
+							<default_speed_value>0</default_speed_value>
+							<!--The minimum and maximum values that the coordinate can range between. Rotational coordinate range in radians and Translational in meters.-->
+							<range>-0.5 0.5</range>
+							<!--Flag indicating whether or not the values of the coordinates should be limited to the range, above.-->
+							<clamped>false</clamped>
+							<!--Flag indicating whether or not the values of the coordinates should be constrained to the current (e.g. default) value, above.-->
+							<locked>false</locked>
+							<!--If specified, the coordinate can be prescribed by a function of time. It can be any OpenSim Function with valid second order derivatives.-->
+							<prescribed_function />
+							<!--Flag indicating whether or not the values of the coordinates should be prescribed according to the function above. It is ignored if the no prescribed function is specified.-->
+							<prescribed>false</prescribed>
+						</Coordinate>
+						<Coordinate name="foot_ty">
+							<!--The value of this coordinate before any value has been set. Rotational coordinate value is in radians and Translational in meters.-->
+							<default_value>0</default_value>
+							<!--The speed value of this coordinate before any value has been set. Rotational coordinate value is in rad/s and Translational in m/s.-->
+							<default_speed_value>0</default_speed_value>
+							<!--The minimum and maximum values that the coordinate can range between. Rotational coordinate range in radians and Translational in meters.-->
+							<range>-0.5 0.5</range>
+							<!--Flag indicating whether or not the values of the coordinates should be limited to the range, above.-->
+							<clamped>false</clamped>
+							<!--Flag indicating whether or not the values of the coordinates should be constrained to the current (e.g. default) value, above.-->
+							<locked>false</locked>
+							<!--If specified, the coordinate can be prescribed by a function of time. It can be any OpenSim Function with valid second order derivatives.-->
+							<prescribed_function />
+							<!--Flag indicating whether or not the values of the coordinates should be prescribed according to the function above. It is ignored if the no prescribed function is specified.-->
+							<prescribed>false</prescribed>
+						</Coordinate>
+					</coordinates>
+				</PlanarJoint>
 				<CustomJoint name="knee_r">
 					<!--Path to a Component that satisfies the Socket 'parent_frame' of type PhysicalFrame (description: The parent frame for the joint.).-->
 					<socket_parent_frame>tibia_r_offset</socket_parent_frame>
@@ -2808,6 +2858,186 @@
 					<!--The maximum generalized force produced by this actuator.-->
 					<optimal_force>100</optimal_force>
 				</CoordinateActuator>
+				<SmoothSphereHalfSpaceForce name="contactSphereHeel_r">
+					<!--Path to a Component that satisfies the Socket 'sphere_frame' of type PhysicalFrame (description: The body to which the contact sphere is attached.).-->
+					<socket_sphere_frame>/bodyset/calcn_r</socket_sphere_frame>
+					<!--Path to a Component that satisfies the Socket 'half_space_frame' of type PhysicalFrame (description: The body to which the contact half space is attached.).-->
+					<socket_half_space_frame>/ground</socket_half_space_frame>
+					<!--The location of the contact sphere in the sphere frame.-->
+					<contact_sphere_location>0.0146421 0 -0.0122799</contact_sphere_location>
+					<!--The radius of the contact sphere.-->
+					<contact_sphere_radius>0.035000000000000003</contact_sphere_radius>
+					<!--The location of the contact half space in the half space frame, default is Vec3(0).-->
+					<contact_half_space_location>0 0 0</contact_half_space_location>
+					<!--The orientation of the contact half space in the half space frame (body-fixed XYZ Euler angles), default represents ground (0,0,-0.5*SimTK::Pi).-->
+					<contact_half_space_orientation>0 0 -1.5707963267948966</contact_half_space_orientation>
+					<!--The stiffness constant (i.e., plain strain modulus), default is 1 (N/m^2)-->
+					<stiffness>400000</stiffness>
+					<!--The dissipation coefficient, default is 0 (s/m).-->
+					<dissipation>2</dissipation>
+					<!--The coefficient of static friction, default is 0.-->
+					<static_friction>0.80000000000000004</static_friction>
+					<!--The coefficient of dynamic friction, default is 0.-->
+					<dynamic_friction>0.80000000000000004</dynamic_friction>
+					<!--The coefficient of viscous friction, default is 0.-->
+					<viscous_friction>0.5</viscous_friction>
+					<!--The transition velocity, default is 0.01 (m/s).-->
+					<transition_velocity>0.20000000000000001</transition_velocity>
+					<!--The parameter that determines the smoothness of the transition of the tanh used to smooth the Hertz force. The larger the steeper the transition but the worse for optimization, default is 300.-->
+					<hertz_smoothing>300</hertz_smoothing>
+					<!--The parameter that determines the smoothness of the transition of the tanh used to smooth the Hunt-Crossley force. The larger the steeper the transition but the worse for optimization, default is 50.-->
+					<hunt_crossley_smoothing>50</hunt_crossley_smoothing>
+				</SmoothSphereHalfSpaceForce>
+				<SmoothSphereHalfSpaceForce name="contactLateralRearfoot_r">
+					<!--Path to a Component that satisfies the Socket 'sphere_frame' of type PhysicalFrame (description: The body to which the contact sphere is attached.).-->
+					<socket_sphere_frame>/bodyset/calcn_r</socket_sphere_frame>
+					<!--Path to a Component that satisfies the Socket 'half_space_frame' of type PhysicalFrame (description: The body to which the contact half space is attached.).-->
+					<socket_half_space_frame>/ground</socket_half_space_frame>
+					<!--The location of the contact sphere in the sphere frame.-->
+					<contact_sphere_location>0.084929099999999993 0 0.033864900000000003</contact_sphere_location>
+					<!--The radius of the contact sphere.-->
+					<contact_sphere_radius>0.035000000000000003</contact_sphere_radius>
+					<!--The location of the contact half space in the half space frame, default is Vec3(0).-->
+					<contact_half_space_location>0 0 0</contact_half_space_location>
+					<!--The orientation of the contact half space in the half space frame (body-fixed XYZ Euler angles), default represents ground (0,0,-0.5*SimTK::Pi).-->
+					<contact_half_space_orientation>0 0 -1.5707963267948966</contact_half_space_orientation>
+					<!--The stiffness constant (i.e., plain strain modulus), default is 1 (N/m^2)-->
+					<stiffness>400000</stiffness>
+					<!--The dissipation coefficient, default is 0 (s/m).-->
+					<dissipation>2</dissipation>
+					<!--The coefficient of static friction, default is 0.-->
+					<static_friction>0.80000000000000004</static_friction>
+					<!--The coefficient of dynamic friction, default is 0.-->
+					<dynamic_friction>0.80000000000000004</dynamic_friction>
+					<!--The coefficient of viscous friction, default is 0.-->
+					<viscous_friction>0.5</viscous_friction>
+					<!--The transition velocity, default is 0.01 (m/s).-->
+					<transition_velocity>0.20000000000000001</transition_velocity>
+					<!--The parameter that determines the smoothness of the transition of the tanh used to smooth the Hertz force. The larger the steeper the transition but the worse for optimization, default is 300.-->
+					<hertz_smoothing>300</hertz_smoothing>
+					<!--The parameter that determines the smoothness of the transition of the tanh used to smooth the Hunt-Crossley force. The larger the steeper the transition but the worse for optimization, default is 50.-->
+					<hunt_crossley_smoothing>50</hunt_crossley_smoothing>
+				</SmoothSphereHalfSpaceForce>
+				<SmoothSphereHalfSpaceForce name="contactLateralMidfoot_r">
+					<!--Path to a Component that satisfies the Socket 'sphere_frame' of type PhysicalFrame (description: The body to which the contact sphere is attached.).-->
+					<socket_sphere_frame>/bodyset/calcn_r</socket_sphere_frame>
+					<!--Path to a Component that satisfies the Socket 'half_space_frame' of type PhysicalFrame (description: The body to which the contact half space is attached.).-->
+					<socket_half_space_frame>/ground</socket_half_space_frame>
+					<!--The location of the contact sphere in the sphere frame.-->
+					<contact_sphere_location>0.153362 0 0.059482899999999998</contact_sphere_location>
+					<!--The radius of the contact sphere.-->
+					<contact_sphere_radius>0.035000000000000003</contact_sphere_radius>
+					<!--The location of the contact half space in the half space frame, default is Vec3(0).-->
+					<contact_half_space_location>0 0 0</contact_half_space_location>
+					<!--The orientation of the contact half space in the half space frame (body-fixed XYZ Euler angles), default represents ground (0,0,-0.5*SimTK::Pi).-->
+					<contact_half_space_orientation>0 0 -1.5707963267948966</contact_half_space_orientation>
+					<!--The stiffness constant (i.e., plain strain modulus), default is 1 (N/m^2)-->
+					<stiffness>400000</stiffness>
+					<!--The dissipation coefficient, default is 0 (s/m).-->
+					<dissipation>2</dissipation>
+					<!--The coefficient of static friction, default is 0.-->
+					<static_friction>0.80000000000000004</static_friction>
+					<!--The coefficient of dynamic friction, default is 0.-->
+					<dynamic_friction>0.80000000000000004</dynamic_friction>
+					<!--The coefficient of viscous friction, default is 0.-->
+					<viscous_friction>0.5</viscous_friction>
+					<!--The transition velocity, default is 0.01 (m/s).-->
+					<transition_velocity>0.20000000000000001</transition_velocity>
+					<!--The parameter that determines the smoothness of the transition of the tanh used to smooth the Hertz force. The larger the steeper the transition but the worse for optimization, default is 300.-->
+					<hertz_smoothing>300</hertz_smoothing>
+					<!--The parameter that determines the smoothness of the transition of the tanh used to smooth the Hunt-Crossley force. The larger the steeper the transition but the worse for optimization, default is 50.-->
+					<hunt_crossley_smoothing>50</hunt_crossley_smoothing>
+				</SmoothSphereHalfSpaceForce>
+				<SmoothSphereHalfSpaceForce name="contactLateralToe_r">
+					<!--Path to a Component that satisfies the Socket 'sphere_frame' of type PhysicalFrame (description: The body to which the contact sphere is attached.).-->
+					<socket_sphere_frame>/bodyset/calcn_r</socket_sphere_frame>
+					<!--Path to a Component that satisfies the Socket 'half_space_frame' of type PhysicalFrame (description: The body to which the contact half space is attached.).-->
+					<socket_half_space_frame>/ground</socket_half_space_frame>
+					<!--The location of the contact sphere in the sphere frame.-->
+					<contact_sphere_location>0.22301399999999999 0 0.067046099999999997</contact_sphere_location>
+					<!--The radius of the contact sphere.-->
+					<contact_sphere_radius>0.035000000000000003</contact_sphere_radius>
+					<!--The location of the contact half space in the half space frame, default is Vec3(0).-->
+					<contact_half_space_location>0 0 0</contact_half_space_location>
+					<!--The orientation of the contact half space in the half space frame (body-fixed XYZ Euler angles), default represents ground (0,0,-0.5*SimTK::Pi).-->
+					<contact_half_space_orientation>0 0 -1.5707963267948966</contact_half_space_orientation>
+					<!--The stiffness constant (i.e., plain strain modulus), default is 1 (N/m^2)-->
+					<stiffness>400000</stiffness>
+					<!--The dissipation coefficient, default is 0 (s/m).-->
+					<dissipation>2</dissipation>
+					<!--The coefficient of static friction, default is 0.-->
+					<static_friction>0.80000000000000004</static_friction>
+					<!--The coefficient of dynamic friction, default is 0.-->
+					<dynamic_friction>0.80000000000000004</dynamic_friction>
+					<!--The coefficient of viscous friction, default is 0.-->
+					<viscous_friction>0.5</viscous_friction>
+					<!--The transition velocity, default is 0.01 (m/s).-->
+					<transition_velocity>0.20000000000000001</transition_velocity>
+					<!--The parameter that determines the smoothness of the transition of the tanh used to smooth the Hertz force. The larger the steeper the transition but the worse for optimization, default is 300.-->
+					<hertz_smoothing>300</hertz_smoothing>
+					<!--The parameter that determines the smoothness of the transition of the tanh used to smooth the Hunt-Crossley force. The larger the steeper the transition but the worse for optimization, default is 50.-->
+					<hunt_crossley_smoothing>50</hunt_crossley_smoothing>
+				</SmoothSphereHalfSpaceForce>
+				<SmoothSphereHalfSpaceForce name="contactMedialToe_r">
+					<!--Path to a Component that satisfies the Socket 'sphere_frame' of type PhysicalFrame (description: The body to which the contact sphere is attached.).-->
+					<socket_sphere_frame>/bodyset/calcn_r</socket_sphere_frame>
+					<!--Path to a Component that satisfies the Socket 'half_space_frame' of type PhysicalFrame (description: The body to which the contact half space is attached.).-->
+					<socket_half_space_frame>/ground</socket_half_space_frame>
+					<!--The location of the contact sphere in the sphere frame.-->
+					<contact_sphere_location>0.27436300000000002 0 -0.026039</contact_sphere_location>
+					<!--The radius of the contact sphere.-->
+					<contact_sphere_radius>0.035000000000000003</contact_sphere_radius>
+					<!--The location of the contact half space in the half space frame, default is Vec3(0).-->
+					<contact_half_space_location>0 0 0</contact_half_space_location>
+					<!--The orientation of the contact half space in the half space frame (body-fixed XYZ Euler angles), default represents ground (0,0,-0.5*SimTK::Pi).-->
+					<contact_half_space_orientation>0 0 -1.5707963267948966</contact_half_space_orientation>
+					<!--The stiffness constant (i.e., plain strain modulus), default is 1 (N/m^2)-->
+					<stiffness>400000</stiffness>
+					<!--The dissipation coefficient, default is 0 (s/m).-->
+					<dissipation>2</dissipation>
+					<!--The coefficient of static friction, default is 0.-->
+					<static_friction>0.80000000000000004</static_friction>
+					<!--The coefficient of dynamic friction, default is 0.-->
+					<dynamic_friction>0.80000000000000004</dynamic_friction>
+					<!--The coefficient of viscous friction, default is 0.-->
+					<viscous_friction>0.5</viscous_friction>
+					<!--The transition velocity, default is 0.01 (m/s).-->
+					<transition_velocity>0.20000000000000001</transition_velocity>
+					<!--The parameter that determines the smoothness of the transition of the tanh used to smooth the Hertz force. The larger the steeper the transition but the worse for optimization, default is 300.-->
+					<hertz_smoothing>300</hertz_smoothing>
+					<!--The parameter that determines the smoothness of the transition of the tanh used to smooth the Hunt-Crossley force. The larger the steeper the transition but the worse for optimization, default is 50.-->
+					<hunt_crossley_smoothing>50</hunt_crossley_smoothing>
+				</SmoothSphereHalfSpaceForce>
+				<SmoothSphereHalfSpaceForce name="contactMedialMidfoot_r">
+					<!--Path to a Component that satisfies the Socket 'sphere_frame' of type PhysicalFrame (description: The body to which the contact sphere is attached.).-->
+					<socket_sphere_frame>/bodyset/calcn_r</socket_sphere_frame>
+					<!--Path to a Component that satisfies the Socket 'half_space_frame' of type PhysicalFrame (description: The body to which the contact half space is attached.).-->
+					<socket_half_space_frame>/ground</socket_half_space_frame>
+					<!--The location of the contact sphere in the sphere frame.-->
+					<contact_sphere_location>0.20363700000000001 0 -0.039868800000000003</contact_sphere_location>
+					<!--The radius of the contact sphere.-->
+					<contact_sphere_radius>0.035000000000000003</contact_sphere_radius>
+					<!--The location of the contact half space in the half space frame, default is Vec3(0).-->
+					<contact_half_space_location>0 0 0</contact_half_space_location>
+					<!--The orientation of the contact half space in the half space frame (body-fixed XYZ Euler angles), default represents ground (0,0,-0.5*SimTK::Pi).-->
+					<contact_half_space_orientation>0 0 -1.5707963267948966</contact_half_space_orientation>
+					<!--The stiffness constant (i.e., plain strain modulus), default is 1 (N/m^2)-->
+					<stiffness>400000</stiffness>
+					<!--The dissipation coefficient, default is 0 (s/m).-->
+					<dissipation>2</dissipation>
+					<!--The coefficient of static friction, default is 0.-->
+					<static_friction>0.80000000000000004</static_friction>
+					<!--The coefficient of dynamic friction, default is 0.-->
+					<dynamic_friction>0.80000000000000004</dynamic_friction>
+					<!--The coefficient of viscous friction, default is 0.-->
+					<viscous_friction>0.5</viscous_friction>
+					<!--The transition velocity, default is 0.01 (m/s).-->
+					<transition_velocity>0.20000000000000001</transition_velocity>
+					<!--The parameter that determines the smoothness of the transition of the tanh used to smooth the Hertz force. The larger the steeper the transition but the worse for optimization, default is 300.-->
+					<hertz_smoothing>300</hertz_smoothing>
+					<!--The parameter that determines the smoothness of the transition of the tanh used to smooth the Hunt-Crossley force. The larger the steeper the transition but the worse for optimization, default is 50.-->
+					<hunt_crossley_smoothing>50</hunt_crossley_smoothing>
+				</SmoothSphereHalfSpaceForce>
 			</objects>
 		</ForceSet>
 		<!--Geometry to be used in contact forces.-->

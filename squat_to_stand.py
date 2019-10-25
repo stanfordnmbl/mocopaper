@@ -48,18 +48,28 @@ class SquatToStand(MocoPaperResult):
         # system's center of mass is over the feet.
         # This avoid excessive tib ant activity simply to prevent the model
         # from falling backwards, which is unrealistic.
-        squat_lumbar = np.deg2rad(-22)
+        squat_lumbar = np.deg2rad(-40)
         problem.setStateInfo('/jointset/back/lumbar_extension/value',
                              [1.5 * squat_lumbar, 0.5], squat_lumbar, 0)
         squat_hip = np.deg2rad(-98)
         problem.setStateInfo('/jointset/hip_r/hip_flexion_r/value',
                              [1.5 * squat_hip, 0.5], squat_hip, 0)
-        squat_knee = np.deg2rad(-104)
+        squat_knee = np.deg2rad(-90)
         problem.setStateInfo('/jointset/knee_r/knee_angle_r/value',
                              [1.5 * squat_knee, 0], squat_knee, 0)
         squat_ankle = np.deg2rad(-30)
         problem.setStateInfo('/jointset/ankle_r/ankle_angle_r/value',
                              [1.5 * squat_ankle, 0.5], squat_ankle, 0)
+
+        problem.setStateInfo('/jointset/foot_ground_r/foot_rz/value',
+                             [-0.25, 0.25], 0, 0)
+        problem.setStateInfo('/jointset/foot_ground_r/foot_tx/value',
+                             [-0.1, 0.1], 0, 0)
+        problem.setStateInfo('/jointset/foot_ground_r/foot_ty/value',
+                             [-0.1, 0.1], 0.00, 0.00)
+        # TODO: Conduct a simulation to solve for the "equilibrium" contact
+        # height.
+
         problem.setStateInfoPattern('/jointset/.*/speed', [], 0, 0)
 
         # for muscle in model.getMuscles():
@@ -91,7 +101,7 @@ class SquatToStand(MocoPaperResult):
         problem = moco.updProblem()
         problem.addGoal(osim.MocoControlGoal('effort'))
         problem.addGoal(osim.MocoInitialActivationGoal('init_activation'))
-        problem.addGoal(osim.MocoFinalTimeGoal('time'))
+        problem.addGoal(osim.MocoFinalTimeGoal('time', 0.1))
 
         solver = osim.MocoCasADiSolver.safeDownCast(moco.updSolver())
         solver.resetProblem(problem)
@@ -165,11 +175,28 @@ class SquatToStand(MocoPaperResult):
         # moco.visualize(solution)
         solution.write(self.predict_assisted_solution_file)
 
+    def parse_args(self, args):
+        self.unassisted = False
+        self.assisted = False
+        if len(args) == 0:
+            self.unassisted = True
+            self.assisted = True
+            return
+        print('Received arguments {}'.format(args))
+        if 'unassisted' in args:
+            self.unassisted = True
+        if 'assisted' in args:
+            self.assisted = True
+
     def generate_results(self, args):
-        self.predict()
-        self.predict_assisted()
+        self.parse_args(args)
+        if self.unassisted:
+            self.predict()
+        if self.assisted:
+            self.predict_assisted()
 
     def report_results(self, args):
+        self.parse_args(args)
         fig = plt.figure(figsize=(7.5, 3))
         values = [
             '/jointset/hip_r/hip_flexion_r/value',
@@ -279,28 +306,33 @@ class SquatToStand(MocoPaperResult):
                 ax.autoscale(enable=True, axis='x', tight=True)
 
 
-        predict_solution = osim.MocoTrajectory(self.predict_solution_file)
+        if self.unassisted:
+            predict_solution = osim.MocoTrajectory(self.predict_solution_file)
 
-        predict_assisted_solution = osim.MocoTrajectory(
-            self.predict_assisted_solution_file)
-        stiffness = predict_assisted_solution.getParameter('stiffness')
+        if self.assisted:
+            predict_assisted_solution = osim.MocoTrajectory(
+                self.predict_assisted_solution_file)
+            stiffness = predict_assisted_solution.getParameter('stiffness')
+            print(f'Stiffness: {stiffness}')
+            with open('results/squat_to_stand_stiffness.txt', 'w') as f:
+                f.write(f'{stiffness:.0f}')
 
         # states = predict_assisted_solution.exportToStatesTrajectory(
         #     self.muscle_driven_model())
 
-        print(f'Stiffness: {stiffness}')
-        with open('results/squat_to_stand_stiffness.txt', 'w') as f:
-            f.write(f'{stiffness:.0f}')
-        plot_solution(predict_solution, 'unassisted', color='gray')
-        plot_solution(predict_assisted_solution, 'assisted')
+        if self.unassisted:
+            plot_solution(predict_solution, 'unassisted', color='gray')
+        if self.assisted:
+            plot_solution(predict_assisted_solution, 'assisted')
 
-        kinematics_rms = predict_solution.compareContinuousVariablesRMSPattern(
-            predict_assisted_solution, 'states', '/jointset.*value$')
-        kinematics_rms_deg = np.rad2deg(kinematics_rms)
-        print('RMS difference in joint angles between conditions (degrees): '
-              f'{kinematics_rms_deg}')
-        with open('results/squat_to_stand_kinematics_rms.txt', 'w') as f:
-            f.write(f'{kinematics_rms_deg:.1f}')
+        if self.unassisted and self.assisted:
+            kinematics_rms = predict_solution.compareContinuousVariablesRMSPattern(
+                predict_assisted_solution, 'states', '/jointset.*value$')
+            kinematics_rms_deg = np.rad2deg(kinematics_rms)
+            print('RMS difference in joint angles between conditions (degrees): '
+                  f'{kinematics_rms_deg}')
+            with open('results/squat_to_stand_kinematics_rms.txt', 'w') as f:
+                f.write(f'{kinematics_rms_deg:.1f}')
 
         fig.tight_layout() # w_pad=0.2)
 
@@ -339,21 +371,6 @@ class SquatToStand(MocoPaperResult):
         #             'joint_moment_contribution.png',
         #             dpi=600)
 
-        sol_predict_table = osim.TimeSeriesTable(self.predict_solution_file)
-        sol_predict_duration = sol_predict_table.getTableMetaDataString('solver_duration')
-        sol_predict_duration = float(sol_predict_duration) / 60.0
-        print('prediction duration ', sol_predict_duration)
-        with open('results/'
-                  'squat_to_stand_predict_duration.txt', 'w') as f:
-            f.write(f'{sol_predict_duration:.1f}')
-
-        sol_predict_assisted_table = osim.TimeSeriesTable(self.predict_assisted_solution_file)
-        sol_predict_assisted_duration = sol_predict_assisted_table.getTableMetaDataString('solver_duration')
-        sol_predict_assisted_duration = float(sol_predict_assisted_duration) / 60.0
-        print('prediction assisted duration ', sol_predict_assisted_duration)
-        with open('results/'
-                  'squat_to_stand_predict_assisted_duration.txt', 'w') as f:
-            f.write(f'{sol_predict_assisted_duration:.1f}')
 
         model = self.muscle_driven_model()
 
@@ -363,15 +380,32 @@ class SquatToStand(MocoPaperResult):
         # osim.STOFileAdapter.write(table,
         #                           'squat_to_stand_norm_fiber_length.sto')
 
-        report = osim.report.Report(self.assisted_model(),
-                                    self.predict_assisted_solution_file,
-                                    ref_files=[self.predict_solution_file])
-        report.generate()
+        if self.unassisted and self.assisted:
+            report = osim.report.Report(self.assisted_model(),
+                                        self.predict_assisted_solution_file,
+                                        ref_files=[self.predict_solution_file])
+            report.generate()
 
-        self.create_ground_reaction_file(model, predict_solution,
-                                         'results/squat_to_stand_ground_reaction.mot')
-        self.create_ground_reaction_file(model, predict_assisted_solution,
-                                         'results/squat_to_stand_assisted_ground_reaction.mot')
+        # if self.unassisted:
+        #     sol_predict_table = osim.TimeSeriesTable(self.predict_solution_file)
+        #     sol_predict_duration = sol_predict_table.getTableMetaDataString('solver_duration')
+        #     sol_predict_duration = float(sol_predict_duration) / 60.0
+        #     print('prediction duration ', sol_predict_duration)
+        #     with open('results/'
+        #               'squat_to_stand_predict_duration.txt', 'w') as f:
+        #         f.write(f'{sol_predict_duration:.1f}')
+        #     self.create_ground_reaction_file(model, predict_solution,
+        #                                      'results/squat_to_stand_ground_reaction.mot')
+        # if self.assisted:
+        #     sol_predict_assisted_table = osim.TimeSeriesTable(self.predict_assisted_solution_file)
+        #     sol_predict_assisted_duration = sol_predict_assisted_table.getTableMetaDataString('solver_duration')
+        #     sol_predict_assisted_duration = float(sol_predict_assisted_duration) / 60.0
+        #     print('prediction assisted duration ', sol_predict_assisted_duration)
+        #     with open('results/'
+        #           'squat_to_stand_predict_assisted_duration.txt', 'w') as f:
+        #         f.write(f'{sol_predict_assisted_duration:.1f}')
+        #     self.create_ground_reaction_file(model, predict_assisted_solution,
+        #                                      'results/squat_to_stand_assisted_ground_reaction.mot')
 
         # TODO: visualize in the GUI!
     def create_ground_reaction_file(self, model, solution, filepath):

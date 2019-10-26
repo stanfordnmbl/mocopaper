@@ -198,28 +198,27 @@
 \end{align}
 }
 
-% TODO: compress rows.
 \newcommand{\prescribed}{
 \begin{align}
     \begin{aligned}
-        \mbox{minimize} \quad & \sum_j w_j J_{j}(t_0, t_f, \hat{q}_0, \hat{q}_f, \hat{u}_0, \hat{u}_f, \mathrlap{z_0, z_f, x_{0}, x_{f}, \lambda_0, \lambda_f, p, S_{c,j})} & \textrm{costs} \\
-        & \quad\quad S_{c,j} = \int_{t_0}^{t_f} s_{c,j}(t, \hat{q}, \hat{u}, z, x, \lambda, p)~dt\\
+        \mbox{minimize} \quad & \mathrlap{\sum_j w_j J_{j}(t_0, t_f, \hat{q}_0, \hat{q}_f, \hat{u}_0, \hat{u}_f, z_0, z_f, x_{0}, x_{f}, \lambda_0, \lambda_f, p, S_{c,j})} &&& \textrm{costs} \\
+        & \quad\quad \mathrlap{S_{c,j} = \int_{t_0}^{t_f} s_{c,j}(t, \hat{q}, \hat{u}, z, x, \lambda, p)~dt} \\
         \mbox{subject to} \quad &
-         M(\hat{q}, p)\hat{\dot{u}} + G(\hat{q}, p)^T \lambda = \mathrlap{f_{\textrm{app}}(t, \hat{q}, \hat{u}, z, x, p) - f_{\textrm{bias}}(\hat{q}, \hat{u}, p)} & \textrm{multi.} \\
-        & \dot{z}_{\textrm{ex}}(t) = f_{\dot{z},\textrm{ex}}(t, \hat{q}, \hat{u}, z, x, \lambda, p) & \textrm{auxiliary dynamics} \\
-        & 0 = f_{\dot{z},\textrm{im}}(t, \hat{q}, \hat{u}, z, \dot{z}_\textrm{im}, x, \lambda, p) \\
-        & V_{L,k} \leq V_k(t_0, t_f, \hat{q}_0, \hat{q}_f, \hat{u}_0, \hat{u}_f, z_0, \mathrlap{z_f, x_{0}, x_{f}, \lambda_0, \lambda_f, p, S_{e,k}) \leq V_{U,k}} \\
-        & \quad\quad \mathrlap{S_{e,k} = \int_{t_0}^{t_f} s_{e,k}(t, \hat{q}, \hat{u}, z, x, \lambda, p)~dt \quad k = 1, \ldots, K} & \textrm{endpoint} \\
-        & g_{L} \leq g(t, \hat{q}, \hat{u}, z, x, \lambda, p) \leq g_{U} & \textrm{path} \\
-        & z_{0,L} \leq z_0 \leq z_{0,U} \quad\quad z_{f,L} \leq z_f \leq z_{f,U} & \textrm{initial and final states} \\
-        & x_{0,L} \leq x_0 \leq x_{0,U} \quad\quad x_{f,L} \leq x_f \leq x_{f,U}& \textrm{initial and final controls} \\
+         M(\hat{q}, p)\hat{\dot{u}} + \mathrlap{G(\hat{q}, p)^T \lambda = f_{\textrm{app}}(t, \hat{q}, \hat{u}, z, x, p) - f_{\textrm{bias}}(\hat{q}, \hat{u}, p)} &&& \textrm{multi.} \\
+        & \mathrlap{\dot{z}_{\textrm{ex}}(t) = f_{\dot{z},\textrm{ex}}(t, \hat{q}, \hat{u}, z, x, \lambda, p)} &&& \textrm{auxiliary dynamics} \\
+        & \mathrlap{0 = f_{\dot{z},\textrm{im}}(t, \hat{q}, \hat{u}, z, \dot{z}_\textrm{im}, x, \lambda, p)} \\
+        & V_{L,k} \leq V_k(t_0, t_f, \hat{q}_0, \mathrlap{\hat{q}_f, \hat{u}_0, \hat{u}_f, z_0, z_f, x_{0}, x_{f}, \lambda_0, \lambda_f, p, S_{e,k}) \leq V_{U,k}} \\
+        & \quad\quad \mathrlap{S_{e,k} = \int_{t_0}^{t_f} s_{e,k}(t, \hat{q}, \hat{u}, z, x, \lambda, p)~dt \quad k = 1, \ldots, K} &&& \textrm{endpoint} \\
+        & \mathrlap{g_{L} \leq g(t, \hat{q}, \hat{u}, z, x, \lambda, p) \leq g_{U}} &&& \textrm{path} \\
+        & z_{0,L} \leq z_0 \leq z_{0,U} && z_{f,L} \leq z_f \leq z_{f,U} & \textrm{initial and final states} \\
+        & x_{0,L} \leq x_0 \leq x_{0,U} && x_{f,L} \leq x_f \leq x_{f,U} & \textrm{initial and final controls} \\
         \mbox{with respect to} \quad
-        & t_0 \in [t_{0,L}, t_{0,U}] & \textrm{initial time} \\
-        & t_f \in [t_{f,L}, t_{f,U}] & \textrm{final time} \\
-        & z(t) \in [z_{L}, z_{U}] & \textrm{auxiliary states} \\
-        & x(t) \in [x_{L}, x_{U}] & \textrm{controls} \\
-        & \lambda(t) & \textrm{multipliers} \\
-        & p \in [p_{L}, p_{U}]. & \textrm{parameters}
+        & t_0 \in [t_{0,L}, t_{0,U}] &&& \textrm{initial time} \\
+        & t_f \in [t_{f,L}, t_{f,U}] &&& \textrm{final time} \\
+        & z(t) \in [z_{L}, z_{U}] &&& \textrm{auxiliary states} \\
+        & x(t) \in [x_{L}, x_{U}] &&& \textrm{controls} \\
+        & \lambda(t) &&& \textrm{multipliers} \\
+        & p \in [p_{L}, p_{U}]. &&& \textrm{parameters}
     \end{aligned}
 \end{align}
 }
@@ -248,27 +247,27 @@
 \begin{align}
     \begin{aligned}
         \mbox{minimize} \quad
-         & \sum_j w_j J_{j}(t_0, t_f, y_0, y_n, x_{0}, x_{n}, \lambda_0, \lambda_n, p, \mathrlap{S_{c,j})
+         & \sum_j w_j J_{j}(t_0, t_f, \mathrlap{y_0, y_n, x_{0}, x_{n}, \lambda_0, \lambda_n, p, S_{c,j})
           + w_{\lambda} \sum_{i=1}^{n} \textrm{trap}_i(\|\lambda\|_2^2)}  \\
-         & \quad\quad S_{c,j} = \sum_{i=1}^{n} \textrm{trap}_i(s_{c,j}(t, y, x, \lambda, p)) \\
+         & \quad\quad \mathrlap{S_{c,j} = \sum_{i=1}^{n} \textrm{trap}_i(s_{c,j}(t, y, x, \lambda, p))} \\
         \mbox{subject to} \quad
-         & q_i = q_{i-1} + \textrm{trap}_i(u) && i = 1, \ldots, n \\
-         & u_i = u_{i-1} + \textrm{trap}_i(f_{\dot{u}}(t, y, x, \lambda, p))  && i = 1, \ldots, n \\
-         & z_{\textrm{ex},i} = z_{\textrm{ex},i-1} + \textrm{trap}_i(f_{\dot{z},\textrm{ex}}(t, y, x, \lambda, p)) && i = 1, \ldots, n \\
-         & z_{\textrm{im},i} = z_{\textrm{im},i-1} + \textrm{trap}_i(\zeta) && i = 1, \ldots, n \\
-         & 0 = f_{\dot{z},\textrm{im}}(t_i, y_i, \zeta_i, x_i, \lambda_i, p) && i = 0, \ldots, n \\
-         & 0 = \phi(q_i, p)  && i = 0, \ldots, n\\
-         & V_{L,k} \leq V_k(t_0, t_f, y_0, y_f, x_{0}, x_{f}, \lambda_0, \mathrlap{\lambda_f, p, S_{e,k}) \leq V_{U,k}} \\
-         & \quad\quad S_{e,k} = \sum_{i=1}^{n} \textrm{trap}_i(s_{e,k}(t, y, x, \lambda, p)) && k = 1, \ldots, K \\
-         & g_{L} \leq g(t_i, y_i, x_{i}, \lambda_i, p) \leq g_{U}  && i = 0, \ldots, n\\
+         & \mathrlap{q_i = q_{i-1} + \textrm{trap}_i(u)} &&&& i = 1, \ldots, n \\
+         & \mathrlap{u_i = u_{i-1} + \textrm{trap}_i(f_{\dot{u}}(t, y, x, \lambda, p))}  &&&& i = 1, \ldots, n \\
+         & \mathrlap{z_{\textrm{ex},i} = z_{\textrm{ex},i-1} + \textrm{trap}_i(f_{\dot{z},\textrm{ex}}(t, y, x, \lambda, p))} &&&& i = 1, \ldots, n \\
+         & \mathrlap{z_{\textrm{im},i} = z_{\textrm{im},i-1} + \textrm{trap}_i(\zeta)} &&&& i = 1, \ldots, n \\
+         & \mathrlap{0 = f_{\dot{z},\textrm{im}}(t_i, y_i, \zeta_i, x_i, \lambda_i, p)} &&&& i = 0, \ldots, n \\
+         & 0 = \phi(q_i, p)  &&&& i = 0, \ldots, n\\
+         & V_{L,k} \leq V_k(t_0, t_f, y_0, \mathrlap{y_f, x_{0}, x_{f}, \lambda_0, \lambda_f, p, S_{e,k}) \leq V_{U,k}} \\
+         & \quad\quad \mathrlap{S_{e,k} = \sum_{i=1}^{n} \textrm{trap}_i(s_{e,k}(t, y, x, \lambda, p))} &&&& k = 1, \ldots, K \\
+         & \mathrlap{g_{L} \leq g(t_i, y_i, x_{i}, \lambda_i, p) \leq g_{U}}  &&&& i = 0, \ldots, n\\
          \mbox{with respect to} \quad
-         & t_0 \in [t_{0,L}, t_{0,U}] \quad\quad t_n \in [t_{f,L}, t_{f,U}] \\
-         & y_0 \in [y_{0,L}, y_{0,U}] \quad\quad y_n \in [y_{f,L}, y_{f,U}] \\
-         & y_i \in [y_{L}, y_{U}] && i = 1, \ldots, n - 1\\
-         & \zeta_i \in [\zeta_{L}, \zeta_{U}] && i = 0, \ldots, n \\
-         & x_0 \in [x_{0,L}, x_{0,U}] \quad\quad x_n \in [x_{f,L}, x_{f,U}] \\
-         & x_i \in [x_{L}, x_{U}] && i = 1, \ldots, n - 1\\
-         & \lambda_i \in [\lambda_L, \lambda_U] && i = 0, \ldots, n \\
+         & t_0 \in [t_{0,L}, t_{0,U}] && t_n \in [t_{f,L}, t_{f,U}] \\
+         & y_0 \in [y_{0,L}, y_{0,U}] && y_n \in [y_{f,L}, y_{f,U}] \\
+         & y_i \in [y_{L}, y_{U}] &&&& i = 1, \ldots, n - 1\\
+         & \zeta_i \in [\zeta_{L}, \zeta_{U}] &&&& i = 0, \ldots, n \\
+         & x_0 \in [x_{0,L}, x_{0,U}] && x_n \in [x_{f,L}, x_{f,U}] \\
+         & x_i \in [x_{L}, x_{U}] &&&& i = 1, \ldots, n - 1\\
+         & \lambda_i \in [\lambda_L, \lambda_U] &&&& i = 0, \ldots, n \\
          & p \in [p_{L}, p_{U}].
     \end{aligned}
 \end{align}
@@ -312,37 +311,37 @@
 \begin{align}
     \begin{aligned}
         \mbox{minimize} \quad
-         & \sum_j w_j J_{c,j}(t_0, t_f, y_0, y_n, x_{0}, x_{n}, \lambda_0, \lambda_n, p, \mathrlap{S_{c,j})
+         & \sum_j w_j J_{c,j}(t_0, t_f, \mathrlap{y_0, y_n, x_{0}, x_{n}, \lambda_0, \lambda_n, p, S_{c,j})
          + w_{\lambda} \sum_{i=1}^{n} \textrm{simpson}_i(\|\lambda\|_2^2)}  \\
-         & \quad\quad S_{c,j} = \sum_{i=1}^{n} \textrm{simpson}_i(s_{c,j}(t, y, x, \lambda, p)) \\
+         & \quad\quad \mathrlap{S_{c,j} = \sum_{i=1}^{n} \textrm{simpson}_i(s_{c,j}(t, y, x, \lambda, p))} \\
         \mbox{subject to} \quad
-         & \bar{q}_i = \textrm{hermite}_i(q, u) + G(\bar{q}_i, p)^T \bar{\gamma}_i && i = 1, \ldots, n \\
-         & q_i = q_{i-1} + \textrm{simpson}_i(u) && i = 1, \ldots, n \\
-         & \bar{u}_i = \textrm{hermite}_i(u, f_{\dot{u}}(t, y, x, \lambda, p)) && i = 1, \ldots, n \\
-         & u_i = u_{i-1} + \textrm{simpson}_i(f_{\dot{u}}(t, y, x, \lambda, p))  && i = 1, \ldots, n \\
-         & \bar{z}_{\textrm{ex},i} = \textrm{hermite}_i(z_{\textrm{ex}}, f_{\dot{z},\textrm{ex}}(t, y, x, \lambda, p)) && i = 1, \ldots, n \\
-         & z_{\textrm{ex},i} = z_{\textrm{ex},i-1} + \textrm{simpson}_i(f_{\dot{z},\textrm{ex}}(t, y, x, \lambda, p)) && i = 1, \ldots, n \\
-         & \bar{z}_{\textrm{im},i} = \textrm{hermite}_i(z_{\textrm{im}}, \zeta) && i = 1, \ldots, n \\
-         & z_{\textrm{im},i} = z_{\textrm{im},i-1} + \textrm{simpson}_i(\zeta) && i = 1, \ldots, n \\
-         & 0 = f_{\dot{z},\textrm{im}}(t_i, y_i, \zeta_i, x_i, \lambda_i, p) && i = 0, \ldots, n \\
-         & \bar{x}_i = (x_{i-1} + x_i)/2 && i = 1, \ldots, n \\
-         & 0 = \phi(q_i, p) = \dot{\phi}(q_i, u_i, p) = \ddot{\phi}(t_i, y_i, x_i, \lambda_i, p)  && i = 0, \ldots, n\\
-         & V_{L,k} \leq V_k(t_0, t_f, y_0, y_f, x_{0}, x_{f}, \lambda_0, \lambda_f, p, \mathrlap{S_{e,k}) \leq V_{U,k}} \\
-        & \quad\quad S_{e,k} = \sum_{i=1}^{n} \textrm{simpson}_i(s_{e,k}(t, y, x, \lambda, p)) && k = 1, \ldots, K \\
-        & g_{L} \leq g(t_i, y_i, x_{i}, \lambda_i, p) \leq g_{U}  && i = 0, \ldots, n\\
+         & \mathrlap{\bar{q}_i = \textrm{hermite}_i(q, u) + G(\bar{q}_i, p)^T \bar{\gamma}_i} &&&& i = 1, \ldots, n \\
+         & \mathrlap{q_i = q_{i-1} + \textrm{simpson}_i(u)} &&&& i = 1, \ldots, n \\
+         & \mathrlap{\bar{u}_i = \textrm{hermite}_i(u, f_{\dot{u}}(t, y, x, \lambda, p))} &&&& i = 1, \ldots, n \\
+         & \mathrlap{u_i = u_{i-1} + \textrm{simpson}_i(f_{\dot{u}}(t, y, x, \lambda, p))}  &&&& i = 1, \ldots, n \\
+         & \mathrlap{\bar{z}_{\textrm{ex},i} = \textrm{hermite}_i(z_{\textrm{ex}}, f_{\dot{z},\textrm{ex}}(t, y, x, \lambda, p))} &&&& i = 1, \ldots, n \\
+         & \mathrlap{z_{\textrm{ex},i} = z_{\textrm{ex},i-1} + \textrm{simpson}_i(f_{\dot{z},\textrm{ex}}(t, y, x, \lambda, p))} &&&& i = 1, \ldots, n \\
+         & \mathrlap{\bar{z}_{\textrm{im},i} = \textrm{hermite}_i(z_{\textrm{im}}, \zeta)} &&&& i = 1, \ldots, n \\
+         & \mathrlap{z_{\textrm{im},i} = z_{\textrm{im},i-1} + \textrm{simpson}_i(\zeta)} &&&& i = 1, \ldots, n \\
+         & \mathrlap{0 = f_{\dot{z},\textrm{im}}(t_i, y_i, \zeta_i, x_i, \lambda_i, p)} &&&& i = 0, \ldots, n \\
+         & \mathrlap{\bar{x}_i = (x_{i-1} + x_i)/2} &&&& i = 1, \ldots, n \\
+         & \mathrlap{0 = \phi(q_i, p) = \dot{\phi}(q_i, u_i, p) = \ddot{\phi}(t_i, y_i, x_i, \lambda_i, p)}  &&&& i = 0, \ldots, n\\
+         & V_{L,k} \leq V_k(t_0, t_f, y_0, y_f, x_{0}, \mathrlap{x_{f}, \lambda_0, \lambda_f, p, S_{e,k}) \leq V_{U,k}} \\
+        & \quad\quad \mathrlap{S_{e,k} = \sum_{i=1}^{n} \textrm{simpson}_i(s_{e,k}(t, y, x, \lambda, p))} &&&& k = 1, \ldots, K \\
+        & \mathrlap{g_{L} \leq g(t_i, y_i, x_{i}, \lambda_i, p) \leq g_{U}}  &&&& i = 0, \ldots, n\\
          \mbox{with respect to} \quad
-         & t_0 \in [t_{0,L}, t_{0,U}] \quad\quad t_n \in [t_{f,L}, t_{f,U}] \\
-         & y_0 \in [y_{0,L}, y_{0,U}] \quad\quad y_n \in [y_{f,L}, y_{f,U}] \\
-         & y_i \in [y_{L}, y_{U}] && i = 1, \ldots, n - 1 \\
-         & \bar{y}_i \in [y_{L}, y_{U}] && i = 1, \ldots, n \\
-         & \zeta_i \in [\zeta_{L}, \zeta_{U}] && i = 0, \ldots, n \\
-         & \bar{\zeta}_i \in [\zeta_{L}, \zeta_{U}] && i = 1, \ldots, n \\
-         & x_0 \in [x_{0,L}, x_{0,U}] \quad\quad x_n \in [x_{f,L}, x_{f,U}] \\
-         & x_i \in [x_{L}, x_{U}] && i = 1, \ldots, n - 1 \\
-         & \bar{x}_i \in [x_{L}, x_{U}] && i = 1, \ldots, n \\
-         & \lambda_i \in [\lambda_L, \lambda_U] && i = 0, \ldots, n \\
-         & \bar{\lambda}_i \in [\lambda_L, \lambda_U] && i = 1, \ldots, n \\
-         & \bar{\gamma}_i \in [\bar{\gamma}_L, \bar{\gamma}_U] && i = 1, \ldots, n \\
+         & t_0 \in [t_{0,L}, t_{0,U}] && t_n \in [t_{f,L}, t_{f,U}] \\
+         & y_0 \in [y_{0,L}, y_{0,U}] && y_n \in [y_{f,L}, y_{f,U}] \\
+         & y_i \in [y_{L}, y_{U}] &&&& i = 1, \ldots, n - 1 \\
+         & \bar{y}_i \in [y_{L}, y_{U}] &&&& i = 1, \ldots, n \\
+         & \zeta_i \in [\zeta_{L}, \zeta_{U}] &&&& i = 0, \ldots, n \\
+         & \bar{\zeta}_i \in [\zeta_{L}, \zeta_{U}] &&&& i = 1, \ldots, n \\
+         & x_0 \in [x_{0,L}, x_{0,U}] && x_n \in [x_{f,L}, x_{f,U}] \\
+         & x_i \in [x_{L}, x_{U}] &&&& i = 1, \ldots, n - 1 \\
+         & \bar{x}_i \in [x_{L}, x_{U}] &&&& i = 1, \ldots, n \\
+         & \lambda_i \in [\lambda_L, \lambda_U] &&&& i = 0, \ldots, n \\
+         & \bar{\lambda}_i \in [\lambda_L, \lambda_U] &&&& i = 1, \ldots, n \\
+         & \bar{\gamma}_i \in [\bar{\gamma}_L, \bar{\gamma}_U] &&&& i = 1, \ldots, n \\
          & p \in [p_{L}, p_{U}].
     \end{aligned}
 \end{align}

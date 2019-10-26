@@ -86,8 +86,11 @@ RUN echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula \
         select true | debconf-set-selections
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
-        python3-scipy python3-matplotlib python3-opencv \
+        python3-pip python3-scipy python3-opencv \
         ttf-mscorefonts-installer
+
+# We need matplotlib 3.1.
+RUN pip3 install matplotlib
 
 COPY . /mocopaper
 

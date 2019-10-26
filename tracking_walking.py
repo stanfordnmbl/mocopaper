@@ -603,12 +603,13 @@ class MotionTrackingWalking(MocoPaperResult):
 
             utilities.publication_spines(ax)
 
-        legend_handles, legend_labels = zip(*legend_handles_and_labels)
-        plt.figlegend(legend_handles, legend_labels,
-            frameon=False,
-            ncol=5,
-            loc='lower center',
-        )
+        if self.inverse and self.knee:
+            legend_handles, legend_labels = zip(*legend_handles_and_labels)
+            plt.figlegend(legend_handles, legend_labels,
+                frameon=False,
+                ncol=5,
+                loc='lower center',
+            )
         fig.tight_layout(h_pad=1, rect=(0, 0.07, 1, 1), pad=0.4)
 
         fig.savefig('figures/motion_tracking_walking.eps')

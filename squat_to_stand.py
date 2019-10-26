@@ -9,11 +9,12 @@ from moco_paper_result import MocoPaperResult
 
 import utilities
 
-# TODO: Get rid of 2*Fmax
 # TODO: Improve wrapping surfaces for such deep flexion (Lai's model?).
 # TODO: Check the moment arm of the glutes: might be too small.
 # TODO: I think the glutes are generating lots of passive force.
 # TODO: Check passive forces: maybe this is why they're not turning on.
+
+# TODO: Use torque-driven to see if it's passive forces.
 
 
 class SquatToStand(MocoPaperResult):
@@ -40,7 +41,7 @@ class SquatToStand(MocoPaperResult):
 
         problem = moco.updProblem()
         problem.setModelCopy(model)
-        problem.setTimeBounds(0, [0.1, 2])
+        problem.setTimeBounds(0, [0.1, 2.0])
         # Initial squat pose is based on
         # https://simtk.org/projects/aredsimulation
         # Simulation Files/ISS_ARED_Initial_States.sto; t = 1.0 seconds;
@@ -48,25 +49,25 @@ class SquatToStand(MocoPaperResult):
         # system's center of mass is over the feet.
         # This avoid excessive tib ant activity simply to prevent the model
         # from falling backwards, which is unrealistic.
-        squat_lumbar = np.deg2rad(-40)
+        self.squat_lumbar = np.deg2rad(0)
         problem.setStateInfo('/jointset/back/lumbar_extension/value',
-                             [1.5 * squat_lumbar, 0.5], squat_lumbar, 0)
-        squat_hip = np.deg2rad(-98)
+                             [1.5 * self.squat_lumbar, 0.5], self.squat_lumbar, 0)
+        self.squat_hip = np.deg2rad(-50)
         problem.setStateInfo('/jointset/hip_r/hip_flexion_r/value',
-                             [1.5 * squat_hip, 0.5], squat_hip, 0)
-        squat_knee = np.deg2rad(-90)
+                             [1.5 * self.squat_hip, 0.5], self.squat_hip, 0)
+        self.squat_knee = np.deg2rad(-60)
         problem.setStateInfo('/jointset/knee_r/knee_angle_r/value',
-                             [1.5 * squat_knee, 0], squat_knee, 0)
-        squat_ankle = np.deg2rad(-30)
+                             [1.5 * self.squat_knee, 0], self.squat_knee, 0)
+        self.squat_ankle = np.deg2rad(-30)
         problem.setStateInfo('/jointset/ankle_r/ankle_angle_r/value',
-                             [1.5 * squat_ankle, 0.5], squat_ankle, 0)
+                             [1.5 * self.squat_ankle, 0.5], self.squat_ankle, 0)
 
         problem.setStateInfo('/jointset/foot_ground_r/foot_rz/value',
                              [-0.25, 0.25], 0, 0)
         problem.setStateInfo('/jointset/foot_ground_r/foot_tx/value',
                              [-0.1, 0.1], 0, 0)
         problem.setStateInfo('/jointset/foot_ground_r/foot_ty/value',
-                             [-0.1, 0.1], 0.00, 0.00)
+                             [-0.1, 0.1], 0.03, [0.0, 0.03])
         # TODO: Conduct a simulation to solve for the "equilibrium" contact
         # height.
 
@@ -82,13 +83,25 @@ class SquatToStand(MocoPaperResult):
     def muscle_driven_model(self):
         model = osim.Model('resources/sitToStand_4dof9musc.osim')
         model.finalizeConnections()
+        # WORKS WITHOUT MUSCLES
+        # osim.ModelFactory.removeMuscles(model)
+        osim.ModelFactory.createReserveActuators(model, 50, 1)
         osim.DeGrooteFregly2016Muscle.replaceMuscles(model)
+        # model.getComponent('/forceset/semimem_r').set_appliesForce(False)
+        # model.getComponent('/forceset/soleus_r').set_appliesForce(False)
+        # model.getComponent('/forceset/med_gas_r').set_appliesForce(True)
+        # model.getComponent('/forceset/bifemsh_r').set_appliesForce(True)
+        # model.getComponent('/forceset/vas_int_r').set_appliesForce(True)
+        # model.getComponent('/forceset/rect_fem_r').set_appliesForce(True)
+        # model.getComponent('/forceset/glut_max2_r').set_appliesForce(True)
+        # model.getComponent('/forceset/psoas_r').set_appliesForce(True)
         for muscle in model.getMuscles():
             # Missing a leg: double the forces.
             muscle.set_max_isometric_force(
                 2.0 * muscle.get_max_isometric_force())
             dgf = osim.DeGrooteFregly2016Muscle.safeDownCast(muscle)
             dgf.set_ignore_passive_fiber_force(True)
+            dgf.set_ignore_tendon_compliance(True)
             dgf.set_tendon_compliance_dynamics_mode('implicit')
             # if muscle.getName() == 'soleus_r':
             #     dgf.set_ignore_passive_fiber_force(True)
@@ -97,6 +110,7 @@ class SquatToStand(MocoPaperResult):
 
     def predict(self):
         model = self.muscle_driven_model()
+        model.initSystem()
         moco = self.create_study(model)
         problem = moco.updProblem()
         problem.addGoal(osim.MocoControlGoal('effort'))
@@ -111,6 +125,7 @@ class SquatToStand(MocoPaperResult):
         N = guess.getNumTimes()
         for muscle in model.getMuscles():
             dgf = osim.DeGrooteFregly2016Muscle.safeDownCast(muscle)
+            if not dgf.get_appliesForce(): continue
             if not dgf.get_ignore_tendon_compliance():
                 guess.setState(
                     '%s/normalized_tendon_force' % muscle.getAbsolutePathString(),
@@ -120,6 +135,16 @@ class SquatToStand(MocoPaperResult):
                 osim.createVectorLinspace(N, 0.05, 0.05))
             guess.setControl(muscle.getAbsolutePathString(),
                 osim.createVectorLinspace(N, 0.05, 0.05))
+
+        guess.setState('/jointset/back/lumbar_extension/value',
+                       osim.createVectorLinspace(N, self.squat_lumbar, 0))
+        guess.setState('/jointset/hip_r/hip_flexion_r/value',
+                             osim.createVectorLinspace(N, self.squat_hip, 0))
+        guess.setState('/jointset/knee_r/knee_angle_r/value',
+                             osim.createVectorLinspace(N, self.squat_knee, 0))
+        guess.setState('/jointset/ankle_r/ankle_angle_r/value',
+                             osim.createVectorLinspace(N, self.squat_ankle, 0))
+
         solver.setGuess(guess)
 
         solution = moco.solve()

@@ -85,16 +85,17 @@ class SquatToStand(MocoPaperResult):
         model.finalizeConnections()
         # WORKS WITHOUT MUSCLES
         # osim.ModelFactory.removeMuscles(model)
-        osim.ModelFactory.createReserveActuators(model, 50, 1)
+        osim.ModelFactory.createReserveActuators(model, 10)
         osim.DeGrooteFregly2016Muscle.replaceMuscles(model)
-        # model.getComponent('/forceset/semimem_r').set_appliesForce(False)
-        # model.getComponent('/forceset/soleus_r').set_appliesForce(False)
-        # model.getComponent('/forceset/med_gas_r').set_appliesForce(True)
-        # model.getComponent('/forceset/bifemsh_r').set_appliesForce(True)
-        # model.getComponent('/forceset/vas_int_r').set_appliesForce(True)
-        # model.getComponent('/forceset/rect_fem_r').set_appliesForce(True)
-        # model.getComponent('/forceset/glut_max2_r').set_appliesForce(True)
-        # model.getComponent('/forceset/psoas_r').set_appliesForce(True)
+        # model.getComponent('/forceset/semimem_r').set_max_isometric_force(0.01)
+        # model.getComponent('/forceset/soleus_r').set_max_isometric_force(0.01)
+        # model.getComponent('/forceset/med_gas_r').set_max_isometric_force(0.01)
+        # model.getComponent('/forceset/bifemsh_r').set_max_isometric_force(0.01)
+        # model.getComponent('/forceset/vas_int_r').set_max_isometric_force(0.01)
+
+        # model.getComponent('/forceset/rect_fem_r').set_max_isometric_force(0.01)
+        # model.getComponent('/forceset/glut_max2_r').set_max_isometric_force(0.01)
+        # model.getComponent('/forceset/psoas_r').set_max_isometric_force(0.01)
         for muscle in model.getMuscles():
             # Missing a leg: double the forces.
             muscle.set_max_isometric_force(
@@ -102,6 +103,7 @@ class SquatToStand(MocoPaperResult):
             dgf = osim.DeGrooteFregly2016Muscle.safeDownCast(muscle)
             dgf.set_ignore_passive_fiber_force(True)
             dgf.set_ignore_tendon_compliance(True)
+            # dgf.set_active_force_width_scale(2.0)
             dgf.set_tendon_compliance_dynamics_mode('implicit')
             # if muscle.getName() == 'soleus_r':
             #     dgf.set_ignore_passive_fiber_force(True)
@@ -113,9 +115,9 @@ class SquatToStand(MocoPaperResult):
         model.initSystem()
         moco = self.create_study(model)
         problem = moco.updProblem()
-        problem.addGoal(osim.MocoControlGoal('effort'))
+        # problem.addGoal(osim.MocoControlGoal('effort'))
         problem.addGoal(osim.MocoInitialActivationGoal('init_activation'))
-        problem.addGoal(osim.MocoFinalTimeGoal('time', 0.1))
+        problem.addGoal(osim.MocoFinalTimeGoal('time'))
 
         solver = osim.MocoCasADiSolver.safeDownCast(moco.updSolver())
         solver.resetProblem(problem)
@@ -404,6 +406,10 @@ class SquatToStand(MocoPaperResult):
         #              ['.*normalized_fiber_length'])
         # osim.STOFileAdapter.write(table,
         #                           'squat_to_stand_norm_fiber_length.sto')
+
+        if self.unassisted:
+            report = osim.report.Report(model, self.predict_solution_file)
+            report.generate()
 
         if self.unassisted and self.assisted:
             report = osim.report.Report(self.assisted_model(),

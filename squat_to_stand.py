@@ -80,12 +80,21 @@ class SquatToStand(MocoPaperResult):
         #         problem.setControlInfo(muscle_path, [0, 1], 0)
         return moco
 
+    def add_reserve_actuator(self, model, coord_name):
+        actuator = osim.CoordinateActuator(coord_name)
+        actuator.setName('reserve_%s' % coord_name)
+        model.addForce(actuator)
+
     def muscle_driven_model(self):
         model = osim.Model('resources/sitToStand_4dof9musc.osim')
         model.finalizeConnections()
         # WORKS WITHOUT MUSCLES
-        # osim.ModelFactory.removeMuscles(model)
-        osim.ModelFactory.createReserveActuators(model, 10)
+        osim.ModelFactory.removeMuscles(model)
+        # osim.ModelFactory.createReserveActuators(model, 10)
+        self.add_reserve_actuator(model, 'hip_flexion_r')
+        self.add_reserve_actuator(model, 'knee_angle_r')
+        self.add_reserve_actuator(model, 'ankle_angle_r')
+
         osim.DeGrooteFregly2016Muscle.replaceMuscles(model)
         # model.getComponent('/forceset/semimem_r').set_max_isometric_force(0.01)
         # model.getComponent('/forceset/soleus_r').set_max_isometric_force(0.01)
@@ -103,7 +112,6 @@ class SquatToStand(MocoPaperResult):
             dgf = osim.DeGrooteFregly2016Muscle.safeDownCast(muscle)
             dgf.set_ignore_passive_fiber_force(True)
             dgf.set_ignore_tendon_compliance(True)
-            # dgf.set_active_force_width_scale(2.0)
             dgf.set_tendon_compliance_dynamics_mode('implicit')
             # if muscle.getName() == 'soleus_r':
             #     dgf.set_ignore_passive_fiber_force(True)
@@ -115,7 +123,7 @@ class SquatToStand(MocoPaperResult):
         model.initSystem()
         moco = self.create_study(model)
         problem = moco.updProblem()
-        # problem.addGoal(osim.MocoControlGoal('effort'))
+        problem.addGoal(osim.MocoControlGoal('effort', 0.01))
         problem.addGoal(osim.MocoInitialActivationGoal('init_activation'))
         problem.addGoal(osim.MocoFinalTimeGoal('time'))
 
@@ -138,14 +146,14 @@ class SquatToStand(MocoPaperResult):
             guess.setControl(muscle.getAbsolutePathString(),
                 osim.createVectorLinspace(N, 0.05, 0.05))
 
-        guess.setState('/jointset/back/lumbar_extension/value',
-                       osim.createVectorLinspace(N, self.squat_lumbar, 0))
-        guess.setState('/jointset/hip_r/hip_flexion_r/value',
-                             osim.createVectorLinspace(N, self.squat_hip, 0))
-        guess.setState('/jointset/knee_r/knee_angle_r/value',
-                             osim.createVectorLinspace(N, self.squat_knee, 0))
-        guess.setState('/jointset/ankle_r/ankle_angle_r/value',
-                             osim.createVectorLinspace(N, self.squat_ankle, 0))
+        # guess.setState('/jointset/back/lumbar_extension/value',
+        #                osim.createVectorLinspace(N, self.squat_lumbar, 0))
+        # guess.setState('/jointset/hip_r/hip_flexion_r/value',
+        #                      osim.createVectorLinspace(N, self.squat_hip, 0))
+        # guess.setState('/jointset/knee_r/knee_angle_r/value',
+        #                      osim.createVectorLinspace(N, self.squat_knee, 0))
+        # guess.setState('/jointset/ankle_r/ankle_angle_r/value',
+        #                      osim.createVectorLinspace(N, self.squat_ankle, 0))
 
         solver.setGuess(guess)
 

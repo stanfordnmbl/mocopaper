@@ -205,7 +205,7 @@ def sit_to_stand():
         model.addForce(actu)
 
     def torque_driven_model():
-        model = osim.Model('sitToStand_4dof9musc.osim')
+        model = osim.Model('squat_to_stand_4dof9musc.osim')
         model.updForceSet().clearAndDestroy()
         model.initSystem()
         add_CoordinateActuator(model, 'hip_flexion_r', 150)

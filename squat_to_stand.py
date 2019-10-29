@@ -70,7 +70,7 @@ class SquatToStand(MocoPaperResult):
         return moco
 
     def muscle_driven_model(self):
-        model = osim.Model('resources/sitToStand_4dof9musc.osim')
+        model = osim.Model('resources/squat_to_stand_4dof9musc.osim')
         model.finalizeConnections()
         osim.DeGrooteFregly2016Muscle.replaceMuscles(model)
         for muscle in model.getMuscles():
@@ -82,7 +82,7 @@ class SquatToStand(MocoPaperResult):
             dgf.set_tendon_compliance_dynamics_mode('implicit')
             # if muscle.getName() == 'soleus_r':
             #     dgf.set_ignore_passive_fiber_force(True)
-        model.printToXML("resources/sitToStand_4dof9musc_dgf.osim")
+        model.printToXML("resources/squat_to_stand_4dof9musc_dgf.osim")
         return model
 
     def predict(self):
@@ -136,6 +136,11 @@ class SquatToStand(MocoPaperResult):
         problem.addGoal(osim.MocoControlGoal('effort'))
         problem.addGoal(osim.MocoInitialActivationGoal('init_activation'))
         problem.addGoal(osim.MocoFinalTimeGoal('time'))
+        #
+        # reaction = osim.MocoJointReactionGoal('reaction_r', 0.1)
+        # reaction.setJointPath('/jointset/foot_ground_r')
+        # reaction.setReactionMeasures(['force-z'])
+        # problem.addGoal(reaction)
 
         problem.addParameter(
             osim.MocoParameter('stiffness', '/forceset/spring',
@@ -165,11 +170,28 @@ class SquatToStand(MocoPaperResult):
         # moco.visualize(solution)
         solution.write(self.predict_assisted_solution_file)
 
+    def parse_args(self, args):
+        self.unassisted = False
+        self.assisted = False
+        if len(args) == 0:
+            self.unassisted = True
+            self.assisted = True
+            return
+        print('Received arguments {}'.format(args))
+        if 'unassisted' in args:
+            self.unassisted = True
+        if 'assisted' in args:
+            self.assisted = True
+
     def generate_results(self, args):
-        self.predict()
-        self.predict_assisted()
+        self.parse_args(args)
+        if self.unassisted:
+            self.predict()
+        if self.assisted:
+            self.predict_assisted()
 
     def report_results(self, args):
+        self.parse_args(args)
         fig = plt.figure(figsize=(7.5, 3))
         values = [
             '/jointset/hip_r/hip_flexion_r/value',

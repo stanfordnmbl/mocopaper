@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
@@ -52,13 +53,13 @@ class SquatToStand(MocoPaperResult):
         problem.setStateInfo('/jointset/back/lumbar_extension/value',
                              [1.5 * squat_lumbar, 0.5], squat_lumbar, 0)
         squat_hip = np.deg2rad(-98)
-        problem.setStateInfo('/jointset/hip_r/hip_flexion_r/value',
+        problem.setStateInfo('/jointset/hip_r/hip_extension_r/value',
                              [1.5 * squat_hip, 0.5], squat_hip, 0)
         squat_knee = np.deg2rad(-104)
-        problem.setStateInfo('/jointset/knee_r/knee_angle_r/value',
+        problem.setStateInfo('/jointset/knee_r/knee_extension_r/value',
                              [1.5 * squat_knee, 0], squat_knee, 0)
         squat_ankle = np.deg2rad(-30)
-        problem.setStateInfo('/jointset/ankle_r/ankle_angle_r/value',
+        problem.setStateInfo('/jointset/ankle_r/ankle_plantarflexion_r/value',
                              [1.5 * squat_ankle, 0.5], squat_ankle, 0)
         problem.setStateInfoPattern('/jointset/.*/speed', [], 0, 0)
 
@@ -120,7 +121,7 @@ class SquatToStand(MocoPaperResult):
 
     def assisted_model(self):
         model = self.muscle_driven_model()
-        device = osim.SpringGeneralizedForce('knee_angle_r')
+        device = osim.SpringGeneralizedForce('knee_extension_r')
         device.setName('spring')
         device.setStiffness(50)
         device.setRestLength(0)
@@ -190,23 +191,120 @@ class SquatToStand(MocoPaperResult):
         if self.assisted:
             self.predict_assisted()
 
+    def plot_joint_moment_breakdown(self, model, moco_traj,
+                                    coord_paths, muscle_paths=None,
+                                    coordact_paths=[], knee_stiffness=None):
+        model.initSystem()
+
+        num_coords = len(coord_paths)
+
+        coord_names = {
+            '/jointset/hip_r/hip_extension_r/value': 'hip extension',
+            '/jointset/knee_r/knee_extension_r/value': 'knee extension',
+            '/jointset/ankle_r/ankle_plantarflexion_r/value': 'ankle plantarflexion',
+        }
+
+        if not muscle_paths:
+            muscle_paths = list()
+            for muscle in model.getMuscleList():
+                muscle_paths.append(muscle.getAbsolutePathString())
+        num_muscles = len(muscle_paths)
+
+        num_coordact = len(coordact_paths)
+
+        time = moco_traj.getTimeMat()
+
+        states_traj = moco_traj.exportToStatesTrajectory(model)
+
+        # TODO for models without activation dynamics, we must prescribeControlsToModel().
+
+        fig = pl.figure(figsize=(8.5, 11))
+        tendon_forces = np.empty((len(time), num_muscles))
+        for imusc, muscle_path in enumerate(muscle_paths):
+            muscle = model.getComponent(muscle_path)
+            for itime in range(len(time)):
+                state = states_traj.get(itime)
+                model.realizeDynamics(state)
+                tendon_forces[itime, imusc] = muscle.getTendonForce(state)
+
+
+        coordact_moments = np.empty((len(time), num_coordact))
+        for ica, coordact_paths in enumerate(coordact_paths):
+            coordact = model.getComponent(coordact_paths)
+            for itime in range(len(time)):
+                state = states_traj.get(itime)
+                model.realizeDynamics(state)
+                coordact_moments[itime, ica] = coordact.getActuation(state)
+
+
+        for icoord, coord_path in enumerate(coord_paths):
+            coord = model.getComponent(coord_path)
+
+            label = os.path.split(coord_path)[-1] + '_moment'
+
+            moment_arms = np.empty((len(time), num_muscles))
+            for imusc, muscle_path in enumerate(muscle_paths):
+                muscle = model.getComponent(muscle_path)
+                for itime in range(len(time)):
+                    state = states_traj.get(itime)
+                    moment_arms[itime, imusc] = \
+                        muscle.computeMomentArm(state, coord)
+
+            ax = fig.add_subplot(num_coords, 1, icoord + 1)
+
+            net_moment = np.zeros_like(time)
+            for imusc, muscle_path in enumerate(muscle_paths):
+                if np.any(moment_arms[:, imusc]) > 0.00001:
+                    this_moment = tendon_forces[:, imusc] * moment_arms[:, imusc]
+                    mom_integ = np.trapz(np.abs(this_moment), time)
+                    net_moment += this_moment
+
+            for ica, coordact_path in enumerate(coordact_paths):
+                this_moment = coordact_moments[:, ica]
+                ax.plot(time, this_moment, label=coordact_path)
+                net_moment += this_moment
+
+            if 'knee' in coord_path and knee_stiffness:
+                knee_angle = moco_traj.getStateMat('/jointset/knee_r/knee_extension_r/value')
+                spring_moment = -knee_stiffness * knee_angle
+                ax.plot(time, spring_moment, label='spring')
+                net_moment += spring_moment
+
+            net_integ = np.trapz(np.abs(net_moment), x=time)
+            sum_actuators_shown = np.zeros_like(time)
+            for imusc, muscle_path in enumerate(muscle_paths):
+                if np.any(moment_arms[:, imusc]) > 0.00001:
+                    this_moment = tendon_forces[:, imusc] * moment_arms[:, imusc]
+                    mom_integ = np.trapz(np.abs(this_moment), time)
+                    if mom_integ > 0.01 * net_integ:
+                        ax.plot(time, this_moment, label=muscle_path)
+
+            ax.plot(time, net_moment,
+                    label='net moment', color='black', linewidth=2)
+
+            ax.set_title(coord_path)
+            ax.set_ylabel('moment (N-m)')
+            ax.legend(frameon=False, bbox_to_anchor=(1, 1),
+                      loc='upper left', ncol=2)
+            ax.tick_params(axis='both')
+        ax.set_xlabel('time (% gait cycle)')
+
+        fig.tight_layout()
+        return fig
+
     def report_results(self, args):
         self.parse_args(args)
+
         fig = plt.figure(figsize=(7.5, 3))
         values = [
-            '/jointset/hip_r/hip_flexion_r/value',
-            '/jointset/knee_r/knee_angle_r/value',
-            '/jointset/ankle_r/ankle_angle_r/value',
+            '/jointset/hip_r/hip_extension_r/value',
+            '/jointset/knee_r/knee_extension_r/value',
+            '/jointset/ankle_r/ankle_plantarflexion_r/value',
         ]
-        coord_names = {
-            '/jointset/hip_r/hip_flexion_r/value': 'hip flexion',
-            '/jointset/knee_r/knee_angle_r/value': 'knee flexion',
-            '/jointset/ankle_r/ankle_angle_r/value': 'ankle dorsiflexion',
-        }
         coord_signs = {
-            '/jointset/hip_r/hip_flexion_r/value': -1.0,
-            '/jointset/knee_r/knee_angle_r/value': -1.0,
-            '/jointset/ankle_r/ankle_angle_r/value': -1.0,
+            '/jointset/hip_r/hip_extension_r/value': -1.0,
+            '/jointset/knee_r/knee_extension_r/value': -1.0,
+            '/jointset/ankle_r/ankle_plantarflexion_r/value': -1.0,
         }
 
         # TODO: Should be 3 muscles, all extensors.
@@ -307,8 +405,9 @@ class SquatToStand(MocoPaperResult):
             self.predict_assisted_solution_file)
         stiffness = predict_assisted_solution.getParameter('stiffness')
 
-        # states = predict_assisted_solution.exportToStatesTrajectory(
-        #     self.muscle_driven_model())
+        model = self.muscle_driven_model()
+        assisted_model = self.assisted_model()
+        assisted_model.updComponent('forceset/spring').setStiffness(stiffness)
 
         print(f'Stiffness: {stiffness}')
         with open('results/squat_to_stand_stiffness.txt', 'w') as f:
@@ -331,11 +430,11 @@ class SquatToStand(MocoPaperResult):
                              # loc='center',
                              )
 
-        # knee_angle = predict_assisted_solution.getStateMat(
-        #     '/jointset/knee_r/knee_angle_r/value')
+        # knee_extension = predict_assisted_solution.getStateMat(
+        #     '/jointset/knee_r/knee_extension_r/value')
         # axright = coord_axes[1].twinx()
         # axright.plot(predict_assisted_solution.getTimeMat(),
-        #              -stiffness * knee_angle)
+        #              -stiffness * knee_extension)
         # axright.set_ylabel('knee extension moment (N-m)')
         # axright.set_yticks([0, 100, 200])
         # axright.spines['top'].set_visible(False)
@@ -343,23 +442,21 @@ class SquatToStand(MocoPaperResult):
 
         fig.savefig('figures/squat_to_stand.png', dpi=600)
 
-
-        # fig = utilities.plot_joint_moment_breakdown(self.muscle_driven_model(),
-        #                                   predict_solution,
-        #                             ['/jointset/hip_r/hip_flexion_r',
-        #                              '/jointset/knee_r/knee_angle_r',
-        #                              '/jointset/ankle_r/ankle_angle_r'])
-        # fig.savefig('figures/squat_to_stand_joint_moment_contribution.png',
-        #             dpi=600)
-        # fig = utilities.plot_joint_moment_breakdown(self.muscle_driven_model(),
-        #                             predict_assisted_solution,
-        #                             ['/jointset/hip_r/hip_flexion_r',
-        #                              '/jointset/knee_r/knee_angle_r',
-        #                              '/jointset/ankle_r/ankle_angle_r'],
-        #                             )
-        # fig.savefig('figures/squat_to_stand_assisted_'
-        #             'joint_moment_contribution.png',
-        #             dpi=600)
+        coords = ['/jointset/hip_r/hip_extension_r',
+                  '/jointset/knee_r/knee_extension_r',
+                  '/jointset/ankle_r/ankle_plantarflexion_r']
+        fig = self.plot_joint_moment_breakdown(model,
+                                          predict_solution, coords)
+        fig.savefig('figures/squat_to_stand_joint_moment_breakdown.png',
+                    dpi=600)
+        fig = self.plot_joint_moment_breakdown(assisted_model,
+                                               predict_assisted_solution,
+                                               coords,
+                                               knee_stiffness=stiffness
+                                               )
+        fig.savefig('figures/squat_to_stand_assisted_'
+                    'joint_moment_breakdown.png',
+                    dpi=600)
 
         sol_predict_table = osim.TimeSeriesTable(self.predict_solution_file)
         sol_predict_duration = sol_predict_table.getTableMetaDataString('solver_duration')
@@ -377,22 +474,22 @@ class SquatToStand(MocoPaperResult):
                   'squat_to_stand_predict_assisted_duration.txt', 'w') as f:
             f.write(f'{sol_predict_assisted_duration:.1f}')
 
-        model = self.muscle_driven_model()
-
         # table = osim.analyze(model,
         #                      osim.MocoTrajectory(self.predict_solution_file),
         #              ['.*normalized_fiber_length'])
         # osim.STOFileAdapter.write(table,
         #                           'squat_to_stand_norm_fiber_length.sto')
 
-        report = osim.report.Report(self.assisted_model(),
+        report = osim.report.Report(assisted_model,
                                     self.predict_assisted_solution_file,
                                     ref_files=[self.predict_solution_file])
         report.generate()
 
+
         self.create_ground_reaction_file(model, predict_solution,
                                          'results/squat_to_stand_ground_reaction.mot')
-        self.create_ground_reaction_file(model, predict_assisted_solution,
+
+        self.create_ground_reaction_file(assisted_model, predict_assisted_solution,
                                          'results/squat_to_stand_assisted_ground_reaction.mot')
 
         # TODO: visualize in the GUI!
@@ -413,17 +510,22 @@ class SquatToStand(MocoPaperResult):
         z_cop = np.empty(reaction.getNumRows())
         TY = np.empty(reaction.getNumRows())
         state = model.initSystem()
+        mass = model.getTotalMass(state)
+        gravity_accel = model.get_gravity()
+        mass_center = model.calcMassCenterPosition(state)
+        print(f'com = {mass_center[0], mass_center[1], mass_center[2]}')
+        print(f'weight = {mass * abs(gravity_accel[1])}')
         offset = model.getBodySet().get('calcn_r').getPositionInGround(state)
         x_offset = offset.get(0)
         z_offset = offset.get(2)
+        print(f'x_offset = {x_offset}; z_offset = {z_offset}')
         for i in range(reaction.getNumRows()):
-            x = -MZ[i] / FY[i] + x_offset
-            z = MX[i] / FY[i] + z_offset
+            x = MZ[i] / FY[i] + x_offset
+            z = -MX[i] / FY[i] + z_offset
             x_cop[i] = x
             z_cop[i] = z
             TY[i] = MY[i] - (x - x_offset) * FZ[i] + (z - z_offset) * FX[i]
 
-        # print(f"x_offset = {x_offset}, z_offset = {z_offset}")
         # print(f"x_cop = {x_cop}")
         # print(f"z_cop = {z_cop}")
         # pl.figure()

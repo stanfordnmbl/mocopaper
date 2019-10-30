@@ -298,7 +298,7 @@ def plot_joint_moment_breakdown(model, moco_traj,
                 moment_arms[itime, imusc] = \
                     muscle.computeMomentArm(state, coord)
 
-        ax = fig.add_subplot(num_coords, 2, 2 * icoord + 1)
+        ax = fig.add_subplot(num_coords, 1, icoord + 1)
         net_integ = np.trapz(np.abs(net_moment), x=time)
         sum_actuators_shown = np.zeros_like(time)
         for imusc, muscle_path in enumerate(muscle_paths):

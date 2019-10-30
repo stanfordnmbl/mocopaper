@@ -1281,7 +1281,7 @@
 					<socket_child_frame>femur_r_offset</socket_child_frame>
 					<!--List containing the generalized coordinates (q's) that parameterize this joint.-->
 					<coordinates>
-						<Coordinate name="knee_angle_r">
+						<Coordinate name="knee_extension_r">
 							<!--The value of this coordinate before any value has been set. Rotational coordinate value is in radians and Translational in meters.-->
 							<default_value>0</default_value>
 							<!--The speed value of this coordinate before any value has been set. Rotational coordinate value is in rad/s and Translational in m/s.-->
@@ -1336,7 +1336,7 @@
 						<!--3 Axes for rotations are listed first.-->
 						<TransformAxis name="rotation1">
 							<!--Names of the coordinates that serve as the independent variables         of the transform function.-->
-							<coordinates>knee_angle_r</coordinates>
+							<coordinates>knee_extension_r</coordinates>
 							<!--Rotation or translation axis for the transform.-->
 							<axis>1 0 0</axis>
 							<!--Transform function of the generalized coordinates used to        represent the amount of displacement along a specified axis.-->
@@ -1367,7 +1367,7 @@
 						<!--3 Axes for translations are listed next.-->
 						<TransformAxis name="translation1">
 							<!--Names of the coordinates that serve as the independent variables         of the transform function.-->
-							<coordinates>knee_angle_r</coordinates>
+							<coordinates>knee_extension_r</coordinates>
 							<!--Rotation or translation axis for the transform.-->
 							<axis>0 1 0</axis>
 							<!--Transform function of the generalized coordinates used to        represent the amount of displacement along a specified axis.-->
@@ -1378,7 +1378,7 @@
 						</TransformAxis>
 						<TransformAxis name="translation2">
 							<!--Names of the coordinates that serve as the independent variables         of the transform function.-->
-							<coordinates>knee_angle_r</coordinates>
+							<coordinates>knee_extension_r</coordinates>
 							<!--Rotation or translation axis for the transform.-->
 							<axis>0 0 1</axis>
 							<!--Transform function of the generalized coordinates used to        represent the amount of displacement along a specified axis.-->
@@ -1406,7 +1406,7 @@
 					<socket_child_frame>patella_r_offset</socket_child_frame>
 					<!--List containing the generalized coordinates (q's) that parameterize this joint.-->
 					<coordinates>
-						<Coordinate name="knee_angle_r_beta">
+						<Coordinate name="knee_extension_r_beta">
 							<!--The value of this coordinate before any value has been set. Rotational coordinate value is in radians and Translational in meters.-->
 							<default_value>0</default_value>
 							<!--The speed value of this coordinate before any value has been set. Rotational coordinate value is in rad/s and Translational in m/s.-->
@@ -1461,7 +1461,7 @@
 						<!--3 Axes for rotations are listed first.-->
 						<TransformAxis name="rotation1">
 							<!--Names of the coordinates that serve as the independent variables         of the transform function.-->
-							<coordinates>knee_angle_r_beta</coordinates>
+							<coordinates>knee_extension_r_beta</coordinates>
 							<!--Rotation or translation axis for the transform.-->
 							<axis>0 0 1</axis>
 							<!--Transform function of the generalized coordinates used to        represent the amount of displacement along a specified axis.-->
@@ -1493,7 +1493,7 @@
 						<!--3 Axes for translations are listed next.-->
 						<TransformAxis name="translation1">
 							<!--Names of the coordinates that serve as the independent variables         of the transform function.-->
-							<coordinates>knee_angle_r_beta</coordinates>
+							<coordinates>knee_extension_r_beta</coordinates>
 							<!--Rotation or translation axis for the transform.-->
 							<axis>1 0 0</axis>
 							<!--Transform function of the generalized coordinates used to        represent the amount of displacement along a specified axis.-->
@@ -1504,7 +1504,7 @@
 						</TransformAxis>
 						<TransformAxis name="translation2">
 							<!--Names of the coordinates that serve as the independent variables         of the transform function.-->
-							<coordinates>knee_angle_r_beta</coordinates>
+							<coordinates>knee_extension_r_beta</coordinates>
 							<!--Rotation or translation axis for the transform.-->
 							<axis>0 1 0</axis>
 							<!--Transform function of the generalized coordinates used to        represent the amount of displacement along a specified axis.-->
@@ -1532,7 +1532,7 @@
 					<socket_child_frame>tibia_r_offset</socket_child_frame>
 					<!--List containing the generalized coordinates (q's) that parameterize this joint.-->
 					<coordinates>
-						<Coordinate name="ankle_angle_r">
+						<Coordinate name="ankle_plantarflexion_r">
 							<!--The value of this coordinate before any value has been set. Rotational coordinate value is in radians and Translational in meters.-->
 							<default_value>0</default_value>
 							<!--The speed value of this coordinate before any value has been set. Rotational coordinate value is in rad/s and Translational in m/s.-->
@@ -1791,7 +1791,7 @@
 					<socket_child_frame>pelvis_offset</socket_child_frame>
 					<!--List containing the generalized coordinates (q's) that parameterize this joint.-->
 					<coordinates>
-						<Coordinate name="hip_flexion_r">
+						<Coordinate name="hip_extension_r">
 							<!--The value of this coordinate before any value has been set. Rotational coordinate value is in radians and Translational in meters.-->
 							<default_value>0</default_value>
 							<!--The speed value of this coordinate before any value has been set. Rotational coordinate value is in rad/s and Translational in m/s.-->
@@ -1839,7 +1839,7 @@
 		<!--Constraints in the model.-->
 		<ConstraintSet name="constraintset">
 			<objects>
-				<CoordinateCouplerConstraint name="patellofemoral_knee_angle_r_con">
+				<CoordinateCouplerConstraint name="patellofemoral_knee_extension_r_con">
 					<!--Flag indicating whether the constraint is enforced or not.Enforced means that the constraint is active in subsequent dynamics realizations. NOTE: Prior to OpenSim 4.0, this behavior was controlled by the 'isDisabled' property, where 'true' meant the constraint was not being enforced. Thus, if 'isDisabled' is'true', then 'isEnforced' is false.-->
 					<isEnforced>true</isEnforced>
 					<!--Constraint function of generalized coordinates (to be specified) used to evaluate the constraint errors and their derivatives, and must valid to at least 2nd order. Constraint function must evaluate to zero when coordinates satisfy the constraint.-->
@@ -1849,9 +1849,9 @@
 						</LinearFunction>
 					</coupled_coordinates_function>
 					<!--List of names of the right hand side (independent) coordinates. Note the constraint function above, must be able to handle multiple coordinate values if more than one coordinate name is provided.-->
-					<independent_coordinate_names>knee_angle_r</independent_coordinate_names>
+					<independent_coordinate_names>knee_extension_r</independent_coordinate_names>
 					<!--Name of the left-hand side (dependent) coordinate of the constraint coupling function.-->
-					<dependent_coordinate_name>knee_angle_r_beta</dependent_coordinate_name>
+					<dependent_coordinate_name>knee_extension_r_beta</dependent_coordinate_name>
 					<!--Scale factor for the coupling function.-->
 					<scale_factor>1</scale_factor>
 				</CoordinateCouplerConstraint>

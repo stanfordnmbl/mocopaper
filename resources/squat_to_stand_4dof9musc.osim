@@ -1564,7 +1564,7 @@
 							<!--Translational offset (in meters) of this frame's origin from the parent frame's origin, expressed in the parent frame.-->
 							<translation>-0.01 -0.40000000000000002 0</translation>
 							<!--Orientation offset (in radians) of this frame in its parent frame, expressed as a frame-fixed x-y-z rotation sequence.-->
-							<orientation>0 -0.105208 0.0186622</orientation>
+							<orientation>0 0 0</orientation>
 						</PhysicalOffsetFrame>
 						<PhysicalOffsetFrame name="talus_r_offset">
 							<!--The geometry used to display the axes of this Frame.-->
@@ -1579,7 +1579,7 @@
 							<!--Translational offset (in meters) of this frame's origin from the parent frame's origin, expressed in the parent frame.-->
 							<translation>0 0 0</translation>
 							<!--Orientation offset (in radians) of this frame in its parent frame, expressed as a frame-fixed x-y-z rotation sequence.-->
-							<orientation>0 -0.105208 0.0186622</orientation>
+							<orientation>0 0 0</orientation>
 						</PhysicalOffsetFrame>
 					</frames>
 				</PinJoint>

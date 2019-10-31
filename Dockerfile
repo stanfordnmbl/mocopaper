@@ -16,7 +16,7 @@ MAINTAINER Christopher Dembia
 #
 #   docker run --volume <local-mocopaper-repo>:/mocopaper \
 #              --entrypoint /usr/bin/rubber <username>/opensim-moco:preprint \
-#              --pdf MocoPaper.tex
+#              --module=lualatex --pdf MocoPaper.tex
 #
 # The paper is saved to <local-mocopaper-repo>/MocoPaper.pdf
 

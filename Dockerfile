@@ -10,15 +10,8 @@ MAINTAINER Christopher Dembia
 #   docker run --volume <local-mocopaper-repo>:/mocopaper <username>/opensim-moco:preprint
 #
 # The results are saved to the results and figures folders of
-# <local-mocopaper-repo>.
-#
-# To generate the paper, use:
-#
-#   docker run --volume <local-mocopaper-repo>:/mocopaper \
-#              --entrypoint /usr/bin/rubber <username>/opensim-moco:preprint \
-#              --module=lualatex --pdf MocoPaper.tex
-#
-# The paper is saved to <local-mocopaper-repo>/MocoPaper.pdf
+# <local-mocopaper-repo>, and the paper is saved to
+# <local-mocopaper-repo>/MocoPaper.pdf
 
 # opensim-moco is a private repository on GitHub, so we need permission to
 # access the repository within the Docker container. Create a Personal Access
@@ -113,5 +106,5 @@ COPY . /mocopaper
 
 WORKDIR /mocopaper
 
-ENTRYPOINT ["python3", "mocopaper.py"]
+ENTRYPOINT ["/bin/bash", "mocopaper.sh"]
 

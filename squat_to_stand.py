@@ -10,12 +10,6 @@ from moco_paper_result import MocoPaperResult
 
 import utilities
 
-# TODO: Get rid of 2*Fmax
-# TODO: Improve wrapping surfaces for such deep flexion (Lai's model?).
-# TODO: Check the moment arm of the glutes: might be too small.
-# TODO: I think the glutes are generating lots of passive force.
-# TODO: Check passive forces: maybe this is why they're not turning on.
-
 
 class SquatToStand(MocoPaperResult):
     def __init__(self):
@@ -137,11 +131,6 @@ class SquatToStand(MocoPaperResult):
         problem.addGoal(osim.MocoControlGoal('effort'))
         problem.addGoal(osim.MocoInitialActivationGoal('init_activation'))
         problem.addGoal(osim.MocoFinalTimeGoal('time'))
-        #
-        # reaction = osim.MocoJointReactionGoal('reaction_r', 0.1)
-        # reaction.setJointPath('/jointset/foot_ground_r')
-        # reaction.setReactionMeasures(['force-z'])
-        # problem.addGoal(reaction)
 
         problem.addParameter(
             osim.MocoParameter('stiffness', '/forceset/spring',
@@ -314,20 +303,6 @@ class SquatToStand(MocoPaperResult):
             ((2, 2), 'semimem', 'hamstrings'),
             ((3, 2), 'vas_int', 'vasti'),
         ]
-        # muscles = [
-        #     # ((0, 3), 'glut_max2', 'gluteus maximus'),
-        #     ((0, 2), 'psoas', 'iliopsoas'),
-        #     # ('semimem', 'hamstrings'),
-        #     ((1, 2), 'rect_fem', 'rectus femoris'),
-        #     # ('bifemsh', 'biceps femoris short head'),
-        #     ((2, 2), 'vas_int', 'vasti'),
-        #     # ((2, 2), 'med_gas', 'gastrocnemius'),
-        #     # ('soleus', 'soleus'),
-        #     ((3, 2), 'tib_ant', 'tibialis anterior'),
-        # ]
-        # grid = plt.GridSpec(9, 2, hspace=0.7,
-        #                     left=0.1, right=0.98, bottom=0.07, top=0.96,
-        #                     )
         grid = gridspec.GridSpec(4, 3)
 
         ax = fig.add_subplot(grid[0:4, 0:2])
@@ -338,21 +313,6 @@ class SquatToStand(MocoPaperResult):
         ax.imshow(image)
         plt.axis('off')
 
-        # coord_axes = []
-        # for ic, coordvalue in enumerate(values):
-        #     ax = fig.add_subplot(grid[ic, 1])
-        #     ax.set_ylabel('%s\n(deg.)' % coord_names[coordvalue])
-        #     # ax.text(0.5, 1, '%s (degrees)' % coord_names[coordvalue],
-        #     #         horizontalalignment='center',
-        #     #         transform=ax.transAxes)
-        #     ax.get_yaxis().set_label_coords(-0.20, 0.5)
-        #     if ic == len(values) - 1:
-        #         ax.set_xlabel('time (s)')
-        #     else:
-        #         ax.set_xticklabels([])
-        #     utilities.publication_spines(ax)
-        #     ax.spines['bottom'].set_position('zero')
-        #     coord_axes += [ax]
         muscle_axes = []
         for im, muscle in enumerate(muscles):
             ax = fig.add_subplot(grid[muscle[0][0], muscle[0][1]])
@@ -374,21 +334,6 @@ class SquatToStand(MocoPaperResult):
             muscle_axes += [ax]
         def plot_solution(sol, label, linestyle='-', color=None):
             time = sol.getTimeMat()
-            # for ic, coordvalue in enumerate(values):
-            #     ax = coord_axes[ic]
-            #     if ic == 1:
-            #         use_label = label
-            #     else:
-            #         use_label = None
-            #     if coordvalue in sol.getStateNames():
-            #         y = (coord_signs[coordvalue] * np.rad2deg(
-            #             sol.getStateMat(coordvalue)))
-            #         ax.plot(time, y, linestyle=linestyle, color=color,
-            #                 label=use_label, clip_on=False)
-            #         ax.autoscale(enable=True, axis='x', tight=True)
-            #     else:
-            #         if ic == 0:
-            #             ax.plot(0, 0, label=use_label)
             for im, muscle in enumerate(muscles):
                 ax = muscle_axes[im]
                 ax.plot(time,
@@ -525,17 +470,6 @@ class SquatToStand(MocoPaperResult):
             x_cop[i] = x
             z_cop[i] = z
             TY[i] = MY[i] - (x - x_offset) * FZ[i] + (z - z_offset) * FX[i]
-
-        # print(f"x_cop = {x_cop}")
-        # print(f"z_cop = {z_cop}")
-        # pl.figure()
-        # pl.subplot(3, 1, 1)
-        # pl.plot(reaction.getIndependentColumn(), x_cop)
-        # pl.subplot(3, 1, 2)
-        # pl.plot(reaction.getIndependentColumn(), z_cop)
-        # pl.subplot(3, 1, 3)
-        # pl.plot(x_cop, z_cop)
-        # pl.show()
 
         zeroMatrix = osim.Matrix(reaction.getNumRows(), 1, 0)
         zero = osim.Vector(reaction.getNumRows(), 0)

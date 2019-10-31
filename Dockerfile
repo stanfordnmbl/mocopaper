@@ -2,6 +2,24 @@ FROM ubuntu
 
 MAINTAINER Christopher Dembia
 
+# When building the Docker container on Windows or Mac, make sure the Docker
+# virtual machine has at least 8 GB of RAM. See Docker's settings/preferences.
+# Run the container to generate the results.
+# To run the container, use:
+#
+#   docker run --volume <local-mocopaper-repo>:/mocopaper <username>/opensim-moco:preprint
+#
+# The results are saved to the results and figures folders of
+# <local-mocopaper-repo>.
+#
+# To generate the paper, use:
+#
+#   docker run --volume <local-mocopaper-repo>:/mocopaper \
+#              --entrypoint /usr/bin/rubber <username>/opensim-moco:preprint \
+#              --pdf MocoPaper.tex
+#
+# The paper is saved to <local-mocopaper-repo>/MocoPaper.pdf
+
 # opensim-moco is a private repository on GitHub, so we need permission to
 # access the repository within the Docker container. Create a Personal Access
 # Token on the GitHub website:
@@ -22,13 +40,6 @@ MAINTAINER Christopher Dembia
 
 # Make sure Docker has access to at least 16 GB of RAM.
 # https://stackoverflow.com/questions/44533319/how-to-assign-more-memory-to-docker-container
-
-# To run the container, use:
-#
-#   docker run --volume <local-mocopaper-repo>:/mocopaper <username>/opensim-moco:preprint
-#
-# The results are saved to the results and figures folders of
-# <local-mocopaper-repo>.
 
 # TODO: Remove when opensim-moco is public.
 ARG GITHUBTOKEN
@@ -87,7 +98,9 @@ RUN echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula \
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
         python3-pip python3-scipy python3-opencv \
-        ttf-mscorefonts-installer
+        ttf-mscorefonts-installer \
+        texlive-full rubber
+
 
 # We need matplotlib 3.1.
 RUN pip3 install matplotlib

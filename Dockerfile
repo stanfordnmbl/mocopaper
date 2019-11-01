@@ -89,7 +89,7 @@ RUN cd / \
 RUN echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula \
         select true | debconf-set-selections
 
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
         python3-pip python3-scipy python3-opencv \
         ttf-mscorefonts-installer \
         texlive-full rubber

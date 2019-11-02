@@ -57,11 +57,6 @@ class SquatToStand(MocoPaperResult):
                              [1.5 * squat_ankle, 0.5], squat_ankle, 0)
         problem.setStateInfoPattern('/jointset/.*/speed', [], 0, 0)
 
-        # for muscle in model.getMuscles():
-        #     if not muscle.get_ignore_activation_dynamics():
-        #         muscle_path = muscle.getAbsolutePathString()
-        #         problem.setStateInfo(muscle_path + '/activation', [0, 1], 0)
-        #         problem.setControlInfo(muscle_path, [0, 1], 0)
         return moco
 
     def muscle_driven_model(self):
@@ -374,16 +369,6 @@ class SquatToStand(MocoPaperResult):
                              # bbox_to_anchor=(-1.0, 0.5),
                              # loc='center',
                              )
-
-        # knee_extension = predict_assisted_solution.getStateMat(
-        #     '/jointset/knee_r/knee_extension_r/value')
-        # axright = coord_axes[1].twinx()
-        # axright.plot(predict_assisted_solution.getTimeMat(),
-        #              -stiffness * knee_extension)
-        # axright.set_ylabel('knee extension moment (N-m)')
-        # axright.set_yticks([0, 100, 200])
-        # axright.spines['top'].set_visible(False)
-        # axright.spines['bottom'].set_visible(False)
 
         fig.savefig('figures/squat_to_stand.png', dpi=600)
 

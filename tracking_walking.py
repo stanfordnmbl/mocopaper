@@ -32,7 +32,6 @@ class MotionTrackingWalking(MocoPaperResult):
             final_time = self.final_time
         if not starting_time:
             starting_time = self.initial_time
-            # starting_time = self.footstrike
         return utilities.shift_data_to_cycle(initial_time, final_time,
                                              starting_time, time, y, cut_off=True)
 
@@ -74,7 +73,6 @@ class MotionTrackingWalking(MocoPaperResult):
 
 
         # Create model for CMC
-        # - ignore tendon compliance
         modelProcessorCMC = osim.ModelProcessor(baseModel)
         cmcModel = modelProcessorCMC.process()
 
@@ -153,25 +151,14 @@ class MotionTrackingWalking(MocoPaperResult):
 
         modelProcessor = self.create_model_processor()
 
-        # TODO:
-        #  - avoid removing muscle passive forces
-        #  - why does soleus activation drop so quickly?
-        #  - set MocoTrack initial guess to the MocoInverse solution?
-
-
-        # TODO: why is recfem used instead of vaslat? recfem counters the hip
-        # extension moment in early stance.
-
         coordinates = osim.TableProcessor(
             "resources/Rajagopal2016/coordinates.mot")
         coordinates.append(osim.TabOpLowPassFilter(6))
         coordinates.append(osim.TabOpUseAbsoluteStateNames())
 
-        # # TODO plotting should happen separately from generating the results.
         # cmc = osim.CMCTool()
         # cmc.setName('motion_tracking_walking_cmc')
         # cmc.setExternalLoadsFileName('grf_walk.xml')
-        # # TODO filter:
         # cmc.setDesiredKinematicsFileName('coordinates.mot')
         # # cmc.setLowpassCutoffFrequency(6)
         # cmc.printToXML('motion_tracking_walking_cmc_setup.xml')
@@ -236,7 +223,6 @@ class MotionTrackingWalking(MocoPaperResult):
         track.set_apply_tracked_states_to_guess(True)
 
         # TODO: set initial activation/excitation much lower!
-
         # track.set_bound_kinematic_states(True)
         # track.set_state_bound_range_rotational(np.deg2rad(10))
         # track.set_state_bound_range_translational(0.10)
@@ -284,7 +270,6 @@ class MotionTrackingWalking(MocoPaperResult):
             shifted_time, shifted_y = self.shift(time, y,
                                                  starting_time=self.initial_time + 0.5 * duration)
 
-        # TODO is this correct?
         duration = self.final_time - self.initial_time
         if fill:
             return plt.fill_between(
@@ -341,14 +326,12 @@ class MotionTrackingWalking(MocoPaperResult):
                                     ['.*walker_knee.*reaction_on_parent.*'])
         jr = jr.flatten(['_mx', '_my', '_mz', '_fx', '_fy', '_fz'])
         max = -np.inf
-        # traj = np.empty(jr.getNumRows())
         for itime in range(jr.getNumRows()):
             for irxn in range(int(jr.getNumColumns() / 6)):
                 fx = jr.getDependentColumnAtIndex(6 * irxn + 3)[itime]
                 fy = jr.getDependentColumnAtIndex(6 * irxn + 4)[itime]
                 fz = jr.getDependentColumnAtIndex(6 * irxn + 5)[itime]
                 norm = np.sqrt(fx**2 + fy**2 + fz**2)
-                # traj[itime] = norm
                 max = np.max([norm, max])
         g = np.abs(model.get_gravity()[1])
         state = model.initSystem()
@@ -582,7 +565,8 @@ class MotionTrackingWalking(MocoPaperResult):
                                    fill=True,
                                    color='lightgray',
                                    label='electromyography')
-                legend_musc.append((handle, 'electromyography (normalized; peak matches the peak from MocoInverse)'))
+                legend_musc.append((handle,
+                                    'electromyography (normalized; peak matches the peak from MocoInverse)'))
             if im == 0:
                 legend_handles_and_labels = legend_musc
             ax.set_ylim(-0.05, 1)

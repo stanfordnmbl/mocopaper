@@ -7,7 +7,7 @@ MAINTAINER Christopher Dembia
 # Run the container to generate the results.
 # To run the container, use:
 #
-#   docker run --volume <local-mocopaper-repo>:/mocopaper <username>/opensim-moco:preprint
+#   docker run --volume <local-mocopaper-repo>:/mocopaper <username>/mocopaper:preprint
 #
 # The results are saved to the results and figures folders of
 # <local-mocopaper-repo>, and the paper is saved to
@@ -27,7 +27,7 @@ MAINTAINER Christopher Dembia
 # 9. Copy the token to the clipboard.
 # 10. Run Docker build from this directory as follows:
 #
-#   docker build --build-arg GITHUBTOKEN=<paste> --tag <username>/opensim-moco:preprint .
+#   docker build --build-arg GITHUBTOKEN=<paste> --tag <username>/mocopaper:preprint .
 #
 #     Include the period at the end of your command.
 

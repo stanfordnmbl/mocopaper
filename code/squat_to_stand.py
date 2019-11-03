@@ -14,9 +14,9 @@ import utilities
 class SquatToStand(MocoPaperResult):
     def __init__(self):
         self.predict_solution_file = \
-            'results/squat_to_stand_predict_solution.sto'
+            '%s/results/squat_to_stand_predict_solution.sto'
         self.predict_assisted_solution_file = \
-            'results/squat_to_stand_predict_assisted_solution.sto'
+            '%s/results/squat_to_stand_predict_assisted_solution.sto'
 
     def create_study(self, model):
         moco = osim.MocoStudy()
@@ -59,8 +59,9 @@ class SquatToStand(MocoPaperResult):
 
         return moco
 
-    def muscle_driven_model(self):
-        model = osim.Model('resources/squat_to_stand_4dof9musc.osim')
+    def muscle_driven_model(self, root_dir):
+        model = osim.Model(
+            os.path.join(root_dir, 'resources/squat_to_stand_4dof9musc.osim'))
         model.finalizeConnections()
         osim.DeGrooteFregly2016Muscle.replaceMuscles(model)
         for muscle in model.getMuscles():
@@ -72,11 +73,12 @@ class SquatToStand(MocoPaperResult):
             dgf.set_tendon_compliance_dynamics_mode('implicit')
             # if muscle.getName() == 'soleus_r':
             #     dgf.set_ignore_passive_fiber_force(True)
-        model.printToXML("resources/squat_to_stand_4dof9musc_dgf.osim")
+        model.printToXML(os.path.join(root_dir,
+                                      "resources/squat_to_stand_4dof9musc_dgf.osim"))
         return model
 
-    def predict(self):
-        model = self.muscle_driven_model()
+    def predict(self, root_dir):
+        model = self.muscle_driven_model(root_dir)
         moco = self.create_study(model)
         problem = moco.updProblem()
         problem.addGoal(osim.MocoControlGoal('effort'))
@@ -103,13 +105,13 @@ class SquatToStand(MocoPaperResult):
         solver.setGuess(guess)
 
         solution = moco.solve()
-        solution.write(self.predict_solution_file)
+        solution.write(self.predict_solution_file % root_dir)
         # moco.visualize(solution)
 
         return solution
 
-    def assisted_model(self):
-        model = self.muscle_driven_model()
+    def assisted_model(self, root_dir):
+        model = self.muscle_driven_model(root_dir)
         device = osim.SpringGeneralizedForce('knee_extension_r')
         device.setName('spring')
         device.setStiffness(50)
@@ -118,8 +120,8 @@ class SquatToStand(MocoPaperResult):
         model.addForce(device)
         return model
 
-    def predict_assisted(self):
-        model = self.assisted_model()
+    def predict_assisted(self, root_dir):
+        model = self.assisted_model(root_dir)
 
         moco = self.create_study(model)
         problem = moco.updProblem()
@@ -153,7 +155,7 @@ class SquatToStand(MocoPaperResult):
         solver.set_parameters_require_initsystem(False)
         solution = moco.solve()
         # moco.visualize(solution)
-        solution.write(self.predict_assisted_solution_file)
+        solution.write(self.predict_assisted_solution_file % root_dir)
 
     def parse_args(self, args):
         self.unassisted = False
@@ -168,12 +170,12 @@ class SquatToStand(MocoPaperResult):
         if 'assisted' in args:
             self.assisted = True
 
-    def generate_results(self, args):
+    def generate_results(self, root_dir, args):
         self.parse_args(args)
         if self.unassisted:
-            self.predict()
+            self.predict(root_dir)
         if self.assisted:
-            self.predict_assisted()
+            self.predict_assisted(root_dir)
 
     def plot_joint_moment_breakdown(self, model, moco_traj,
                                     coord_paths, muscle_paths=None,
@@ -276,7 +278,7 @@ class SquatToStand(MocoPaperResult):
         fig.tight_layout()
         return fig
 
-    def report_results(self, args):
+    def report_results(self, root_dir, args):
         self.parse_args(args)
 
         fig = plt.figure(figsize=(7.5, 3))
@@ -303,8 +305,8 @@ class SquatToStand(MocoPaperResult):
         ax = fig.add_subplot(grid[0:4, 0:2])
         import cv2
         # Convert BGR color ordering to RGB.
-        image = cv2.imread('squat_to_stand_visualization/'
-                           'squat_to_stand_visualization.png')[...,::-1]
+        image = cv2.imread(os.path.join(root_dir, 'squat_to_stand_visualization/'
+                           'squat_to_stand_visualization.png'))[...,::-1]
         ax.imshow(image)
         plt.axis('off')
 
@@ -339,18 +341,18 @@ class SquatToStand(MocoPaperResult):
                 ax.autoscale(enable=True, axis='x', tight=True)
 
 
-        predict_solution = osim.MocoTrajectory(self.predict_solution_file)
+        predict_solution = osim.MocoTrajectory(self.predict_solution_file % root_dir)
 
         predict_assisted_solution = osim.MocoTrajectory(
-            self.predict_assisted_solution_file)
+            self.predict_assisted_solution_file % root_dir)
         stiffness = predict_assisted_solution.getParameter('stiffness')
 
-        model = self.muscle_driven_model()
-        assisted_model = self.assisted_model()
+        model = self.muscle_driven_model(root_dir)
+        assisted_model = self.assisted_model(root_dir)
         assisted_model.updComponent('forceset/spring').setStiffness(stiffness)
 
         print(f'Stiffness: {stiffness}')
-        with open('results/squat_to_stand_stiffness.txt', 'w') as f:
+        with open(os.path.join(root_dir, 'results/squat_to_stand_stiffness.txt'), 'w') as f:
             f.write(f'{stiffness:.0f}')
         plot_solution(predict_solution, 'unassisted', color='gray')
         plot_solution(predict_assisted_solution, 'assisted')
@@ -360,7 +362,7 @@ class SquatToStand(MocoPaperResult):
         kinematics_rms_deg = np.rad2deg(kinematics_rms)
         print('RMS difference in joint angles between conditions (degrees): '
               f'{kinematics_rms_deg}')
-        with open('results/squat_to_stand_kinematics_rms.txt', 'w') as f:
+        with open(os.path.join(root_dir, 'results/squat_to_stand_kinematics_rms.txt'), 'w') as f:
             f.write(f'{kinematics_rms_deg:.1f}')
 
         fig.tight_layout() # w_pad=0.2)
@@ -370,38 +372,42 @@ class SquatToStand(MocoPaperResult):
                              # loc='center',
                              )
 
-        fig.savefig('figures/squat_to_stand.png', dpi=600)
+        fig.savefig(os.path.join(root_dir, 'figures/squat_to_stand.png'), dpi=600)
 
         coords = ['/jointset/hip_r/hip_extension_r',
                   '/jointset/knee_r/knee_extension_r',
                   '/jointset/ankle_r/ankle_plantarflexion_r']
         fig = self.plot_joint_moment_breakdown(model,
                                           predict_solution, coords)
-        fig.savefig('figures/squat_to_stand_joint_moment_breakdown.png',
+        fig.savefig(os.path.join(root_dir,
+                                 'figures/squat_to_stand_joint_moment_breakdown.png'),
                     dpi=600)
         fig = self.plot_joint_moment_breakdown(assisted_model,
                                                predict_assisted_solution,
                                                coords,
                                                knee_stiffness=stiffness
                                                )
-        fig.savefig('figures/squat_to_stand_assisted_'
-                    'joint_moment_breakdown.png',
+        fig.savefig(os.path.join(root_dir, 'figures/squat_to_stand_assisted_'
+                    'joint_moment_breakdown.png'),
                     dpi=600)
 
-        sol_predict_table = osim.TimeSeriesTable(self.predict_solution_file)
+        sol_predict_table = osim.TimeSeriesTable(self.predict_solution_file % root_dir)
         sol_predict_duration = sol_predict_table.getTableMetaDataString('solver_duration')
         sol_predict_duration = float(sol_predict_duration) / 60.0
         print('prediction duration ', sol_predict_duration)
-        with open('results/'
-                  'squat_to_stand_predict_duration.txt', 'w') as f:
+        with open(os.path.join(root_dir, 'results/'
+                  'squat_to_stand_predict_duration.txt'), 'w') as f:
             f.write(f'{sol_predict_duration:.1f}')
 
-        sol_predict_assisted_table = osim.TimeSeriesTable(self.predict_assisted_solution_file)
-        sol_predict_assisted_duration = sol_predict_assisted_table.getTableMetaDataString('solver_duration')
-        sol_predict_assisted_duration = float(sol_predict_assisted_duration) / 60.0
+        sol_predict_assisted_table = osim.TimeSeriesTable(
+            self.predict_assisted_solution_file % root_dir)
+        sol_predict_assisted_duration = sol_predict_assisted_table.getTableMetaDataString(
+            'solver_duration')
+        sol_predict_assisted_duration = float(
+            sol_predict_assisted_duration) / 60.0
         print('prediction assisted duration ', sol_predict_assisted_duration)
-        with open('results/'
-                  'squat_to_stand_predict_assisted_duration.txt', 'w') as f:
+        with open(os.path.join(root_dir, 'results/'
+                  'squat_to_stand_predict_assisted_duration.txt'), 'w') as f:
             f.write(f'{sol_predict_assisted_duration:.1f}')
 
         # table = osim.analyze(model,
@@ -411,18 +417,19 @@ class SquatToStand(MocoPaperResult):
         #                           'squat_to_stand_norm_fiber_length.sto')
 
         report = osim.report.Report(assisted_model,
-                                    self.predict_assisted_solution_file,
-                                    ref_files=[self.predict_solution_file])
+                                    self.predict_assisted_solution_file % root_dir,
+                                    ref_files=[self.predict_solution_file % root_dir])
         report.generate()
 
-
         self.create_ground_reaction_file(model, predict_solution,
-                                         'results/squat_to_stand_ground_reaction.mot')
+                                         os.path.join(root_dir,
+                                                      'results/squat_to_stand_ground_reaction.mot'))
 
-        self.create_ground_reaction_file(assisted_model, predict_assisted_solution,
-                                         'results/squat_to_stand_assisted_ground_reaction.mot')
+        self.create_ground_reaction_file(assisted_model,
+                                         predict_assisted_solution,
+                                         os.path.join(root_dir,
+                                                      'results/squat_to_stand_assisted_ground_reaction.mot'))
 
-        # TODO: visualize in the GUI!
     def create_ground_reaction_file(self, model, solution, filepath):
         reaction = osim.analyzeSpatialVec(model, solution,
                                           ['/jointset/foot_ground_r\|reaction_on_child'])

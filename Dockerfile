@@ -11,7 +11,7 @@ MAINTAINER Christopher Dembia
 #
 # The results are saved to the results and figures folders of
 # <local-mocopaper-repo>, and the paper is saved to
-# <local-mocopaper-repo>/MocoPaper.pdf
+# <local-mocopaper-repo>/paper/MocoPaper.pdf
 
 # opensim-moco is a private repository on GitHub, so we need permission to
 # access the repository within the Docker container. Create a Personal Access

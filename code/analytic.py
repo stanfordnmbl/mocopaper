@@ -1,3 +1,4 @@
+import os
 import numpy as np
 
 import opensim as osim
@@ -6,8 +7,8 @@ from moco_paper_result import MocoPaperResult
 
 class Analytic(MocoPaperResult):
     def __init__(self):
-        self.solution_file = 'results/analytic_solution.sto'
-    def generate_results(self, args):
+        self.solution_file = '%s/results/analytic_solution.sto'
+    def generate_results(self, root_dir, args):
         model = osim.Model()
         body = osim.Body("b", 1, osim.Vec3(0), osim.Inertia(0))
         model.addBody(body)
@@ -38,10 +39,10 @@ class Analytic(MocoPaperResult):
         solver = moco.initCasADiSolver()
         solver.set_num_mesh_intervals(50)
         solution = moco.solve()
-        solution.write(self.solution_file)
+        solution.write(self.solution_file % root_dir)
 
-    def report_results(self, args):
-        solution = osim.MocoTrajectory(self.solution_file)
+    def report_results(self, root_dir, args):
+        solution = osim.MocoTrajectory(self.solution_file % root_dir)
         time = solution.getTimeMat()
 
         exp = np.exp
@@ -70,6 +71,6 @@ class Analytic(MocoPaperResult):
         root = np.sqrt(mean)
         rms = root
         print(f'root-mean-square error in states: {rms}')
-        with open('results/analytic_rms.txt', 'w') as f:
+        with open(os.path.join(root_dir, 'results/analytic_rms.txt'), 'w') as f:
             f.write(f'{rms:.4f}')
 

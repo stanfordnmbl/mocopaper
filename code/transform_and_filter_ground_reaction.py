@@ -3,7 +3,6 @@ import sys
 import os
 
 import numpy as np
-from scipy.signal import butter, filtfilt
 
 import pylab as pl
 

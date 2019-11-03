@@ -1,7 +1,7 @@
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-import pylab as pl
 
 import opensim as osim
 
@@ -9,17 +9,18 @@ from moco_paper_result import MocoPaperResult
 
 import utilities
 
+
 class MotionTrackingWalking(MocoPaperResult):
     def __init__(self):
         self.initial_time = 0.83 # 0.450
         self.final_time = 2.0 # 1.565
         # self.footstrike = 0.836 # 1.424
         self.mocotrack_solution_file = \
-            'results/motion_tracking_walking_track_solution.sto'
+            '%s/results/motion_tracking_walking_track_solution.sto'
         self.mocoinverse_solution_file = \
-            'results/motion_tracking_walking_inverse_solution.sto'
+            '%s/results/motion_tracking_walking_inverse_solution.sto'
         self.mocoinverse_jointreaction_solution_file = \
-            'results/motion_tracking_walking_inverse_jointreaction_solution.sto'
+            '%s/results/motion_tracking_walking_inverse_jointreaction_solution.sto'
         self.side = 'l'
         self.emg_sensor_names = [
             'SOL', 'GAS', 'TA', 'MH', 'BF', 'VL', 'VM', 'RF', 'GMAX', 'GMED'
@@ -35,11 +36,12 @@ class MotionTrackingWalking(MocoPaperResult):
         return utilities.shift_data_to_cycle(initial_time, final_time,
                                              starting_time, time, y, cut_off=True)
 
-    def create_model_processor(self):
+    def create_model_processor(self, root_dir):
 
         # Create base model without reserves.
         model = osim.Model(
-            "resources/Rajagopal2016/subject_walk_armless_80musc.osim")
+            os.path.join(root_dir, "resources/Rajagopal2016/"
+                                   "subject_walk_armless_80musc.osim"))
         def add_reserve(model, coord, max_control):
             actu = osim.CoordinateActuator(coord)
             if coord.startswith('lumbar'):
@@ -88,15 +90,17 @@ class MotionTrackingWalking(MocoPaperResult):
             task.setKV(80, 1, 1)
             task.setActive(True, False, False)
             tasks.cloneAndAppend(task)
-        tasks.printToXML('motion_tracking_walking_cmc_tasks.xml')
+        tasks.printToXML(os.path.join(root_dir, 'code',
+                                      'motion_tracking_walking_cmc_tasks.xml'))
 
-        cmcModel.printToXML("resources/Rajagopal2016/"
-                            "subject_walk_armless_for_cmc.osim")
+        cmcModel.printToXML(os.path.join(root_dir, "resources/Rajagopal2016/"
+                            "subject_walk_armless_for_cmc.osim"))
 
         # Create direct collocation model:
         #   - implicit tendon compliance mode
         #   - add external loads
-        ext_loads_xml = "resources/Rajagopal2016/grf_walk.xml"
+        ext_loads_xml = os.path.join(root_dir,
+                                     "resources/Rajagopal2016/grf_walk.xml")
         baseModel.initSystem()
         muscles = baseModel.updMuscles()
         for imusc in np.arange(muscles.getSize()):
@@ -108,7 +112,8 @@ class MotionTrackingWalking(MocoPaperResult):
         modelProcessorDC.append(
             osim.ModOpTendonComplianceDynamicsModeDGF('implicit'))
 
-        ext_loads_xml = "resources/Rajagopal2016/grf_walk.xml"
+        ext_loads_xml = os.path.join(root_dir,
+                                     "resources/Rajagopal2016/grf_walk.xml")
         modelProcessorDC.append(osim.ModOpAddExternalLoads(ext_loads_xml))
 
         return modelProcessorDC
@@ -135,24 +140,24 @@ class MotionTrackingWalking(MocoPaperResult):
         if 'knee' in args:
             self.knee = True
 
-    def generate_results(self, args):
+    def generate_results(self, root_dir, args):
         self.parse_args(args)
 
         from transform_and_filter_ground_reaction import \
             transform_and_filter_ground_reaction
         # TODO: We aren't actually using this filtered file yet.
         transform_and_filter_ground_reaction(
-            'resources/Rajagopal2016/emg_walk_raw.anc',
-            'resources/Rajagopal2016/grf_walk.mot',
+            os.path.join(root_dir, 'resources/Rajagopal2016/emg_walk_raw.anc'),
+            os.path.join(root_dir, 'resources/Rajagopal2016/grf_walk.mot'),
             'ground_reaction_forces',
             'rlr',
             mode='multicutoff')
 
 
-        modelProcessor = self.create_model_processor()
+        modelProcessor = self.create_model_processor(root_dir)
 
         coordinates = osim.TableProcessor(
-            "resources/Rajagopal2016/coordinates.mot")
+            os.path.join(root_dir, "resources/Rajagopal2016/coordinates.mot"))
         coordinates.append(osim.TabOpLowPassFilter(6))
         coordinates.append(osim.TabOpUseAbsoluteStateNames())
 
@@ -162,7 +167,8 @@ class MotionTrackingWalking(MocoPaperResult):
         # cmc.setDesiredKinematicsFileName('coordinates.mot')
         # # cmc.setLowpassCutoffFrequency(6)
         # cmc.printToXML('motion_tracking_walking_cmc_setup.xml')
-        cmc = osim.CMCTool('motion_tracking_walking_cmc_setup.xml')
+        cmc = osim.CMCTool(os.path.join(root_dir,
+                                        'code/motion_tracking_walking_cmc_setup.xml'))
         # 2.5 minute
         if self.cmc:
             cmc.run()
@@ -181,7 +187,7 @@ class MotionTrackingWalking(MocoPaperResult):
         # 8 minutes
         if self.inverse:
             solution = inverse.solve()
-            solution.getMocoSolution().write(self.mocoinverse_solution_file)
+            solution.getMocoSolution().write(self.mocoinverse_solution_file % root_dir)
 
         # MocoInverse, minimize joint reactions
         # -------------------------------------
@@ -202,7 +208,7 @@ class MotionTrackingWalking(MocoPaperResult):
         # 50 minutes.
         if self.knee:
             solution_reaction = study.solve()
-            solution_reaction.write(self.mocoinverse_jointreaction_solution_file)
+            solution_reaction.write(self.mocoinverse_jointreaction_solution_file % root_dir)
 
 
         # Create and name an instance of the MocoTrack tool.
@@ -255,11 +261,11 @@ class MotionTrackingWalking(MocoPaperResult):
             osim.MocoBounds(-100, 100))
 
         # Solve and visualize.
-        moco.printToXML('motion_tracking_walking.omoco')
+        moco.printToXML(os.path.join(root_dir, 'code/motion_tracking_walking.omoco'))
         # 45 minutes
         if self.track:
             solution = moco.solve()
-            solution.write(self.mocotrack_solution_file)
+            solution.write(self.mocotrack_solution_file % root_dir)
             # moco.visualize(solution)
 
     def plot(self, ax, time, y, shift=True, fill=False, *args, **kwargs):
@@ -282,8 +288,9 @@ class MotionTrackingWalking(MocoPaperResult):
             return ax.plot(100.0 * shifted_time / duration, shifted_y, *args,
                            clip_on=False, **kwargs)
 
-    def load_electromyography(self):
-        anc = utilities.ANCFile('resources/Rajagopal2016/emg_walk_raw.anc')
+    def load_electromyography(self, root_dir):
+        anc = utilities.ANCFile(
+            os.path.join(root_dir, 'resources/Rajagopal2016/emg_walk_raw.anc'))
         raw = anc.data
         fields_to_remove = []
         for name in anc.names:
@@ -313,14 +320,14 @@ class MotionTrackingWalking(MocoPaperResult):
                 filtered_emg[name] /= np.max(filtered_emg[name])
         return filtered_emg
 
-    def calc_reserves(self, solution):
-        modelProcessor = self.create_model_processor()
+    def calc_reserves(self, root_dir, solution):
+        modelProcessor = self.create_model_processor(root_dir)
         model = modelProcessor.process()
         output = osim.analyze(model, solution, ['.*reserve.*actuation'])
         return output
 
-    def calc_max_knee_reaction_force(self, solution):
-        modelProcessor = self.create_model_processor()
+    def calc_max_knee_reaction_force(self, root_dir, solution):
+        modelProcessor = self.create_model_processor(root_dir)
         model = modelProcessor.process()
         jr = osim.analyzeSpatialVec(model, solution,
                                     ['.*walker_knee.*reaction_on_parent.*'])
@@ -339,60 +346,60 @@ class MotionTrackingWalking(MocoPaperResult):
         weight = mass * g
         return max / weight
 
-    def report_results(self, args):
+    def report_results(self, root_dir, args):
         self.parse_args(args)
 
         if self.track:
-            sol_track_table = osim.TimeSeriesTable(self.mocotrack_solution_file)
+            sol_track_table = osim.TimeSeriesTable(self.mocotrack_solution_file % root_dir)
             track_duration = sol_track_table.getTableMetaDataString('solver_duration')
             track_duration = float(track_duration) / 60.0 / 60.0
             print('track duration ', track_duration)
-            with open('results/'
-                      'motion_tracking_walking_track_duration.txt', 'w') as f:
+            with open(os.path.join(root_dir, 'results/'
+                      'motion_tracking_walking_track_duration.txt'), 'w') as f:
                 f.write(f'{track_duration:.1f}')
 
         if self.inverse:
-            sol_inverse_table = osim.TimeSeriesTable(self.mocoinverse_solution_file)
+            sol_inverse_table = osim.TimeSeriesTable(self.mocoinverse_solution_file % root_dir)
             inverse_duration = sol_inverse_table.getTableMetaDataString('solver_duration')
             inverse_duration = float(inverse_duration) / 60.0
             print('inverse duration ', inverse_duration)
-            with open('results/'
-                      'motion_tracking_walking_inverse_duration.txt', 'w') as f:
+            with open(os.path.join(root_dir, 'results/'
+                      'motion_tracking_walking_inverse_duration.txt'), 'w') as f:
                 f.write(f'{inverse_duration:.1f}')
 
         if self.knee:
-            sol_inverse_jr_table = osim.TimeSeriesTable(self.mocoinverse_jointreaction_solution_file)
+            sol_inverse_jr_table = osim.TimeSeriesTable(self.mocoinverse_jointreaction_solution_file % root_dir)
             inverse_jr_duration = sol_inverse_jr_table.getTableMetaDataString('solver_duration')
             inverse_jr_duration = float(inverse_jr_duration) / 60.0
             print('inverse joint reaction duration ', inverse_jr_duration)
-            with open('results/'
-                      'motion_tracking_walking_inverse_jr_duration.txt', 'w') as f:
+            with open(os.path.join(root_dir, 'results/'
+                      'motion_tracking_walking_inverse_jr_duration.txt'), 'w') as f:
                 f.write(f'{inverse_jr_duration:.1f}')
 
-        emg = self.load_electromyography()
+        emg = self.load_electromyography(root_dir)
 
 
         if self.track:
-            sol_track = osim.MocoTrajectory(self.mocotrack_solution_file)
+            sol_track = osim.MocoTrajectory(self.mocotrack_solution_file % root_dir)
             time_track = sol_track.getTimeMat()
 
         if self.inverse:
-            sol_inverse = osim.MocoTrajectory(self.mocoinverse_solution_file)
+            sol_inverse = osim.MocoTrajectory(self.mocoinverse_solution_file % root_dir)
             time_inverse = sol_inverse.getTimeMat()
 
         if self.knee and self.inverse:
             sol_inverse_jointreaction = \
-                osim.MocoTrajectory(self.mocoinverse_jointreaction_solution_file)
+                osim.MocoTrajectory(self.mocoinverse_jointreaction_solution_file % root_dir)
             sol_inverse_jointreaction.insertStatesTrajectory(
                 sol_inverse.exportToStatesTable(), False)
             mocoinverse_jr_solution_file = \
                 self.mocoinverse_jointreaction_solution_file.replace('.sto',
                                                                      '_with_q_u.sto')
 
-            sol_inverse_jointreaction.write(mocoinverse_jr_solution_file)
+            sol_inverse_jointreaction.write(mocoinverse_jr_solution_file % root_dir)
             time_inverse_jointreaction = sol_inverse_jointreaction.getTimeMat()
 
-        modelProcessor = self.create_model_processor()
+        modelProcessor = self.create_model_processor(root_dir)
         model = modelProcessor.process()
         model.initSystem()
         print(f'Degrees of freedom: {model.getCoordinateSet().getSize()}')
@@ -400,8 +407,8 @@ class MotionTrackingWalking(MocoPaperResult):
         # TODO: slight shift in CMC solution might be due to how we treat
         # percent gait cycle and the fact that CMC is missing 0.02 seconds.
         if self.cmc:
-            sol_cmc = osim.TimeSeriesTable('results/motion_tracking_walking_cmc_results/'
-                                           'motion_tracking_walking_cmc_states.sto')
+            sol_cmc = osim.TimeSeriesTable(os.path.join(root_dir, 'results/motion_tracking_walking_cmc_results/'
+                                           'motion_tracking_walking_cmc_states.sto'))
             time_cmc = np.array(sol_cmc.getIndependentColumn())
 
         plot_breakdown = False
@@ -414,11 +421,11 @@ class MotionTrackingWalking(MocoPaperResult):
                                                          '/jointset/walker_knee_l/knee_angle_l',
                                                          '/jointset/ankle_l/ankle_angle_l'],
                                                         )
-            fig.savefig('results/motion_tracking_walking_inverse_'
-                        'joint_moment_breakdown.png',
+            fig.savefig(os.path.join(root_dir, 'results/motion_tracking_walking_inverse_'
+                        'joint_moment_breakdown.png'),
                         dpi=600)
 
-        # report = osim.report.Report(model, mocoinverse_jr_solution_file)
+        # report = osim.report.Report(model, mocoinverse_jr_solution_file % root_dir)
         # report.generate()
 
         if plot_breakdown:
@@ -430,8 +437,9 @@ class MotionTrackingWalking(MocoPaperResult):
                                                          '/jointset/walker_knee_l/knee_angle_l',
                                                          '/jointset/ankle_l/ankle_angle_l'],
                                                         )
-            fig.savefig('results/motion_tracking_walking_inverse_'
-                        'jointreaction_joint_moment_breakdown.png',
+            fig.savefig(os.path.join(root_dir,
+                                     'results/motion_tracking_walking_inverse_'
+                                     'jointreaction_joint_moment_breakdown.png'),
                         dpi=600)
 
         coords = [
@@ -497,7 +505,9 @@ class MotionTrackingWalking(MocoPaperResult):
             ax.spines['bottom'].set_position('zero')
             utilities.publication_spines(ax)
 
-        fig.savefig('figures/motion_tracking_walking_kinematics.png', dpi=600)
+        fig.savefig(os.path.join(root_dir,
+                                 'figures/motion_tracking_walking_kinematics.png'),
+                    dpi=600)
 
 
         fig = plt.figure(figsize=(7.5, 3.3))
@@ -506,7 +516,8 @@ class MotionTrackingWalking(MocoPaperResult):
         ax = fig.add_subplot(gs[0:3, 0])
         import cv2
         # Convert BGR color ordering to RGB.
-        image = cv2.imread('figures/motion_tracking_walking_inverse_model.png')[
+        image = cv2.imread(os.path.join(root_dir,
+                                        'figures/motion_tracking_walking_inverse_model.png'))[
                 ..., ::-1]
         ax.imshow(image)
         plt.axis('off')
@@ -566,7 +577,8 @@ class MotionTrackingWalking(MocoPaperResult):
                                    color='lightgray',
                                    label='electromyography')
                 legend_musc.append((handle,
-                                    'electromyography (normalized; peak matches the peak from MocoInverse)'))
+                                    'electromyography (normalized; peak '
+                                    'matches the peak from MocoInverse)'))
             if im == 0:
                 legend_handles_and_labels = legend_musc
             ax.set_ylim(-0.05, 1)
@@ -596,9 +608,9 @@ class MotionTrackingWalking(MocoPaperResult):
             )
         fig.tight_layout(h_pad=1, rect=(0, 0.07, 1, 1), pad=0.4)
 
-        fig.savefig('figures/motion_tracking_walking.eps')
-        fig.savefig('figures/motion_tracking_walking.pdf')
-        fig.savefig('figures/motion_tracking_walking.png', dpi=600)
+        fig.savefig(
+            os.path.join(root_dir, 'figures/motion_tracking_walking.png'),
+            dpi=600)
 
         if self.cmc and self.inverse:
             mocosol_cmc = sol_inverse.clone()
@@ -618,8 +630,8 @@ class MotionTrackingWalking(MocoPaperResult):
             inv_sol_rms_pcent = 100.0 * inv_sol_rms / peak_inverse_activation
             print(f'Peak MocoInverse activation: {peak_inverse_activation}')
             print('CMC MocoInverse activation RMS: ', inv_sol_rms_pcent)
-            with open('results/motion_tracking_walking_'
-                      'inverse_cmc_rms.txt', 'w') as f:
+            with open(os.path.join(root_dir, 'results/motion_tracking_walking_'
+                      'inverse_cmc_rms.txt'), 'w') as f:
                 f.write(f'{inv_sol_rms_pcent:.0f}')
 
         if self.track:
@@ -632,12 +644,12 @@ class MotionTrackingWalking(MocoPaperResult):
                 max = np.max(np.abs(column))
                 max_res_track = np.max([max_res_track, max])
                 print(f'track max abs {column_labels[icol]}: {max}')
-            with open('results/motion_tracking_walking_'
-                      'track_max_reserve.txt', 'w') as f:
+            with open(os.path.join(root_dir, 'results/motion_tracking_walking_'
+                      'track_max_reserve.txt'), 'w') as f:
                 f.write(f'{max_res_track:.2f}')
 
         if self.inverse:
-            res_inverse = self.calc_reserves(sol_inverse)
+            res_inverse = self.calc_reserves(root_dir, sol_inverse)
             column_labels = res_inverse.getColumnLabels()
             max_res_inverse = -np.inf
             for icol in range(res_inverse.getNumColumns()):
@@ -646,12 +658,13 @@ class MotionTrackingWalking(MocoPaperResult):
                 max = np.max(np.abs(column))
                 max_res_inverse = np.max([max_res_inverse, max])
                 print(f'inverse max abs {column_labels[icol]}: {max}')
-            with open('results/motion_tracking_walking_'
-                      'inverse_max_reserve.txt', 'w') as f:
+            with open(os.path.join(root_dir, 'results/motion_tracking_walking_'
+                      'inverse_max_reserve.txt'), 'w') as f:
                 f.write(f'{max_res_inverse:.1f}')
 
         if self.knee and self.inverse:
-            res_inverse_jr = self.calc_reserves(sol_inverse_jointreaction)
+            res_inverse_jr = self.calc_reserves(root_dir,
+                                                sol_inverse_jointreaction)
             column_labels = res_inverse_jr.getColumnLabels()
             max_res_inverse_jr = -np.inf
             for icol in range(res_inverse_jr.getNumColumns()):
@@ -660,18 +673,18 @@ class MotionTrackingWalking(MocoPaperResult):
                 max = np.max(np.abs(column))
                 max_res_inverse_jr = np.max([max_res_inverse_jr, max])
                 print(f'inverse_jr max abs {column_labels[icol]}: {max}')
-            with open('results/motion_tracking_walking_'
-                      'inverse_jr_max_reserve.txt', 'w') as f:
+            with open(os.path.join(root_dir, 'results/motion_tracking_walking_'
+                      'inverse_jr_max_reserve.txt'), 'w') as f:
                 f.write(f'{max_res_inverse_jr:.3f}')
 
-            maxjr_inverse = self.calc_max_knee_reaction_force(sol_inverse)
-            maxjr_inverse_jr = self.calc_max_knee_reaction_force(sol_inverse_jointreaction)
+            maxjr_inverse = self.calc_max_knee_reaction_force(root_dir, sol_inverse)
+            maxjr_inverse_jr = self.calc_max_knee_reaction_force(root_dir, sol_inverse_jointreaction)
             print(f'Max joint reaction {maxjr_inverse} -> {maxjr_inverse_jr}')
-            with open('results/motion_tracking_walking_'
-                      'inverse_maxjr.txt', 'w') as f:
+            with open(os.path.join(root_dir, 'results/motion_tracking_walking_'
+                      'inverse_maxjr.txt'), 'w') as f:
                 f.write(f'{maxjr_inverse:.1f}')
-            with open('results/motion_tracking_walking_'
-                      'inverse_jr_maxjr.txt', 'w') as f:
+            with open(os.path.join(root_dir, 'results/motion_tracking_walking_'
+                      'inverse_jr_maxjr.txt'), 'w') as f:
                 f.write(f'{maxjr_inverse_jr:.1f}')
 
         if self.inverse:
@@ -682,15 +695,15 @@ class MotionTrackingWalking(MocoPaperResult):
             print(f'Average speed: {avg_speed}')
 
         if self.inverse:
-            report = osim.report.Report(model, self.mocoinverse_solution_file)
+            report = osim.report.Report(model, self.mocoinverse_solution_file % root_dir)
             report.generate()
 
         if self.knee and self.inverse:
             report = osim.report.Report(model,
-                                        mocoinverse_jr_solution_file)
+                                        mocoinverse_jr_solution_file % root_dir)
             report.generate()
 
         if self.track:
-            report = osim.report.Report(model, self.mocotrack_solution_file)
+            report = osim.report.Report(model, self.mocotrack_solution_file % root_dir)
             report.generate()
 

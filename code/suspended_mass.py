@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
@@ -9,6 +10,7 @@ import opensim as osim
 from moco_paper_result import MocoPaperResult
 
 import utilities
+
 suspended_mass_code = \
 """import org.opensim.modeling.*;
 study = osim.MocoStudy():
@@ -162,24 +164,28 @@ class SuspendedMass(MocoPaperResult):
 
         return solution
 
-    def generate_results(self, args):
+    def generate_results(self, root_dir, args):
         predict_solution, time_stepping = self.predict(True)
-        predict_solution.write('results/suspended_mass_prediction_solution.sto')
-        time_stepping.write('results/suspended_mass_time_stepping.sto')
+        predict_solution.write(
+            os.path.join(root_dir, 'results/suspended_mass_prediction_solution.sto'))
+        time_stepping.write(
+            os.path.join(root_dir, 'results/suspended_mass_time_stepping.sto'))
         track_solution = self.track(predict_solution)
-        track_solution.write('results/suspended_mass_track_solution.sto')
+        track_solution.write(
+            os.path.join(root_dir, 'results/suspended_mass_track_solution.sto'))
         track_solution_p = self.track(predict_solution, 4)
-        track_solution_p.write('results/suspended_mass_track_p_solution.sto')
+        track_solution_p.write(
+            os.path.join(root_dir, 'results/suspended_mass_track_p_solution.sto'))
 
-    def report_results(self, args):
+    def report_results(self, root_dir, args):
         predict_solution = osim.MocoTrajectory(
-            'results/suspended_mass_prediction_solution.sto')
+            os.path.join(root_dir, 'results/suspended_mass_prediction_solution.sto'))
         time_stepping = osim.MocoTrajectory(
-            'results/suspended_mass_time_stepping.sto')
+            os.path.join(root_dir, 'results/suspended_mass_time_stepping.sto'))
         track_solution = osim.MocoTrajectory(
-            'results/suspended_mass_track_solution.sto')
+            os.path.join(root_dir, 'results/suspended_mass_track_solution.sto'))
         track_p_solution = osim.MocoTrajectory(
-            'results/suspended_mass_track_p_solution.sto')
+            os.path.join(root_dir, 'results/suspended_mass_track_p_solution.sto'))
 
         peak_left = np.max(predict_solution.getStateMat('/forceset/left/activation'))
         peak_middle = np.max(predict_solution.getStateMat('/forceset/middle/activation'))
@@ -190,24 +196,24 @@ class SuspendedMass(MocoPaperResult):
             predict_solution,
             'states', '/jointset.*value$')
         print(f'time-stepping rms: {time_stepping_rms}')
-        with open('results/suspended_mass_'
-                  'time_stepping_coord_rms.txt', 'w') as f:
+        with open(os.path.join(root_dir, 'results/suspended_mass_'
+                  'time_stepping_coord_rms.txt'), 'w') as f:
             f.write(f'{time_stepping_rms:.4f}')
 
         track_rms = track_solution.compareContinuousVariablesRMSPattern(
             predict_solution, 'states', '/forceset.*activation$')
         track_rms_pcent = 100.0 * track_rms / peak_predicted_activation
         print(f'track rms percentage of peak activation: {track_rms_pcent}')
-        with open('results/suspended_mass_'
-                  'track_activation_rms.txt', 'w') as f:
+        with open(os.path.join(root_dir, 'results/suspended_mass_'
+                  'track_activation_rms.txt'), 'w') as f:
             f.write(f'{track_rms_pcent:.2f}')
 
         track_p_rms = track_p_solution.compareContinuousVariablesRMSPattern(
             predict_solution, 'states', '/forceset.*activation$')
         track_p_rms_pcent = 100.0 * track_p_rms / peak_predicted_activation
         print(f'track p=4 rms: {track_p_rms_pcent}')
-        with open('results/suspended_mass_'
-                  'track_p_activation_rms.txt', 'w') as f:
+        with open(os.path.join(root_dir, 'results/suspended_mass_'
+                  'track_p_activation_rms.txt'), 'w') as f:
             f.write(f'{track_p_rms_pcent:.0f}')
 
         fig = plt.figure(figsize=(5.2, 2.7))
@@ -384,5 +390,5 @@ class SuspendedMass(MocoPaperResult):
 
         fig.tight_layout()
 
-        pl.savefig('figures/suspended_mass.png', dpi=600)
-        pl.savefig('figures/suspended_mass.pdf')
+        pl.savefig(os.path.join(root_dir, 'figures/suspended_mass.png'),
+                   dpi=600)

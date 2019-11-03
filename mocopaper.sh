@@ -1,5 +1,5 @@
 #!/bin/bash
 
-python3 mocopaper.py
+python3 code/mocopaper.py
 
-rubber --module=lualatex --pdf MocoPaper.tex
+rubber --module=lualatex --pdf paper/MocoPaper.tex

@@ -1,8 +1,4 @@
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
-import pylab as pl
-
+import os
 import opensim as osim
 
 from analytic import Analytic
@@ -52,6 +48,9 @@ if __name__ == "__main__":
 
     print(f'OpenSim Moco {osim.GetMocoVersionAndDate()}')
 
+    root_dir = os.path.abspath(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+
     if args.results:
         for requested in args.results:
             if not requested in results.keys():
@@ -60,7 +59,7 @@ if __name__ == "__main__":
         if args.results is None or result_name in args.results:
             if args.generate:
                 print(f'Generating {result_name} results.')
-                result_object.generate_results(args.args)
+                result_object.generate_results(root_dir, args.args)
             print(f'Reporting {result_name} results.')
-            result_object.report_results(args.args)
+            result_object.report_results(root_dir, args.args)
 

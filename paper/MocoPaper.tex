@@ -494,7 +494,7 @@ Moco solves optimal control problems defined using a library of cost and constra
 \begin{figure}[!h]
 %\begin{adjustwidth}{-2.25in}{0in} % Comment out/remove adjustwidth environment if table fits in text column.
 \centering
-    \includegraphics{figures/MocoStudyDiagram.png}
+    \includegraphics{../figures/MocoStudyDiagram.png}
     \caption{{\bf Overview of \textit{MocoStudy}.}
     (a) Moco can solve customized optimal control problems using (b) a library of cost, endpoint constraint, and path constraint modules. Moco contains additional cost modules beyond what is shown here, and users can define their own custom modules.}
     \label{mocodiagram}
@@ -544,7 +544,7 @@ Solving a \textit{MocoStudy} yields a \textit{MocoSolution} (see Fig 2), which i
 \begin{figure}[!h]
     %\begin{adjustwidth}{-2.25in}{0in} % Comment out/remove adjustwidth environment if table fits in text column.
     \centering
-    \includegraphics{figures/MocoSolverDiagram.png}
+    \includegraphics{../figures/MocoSolverDiagram.png}
     \caption{{\bf Using trajectories to solve problems iteratively.}
     Guesses for the optimization are specified using \textit{MocoTrajectory}, which holds the values of states, controls, Lagrange multipliers, and parameters at any iteration in the optimization. \textit{MocoSolution} is a subclass of \textit{MocoTrajectory} that holds the solution to a study and includes the success status of the optimization, the final objective value, and the number of solver iterations. Users can use the solution of one problem as the initial guess for a subsequent problem.
     }
@@ -567,7 +567,7 @@ While the \textit{MocoStudy} interface is powerful, many questions can be answer
 \begin{figure}[!h]
     %\begin{adjustwidth}{-2.25in}{0in} % Comment out/remove adjustwidth environment if table fits in text column.
     \centering
-    \includegraphics{figures/MocoToolDiagram.png}
+    \includegraphics{../figures/MocoToolDiagram.png}
     \caption{{\bf Solving prescribed motion, tracked motion, and predicted motion problems.}
 Moco provides the tools \textit{MocoTrack} and \textit{MocoInverse} for solving standard problems. Both require a \textit{Model} and kinematic data as inputs and produce controls and actuator states as outputs, but these tools solve different optimal control problems. \textit{MocoTrack} produces a new simulated motion, while \textit{MocoInverse} does not permit deviations from the provided kinematics data. Predicting a motion is not easily standardized into a tool, and requires using a custom \textit{MocoStudy}.    }
     \label{mocotooldiagram}
@@ -590,7 +590,7 @@ Next, we ensured that a time-stepping forward simulation using controls from a m
 \begin{figure}[!h]
 %    \begin{adjustwidth}{-2.25in}{0in} % Comment out/remove adjustwidth environment if table fits in text column.
         \centering
-        \includegraphics{figures/suspended_mass.png}
+        \includegraphics{../figures/suspended_mass.png}
         \caption{{\bf Verification of time-stepping and motion tracking.}
        The trajectory of a point mass suspended by three muscles and moving under the influence of gravity (g) in three different types of simulation is shown on the left. The activations of the “left,” “middle,” and “right” muscles throughout the motion are shown on the right. We predicted a trajectory (gray band) that minimized the sum of squared muscle excitations and final time. We then performed a time-stepping forward simulation (blue) with the predicted controls and produced the motion we originally predicted. Tracking the predicted motion with \textit{MocoTrack} (orange) produced the original activations.
         }
@@ -612,7 +612,7 @@ Moco can estimate muscle activity in walking, which allows studies of gait disor
 \begin{figure}[!h]
         \begin{adjustwidth}{-2.25in}{0in} % Comment out/remove adjustwidth environment if table fits in text column.
     \centering
-    \includegraphics{figures/motion_tracking_walking.png}
+    \includegraphics{../figures/motion_tracking_walking.png}
     \caption{{\bf Estimates of muscle activity during walking.}
     \textit{MocoInverse} (black) produced muscle activations whose timing matched the timing from electromyography measurements (gray; available for all muscles shown except psoas). Electromyography was normalized such that its peak matched the peak of the \textit{MocoInverse} activations. Moco allows users to customize the optimization cost; minimizing knee joint loading reduced the activity of muscles spanning the knee (blue).
     }
@@ -632,7 +632,7 @@ To show that Moco can predict motions and optimize parameters of a model, we pre
 \begin{figure}[!h]
     \begin{adjustwidth}{-2.25in}{0in} % Comment out/remove adjustwidth environment if table fits in text column.
         \centering
-        \includegraphics{figures/squat_to_stand.png}
+        \includegraphics{../figures/squat_to_stand.png}
         \caption{{\bf Predicting and assisting a crouch-to-stand motion.}
 We predicted a squat-to-stand motion with prescribed initial and final poses that minimized the sum of squared muscle excitations and final time (gray). The predicted motion is shown on the left, and the activations of key muscles are shown on the right. We then added a torsional spring to the knee and solved for the optimal motion, muscle activations, and spring stiffness k (blue). The spring allowed gluteus maximus and vasti activity to decrease substantially.
         }

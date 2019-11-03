@@ -606,7 +606,7 @@ Moco contains a comprehensive automated test suite that extends beyond the verif
 
 \subsection*{Estimating muscle activity from motion capture data of walking}
 
-Moco can estimate muscle activity in walking, which allows studies of gait disorders, muscle coordination, and prostheses. We used a model with 19 degrees of freedom and 80 lower-limb muscles~\cite{Rajagopal:2016ek} to simulate one gait cycle of walking at a self-selected speed of 1.25 m/s. The scaled model and data are based on the supplementary material of~\cite{Rajagopal:2016ek}. We modeled the muscles using \textit{DeGrooteFregly2016Muscle}; all muscles had activation dynamics but only the gastrocnemii and soleus had compliant tendons. We solved for muscle activity using \textit{MocoInverse}, which prescribes kinematics exactly (see “Tools for standard problems” for details), and compared the resulting muscle activations to electromyography measurements (Fig 5).
+Moco can estimate muscle activity in walking, which allows studies of gait disorders, muscle coordination, and prostheses. We used a model with 19 degrees of freedom and 80 lower-limb muscles~\cite{Rajagopal:2016ek} to simulate one gait cycle of walking at a self-selected speed of 1.25 m/s. The scaled model and data are based on the supplementary material of~\cite{Rajagopal:2016ek}. All muscles had activation dynamics but only the gastrocnemii and soleus had compliant tendons~\cite{Groote:2016dq}. We solved for muscle activity using \textit{MocoInverse}, which prescribes kinematics exactly (see “Tools for standard problems” for details), and compared the resulting muscle activations to electromyography measurements (Fig 5).
 
 % Place figure captions after the first paragraph in which they are cited.
 \begin{figure}[!h]
@@ -647,7 +647,7 @@ Both predictions solved in under 3 minutes. Moco’s ability to rapidly predict 
 
 \section*{Availability and future directions}
 
-OpenSim Moco can be downloaded freely for Windows and Mac from https://github.com/opensim-org/opensim-moco, where we develop the project and users can report bugs and request features. The OpenSim Moco source code is available under the permissive Apache License 2.0, though some dependencies have more restrictive licenses (e.g., CasADi~\cite{Andersson:2019} is available under the “weak copyleft” GNU Lesser General Public License).
+OpenSim Moco can be downloaded freely for Windows and Mac from https://simtk.org/projects/opensim-moco and https://github.com/opensim-org/opensim-moco, where we develop the project and users can report bugs and request features. The OpenSim Moco source code is available under the permissive Apache License 2.0, though some dependencies have more restrictive licenses (e.g., CasADi~\cite{Andersson:2019} is available under the “weak copyleft” GNU Lesser General Public License).
 
 The documentation for Moco, which is available online at https://opensim-org.github.io/opensim-moco-docs and within the Moco distribution, contains a User Guide, Theory Guide, Developer Guide, and an Application Programming Interface (API) Reference. The User Guide explains how to use Moco and provides tips for posing a problem. The Theory Guide explains how Moco implements direct collocation, and the Developer Guide introduces the code and explains software design choices. The API Reference describes the classes and functions in the library. Lastly, we provide a printable two-page “cheat sheet” that demonstrates common commands in Moco.
 
@@ -759,7 +759,7 @@ Gradient-based nonlinear program solvers require the gradient of the objective, 
 
 \section*{Acknowledgments}
 
-We thank Ajay Seth, Michael Sherman, Friedl de Groote, Antonie van den Bogert, B.J. Fregly, Michael Posa, Joris Gillis, and Joel Andersson for discussing methodology and implementation; Bradley Humphreys, Carmichael Ong, Noah Gordon, and Jenny Yong for contributing code; Andrew Baines, Mohammad Shourijeh, and Prasanna Sritharan for testing the software; and Ayman Habib for reviewing the manuscript.
+We thank Ajay Seth, Michael Sherman, Friedl de Groote, Michael Posa, Joris Gillis, and Joel Andersson for discussing methodology and implementation; Bradley Humphreys, Carmichael Ong, Noah Gordon, and Jenny Yong for contributing code; Andrew Baines, Mohammad Shourijeh, and Prasanna Sritharan for testing the software; and Ayman Habib for reviewing the manuscript.
 This work was supported by the National Institutes of Health grants U54 EB020405 and P2C HD065690. CLD and NAB received support from the National Science Foundation Graduate Research Fellowship Program. CLD received support from the Stanford Bio-X Graduate Fellowship. NAB received support from the Stanford Graduate Fellowship Program.
 
 

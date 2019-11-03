@@ -199,6 +199,13 @@ class SuspendedMass(MocoPaperResult):
         with open(os.path.join(root_dir, 'results/suspended_mass_'
                   'time_stepping_coord_rms.txt'), 'w') as f:
             f.write(f'{time_stepping_rms:.4f}')
+        distance = np.sqrt(
+            (self.xfinal - self.xinit) ** 2 + (self.yfinal - self.yinit) ** 2)
+        norm_rms = 100.0 * time_stepping_rms / distance
+        print(f'time-stepping rms as a percent of distance: {norm_rms}')
+        with open(os.path.join(root_dir, 'results/suspended_mass_'
+                                         'time_stepping_coord_norm_rms.txt'), 'w') as f:
+            f.write(f'{norm_rms:.1f}')
 
         track_rms = track_solution.compareContinuousVariablesRMSPattern(
             predict_solution, 'states', '/forceset.*activation$')

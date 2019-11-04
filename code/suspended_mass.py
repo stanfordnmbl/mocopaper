@@ -12,20 +12,18 @@ from moco_paper_result import MocoPaperResult
 import utilities
 
 suspended_mass_code = \
-"""import org.opensim.modeling.*;
-study = osim.MocoStudy():
+"""
+study = MocoStudy();
 problem = study.updProblem();
+problem.addGoal(MocoControlGoal('effort'));
+problem.addGoal(MocoFinalTimeGoal('time', 0.01));
 problem.setModel(createSuspendedMassModel());
 problem.setTimeBounds(0, [0.4, 0.8]);
-problem.setStateInfo("/jointset/tx/tx/value", ...
-        [-0.2, 0.2], -0.14, 0.14);
-problem.setStateInfo("/jointset/ty/ty/value", ...
-        [-0.4, 0], -0.2, 0.15);
-problem.setStateInfoPattern("/jointset/.*/speed", [-15, 15], 0, 0);
-problem.setStateInfoPattern("/forceset/.*/activation", [0, 1], 0):
-problem.setControlInfoPattern("/forceset/.*", [0, 1]);
-problem.addGoal(osim.MocoControlGoal("effort"));
-problem.addGoal(osim.MocoFinalTimeGoal("time", 0.01));
+problem.setStateInfo('/jointset/tx/tx/value', [-0.2, 0.2], -0.14, 0.14);
+problem.setStateInfo('/jointset/ty/ty/value', [-0.4, 0], -0.2, 0.15);
+problem.setStateInfoPattern('/jointset/.*/speed', [-15, 15], 0, 0);
+problem.setStateInfoPattern('/forceset/.*/activation', [0, 1], 0):
+problem.setControlInfoPattern('/forceset/.*', [0, 1]);
 solution = study.solve()
 """
 
@@ -223,18 +221,22 @@ class SuspendedMass(MocoPaperResult):
                   'track_p_activation_rms.txt'), 'w') as f:
             f.write(f'{track_p_rms_pcent:.0f}')
 
-        fig = plt.figure(figsize=(5.2, 2.7))
-        grid = gridspec.GridSpec(3, 4)
+        fig = plt.figure(figsize=(5.2, 4.2))
+        grid = gridspec.GridSpec(4, 4,
+                                 height_ratios=[4, 1, 1, 1])
 
-        # ax = fig.add_subplot(grid[:, 0])
-        # ax.text(0, 0, suspended_mass_code, fontsize=8)
-        # utilities.publication_spines(ax)
-        # ax.spines['left'].set_visible(False)
-        # ax.spines['bottom'].set_visible(False)
-        # ax.set_xticks([])
-        # ax.set_yticks([])
-        #
-        ax = fig.add_subplot(grid[:, 0:2])
+        ax = fig.add_subplot(grid[0, :])
+        ax.text(0.2, 0.5, suspended_mass_code, fontsize=8,
+                verticalalignment='center',
+                # fontdict={'fontfamily': 'monospace'},
+                transform=ax.transAxes)
+        utilities.publication_spines(ax)
+        ax.spines['left'].set_visible(False)
+        ax.spines['bottom'].set_visible(False)
+        ax.set_xticks([])
+        ax.set_yticks([])
+
+        ax = fig.add_subplot(grid[1:, 0:2])
 
         initial_alpha = 0.1
         ax.plot([-self.width, self.xinit],
@@ -256,7 +258,8 @@ class SuspendedMass(MocoPaperResult):
         ax.plot([self.width, self.xfinal],
                 [0, self.yfinal], color='tab:red',
                 linewidth=3)
-        ax.plot([-1.1 * self.width, 1.1 * self.width], [0.004, 0.004], color='k',
+        ax.plot([-1.1 * self.width, 1.1 * self.width], [0.004, 0.004],
+                color='k',
                 linewidth=2.5)
 
         ax.plot([-self.width, 0, self.width],
@@ -294,11 +297,11 @@ class SuspendedMass(MocoPaperResult):
         #             linestyle='-', linewidth=1,
         #             label='MocoTrack, $x^4$')
         plt.annotate('initial', (self.xinit, self.yinit),
-                     xytext=(self.xinit - 0.02, self.yinit - 0.03),
+                     xytext=(self.xinit - 0.02, self.yinit - 0.04),
                      color='tab:red',
                      alpha=0.5)
         plt.annotate('final', (self.xfinal, self.yfinal),
-                     xytext=(self.xfinal + 0.008, self.yfinal - 0.03),
+                     xytext=(self.xfinal + 0.008, self.yfinal - 0.04),
                      color='tab:red',
                      )
         ax.plot([self.xinit, self.xfinal],
@@ -311,7 +314,7 @@ class SuspendedMass(MocoPaperResult):
                                    pad=-2.0,
                                    frameon=False)
         ax.add_artist(scalebar)
-        ax.set_title('trajectory of point mass')
+        ax.set_title('trajectory of point mass', fontsize=8)
         ax.set_xticks([])
         ax.set_yticks([])
         ax.set_aspect('equal', 'datalim')
@@ -323,7 +326,7 @@ class SuspendedMass(MocoPaperResult):
         ax.spines['bottom'].set_visible(False)
 
 
-        ax = fig.add_subplot(grid[0, 2:4])
+        ax = fig.add_subplot(grid[1, 2:4])
         ax.plot(predict_solution.getTimeMat(),
                 predict_solution.getStateMat('/forceset/left/activation'),
                 color=gray, linewidth=6, clip_on=False)
@@ -347,7 +350,7 @@ class SuspendedMass(MocoPaperResult):
         ax.autoscale(enable=True, axis='x', tight=True)
         utilities.publication_spines(ax)
 
-        ax = fig.add_subplot(grid[1, 2:4])
+        ax = fig.add_subplot(grid[2, 2:4])
         ax.plot(predict_solution.getTimeMat(),
                 predict_solution.getStateMat('/forceset/middle/activation'),
                 color=gray, linewidth=6, clip_on=False)
@@ -371,7 +374,7 @@ class SuspendedMass(MocoPaperResult):
         ax.autoscale(enable=True, axis='x', tight=True)
         utilities.publication_spines(ax)
 
-        ax = fig.add_subplot(grid[2, 2:4])
+        ax = fig.add_subplot(grid[3, 2:4])
         ax.plot(predict_solution.getTimeMat(),
                 predict_solution.getStateMat('/forceset/right/activation'),
                 color=gray, linewidth=6, clip_on=False)

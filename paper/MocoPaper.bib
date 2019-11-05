@@ -21,18 +21,18 @@
   year = {2007}
 }
 @article{Falisse:2019a, 
-  author = {Falisse, Antoine and Serrancolí, Gil and Dembia, Christopher L and Gillis, Joris and Groote, Friedl De}, 
+  author = {Falisse, Antoine and Serrancolí, Gil and Dembia, Christopher L and Gillis, Joris and De Groote, Friedl}, 
   title = {{Algorithmic differentiation improves the computational efficiency of OpenSim-based trajectory optimization of human movement.}}, 
   doi = {10.1371/journal.pone.0217730}, 
   pmid = {31622352}, 
   abstract = {Algorithmic differentiation (AD) is an alternative to finite differences (FD) for evaluating function derivatives. The primary aim of this study was to demonstrate the computational benefits of using AD instead of FD in OpenSim-based trajectory optimization of human movement. The secondary aim was to evaluate computational choices including different AD tools, different linear solvers, and the use of first- or second-order derivatives. First, we enabled the use of AD in OpenSim through a custom source code transformation tool and through the operator overloading tool ADOL-C. Second, we developed an interface between OpenSim and CasADi to solve trajectory optimization problems. Third, we evaluated computational choices through simulations of perturbed balance, two-dimensional predictive simulations of walking, and three-dimensional tracking simulations of walking. We performed all simulations using direct collocation and implicit differential equations. Using AD through our custom tool was between 1.8 ± 0.1 and 17.8 ± 4.9 times faster than using FD, and between 3.6 ± 0.3 and 12.3 ± 1.3 times faster than using AD through ADOL-C. The linear solver efficiency was problem-dependent and no solver was consistently more efficient. Using second-order derivatives was more efficient for balance simulations but less efficient for walking simulations. The walking simulations were physiologically realistic. These results highlight how the use of AD drastically decreases computational time of trajectory optimization problems as compared to more common FD. Overall, combining AD with direct collocation and implicit differential equations decreases the computational burden of trajectory optimization of human movement, which will facilitate their use for biomechanical applications requiring the use of detailed models of the musculoskeletal system.}, 
   pages = {e0217730}, 
   volume = {14}, 
-  journal = {PloS one}, 
+  journal = {PLoS ONE}, 
   year = {2019}
 }
 @article{Serrancoli:2019aa, 
-  author = {Serrancoli, Gil and Falisse, Antoine and Dembia, Christopher and Vantilt, Jonas and Tanghe, Kevin and Lefeber, Dirk and Jonkers, Ilse and Schutter, Joris De and Groote, Friedl De}, 
+  author = {Serrancoli, Gil and Falisse, Antoine and Dembia, Christopher and Vantilt, Jonas and Tanghe, Kevin and Lefeber, Dirk and Jonkers, Ilse and Schutter, Joris De and De Groote, Friedl}, 
   title = {{Subject-Exoskeleton Contact Model Calibration Leads to Accurate Interaction Force Predictions}}, 
   issn = {1534-4320}, 
   doi = {10.1109/tnsre.2019.2924536}, 
@@ -66,7 +66,7 @@
   year = {2017}
 }
 @article{Falisse:2019b, 
-  author = {Falisse, Antoine and Serrancolí, Gil and Dembia, Christopher L and Gillis, Joris and Jonkers, Ilse and Groote, Friedl De}, 
+  author = {Falisse, Antoine and Serrancolí, Gil and Dembia, Christopher L and Gillis, Joris and Jonkers, Ilse and De Groote, Friedl}, 
   title = {{Rapid predictive simulations with complex musculoskeletal models suggest that diverse healthy and pathological human gaits can emerge from similar control strategies.}}, 
   issn = {1742-5689}, 
   doi = {10.1098/rsif.2019.0402}, 
@@ -207,7 +207,7 @@
   year = {2010}
 }
 @article{Falisse:2019biorxiv, 
-  author = {Falisse, Antoine and Serrancolí, Gil and Dembia, Christopher Lee and Gillis, Joris and Groote, Friedl De}, 
+  author = {Falisse, Antoine and Serrancolí, Gil and Dembia, Christopher Lee and Gillis, Joris and De Groote, Friedl}, 
   title = {{Algorithmic differentiation improves the computational efficiency of OpenSim-based optimal control simulations of movement}}, 
   doi = {10.1101/644245}, 
   abstract = {Algorithmic differentiation (AD) is an alternative to finite differences (FD) for evaluating function derivatives. The primarily aim of this study was to demonstrate the computational benefits of using AD instead of FD in OpenSim-based optimal control simulations. The secondary aim was to evaluate computational choices including different AD tools, different linear solvers, and the use of first- or second-order derivatives. First, we enabled the use of AD in OpenSim through a custom source code transformation tool and through the operator overloading tool ADOL-C. Second, we developed an interface between OpenSim and CasADi to perform optimal control simulations. Third, we evaluated computational choices through simulations of perturbed balance, two-dimensional predictive simulations of walking, and three-dimensional tracking simulations of walking. We performed all simulations using direct collocation and implicit differential equations. Using AD through our custom tool was between 1.8 ± 0.1 and 17.8 ± 4.9 times faster than using FD, and between 3.6 ± 0.3 and 12.3 ± 1.3 times faster than using AD through ADOL-C. The linear solver efficiency was problem-dependent and no solver was consistently more efficient. Using second-order derivatives was more efficient for balance simulations but less efficient for walking simulations. The walking simulations were physiologically realistic. These results highlight how the use of AD drastically decreases computational time of optimal control simulations as compared to more common FD. Overall, combining AD with direct collocation and implicit differential equations decreases the computational burden of optimal control simulations, which will facilitate their use for biomechanical applications.}, 
@@ -257,7 +257,7 @@
   abstract = {Cervical spine trauma from sport or traffic collisions can have devastating consequences for individuals and a high societal cost. The precise mechanisms of such injuries are still unknown as investigation is hampered by the difficulty in experimentally replicating the conditions under which these injuries occur. We harness the benefits of computer simulation to report on the creation and validation of i) a generic musculoskeletal model (MASI) for the analyses of cervical spine loading in healthy subjects, and ii) a population-specific version of the model (Rugby Model), for investigating cervical spine injury mechanisms during rugby activities. The musculoskeletal models were created in OpenSim, and validated against in vivo data of a healthy subject and a rugby player performing neck and upper limb movements. The novel aspects of the Rugby Model comprise i) population-specific inertial properties and muscle parameters representing rugby forward players, and ii) a custom scapula-clavicular joint that allows the application of multiple external loads. We confirm the utility of the developed generic and population-specific models via verification steps and validation of kinematics, joint moments and neuromuscular activations during rugby scrummaging and neck functional movements, which achieve results comparable with in vivo and in vitro data. The Rugby Model was validated and used for the first time to provide insight into anatomical loading and cervical spine injury mechanisms related to rugby, whilst the MASI introduces a new computational tool to allow investigation of spinal injuries arising from other sporting activities, transport, and ergonomic applications. The models used in this study are freely available at simtk.org and allow to integrate in silico analyses with experimental approaches in injury prevention.}, 
   pages = {e0169329}, 
   volume = {12}, 
-  journal = {PLOS ONE}, 
+  journal = {PLoS ONE}, 
   year = {2017}
 }
 @article{Seth:2016, 
@@ -286,7 +286,7 @@
   year = {2015}
 }
 @article{Rohani:2017, 
-  author = {Rohani, Farbod and Richter, Hanz and Bogert, Antonie J. van den}, 
+  author = {Rohani, Farbod and Richter, Hanz and van den Bogert, Antonie J.}, 
   title = {{Optimal design and control of an electromechanical transfemoral prosthesis with energy regeneration}}, 
   doi = {10.1371/journal.pone.0188266}, 
   pmid = {29149213}, 
@@ -422,7 +422,7 @@
   year = {2019}
 }
 @article{Vantilt:2019, 
-  author = {Vantilt, Jonas and Tanghe, Kevin and Afschrift, Maarten and Bruijnes, Amber K.B.D and Junius, Karen and Geeroms, Joost and Aertbeliën, Erwin and Groote, Friedl De and Lefeber, Dirk and Jonkers, Ilse and Schutter, Joris De}, 
+  author = {Vantilt, Jonas and Tanghe, Kevin and Afschrift, Maarten and Bruijnes, Amber K.B.D and Junius, Karen and Geeroms, Joost and Aertbeliën, Erwin and De Groote, Friedl and Lefeber, Dirk and Jonkers, Ilse and Schutter, Joris De}, 
   title = {{Model-based control for exoskeletons with series elastic actuators evaluated on sit-to-stand movements}}, 
   doi = {10.1186/s12984-019-0526-8}, 
   pmid = {31159874}, 
@@ -453,7 +453,7 @@
   year = {2017}
 }
 @article{Koelewijn:2019, 
-  author = {Koelewijn, Anne D. and Heinrich, Dieter and Bogert, Antonie J. van den}, 
+  author = {Koelewijn, Anne D. and Heinrich, Dieter and van den Bogert, Antonie J.}, 
   title = {{Metabolic cost calculations of gait using musculoskeletal energy models, a comparison study}}, 
   doi = {10.1101/588590}, 
   abstract = {This paper compares predictions of metabolic energy expenditure in gait using seven metabolic energy expenditure models to assess their correlation with experimental data. Ground reaction forces, marker data, and pulmonary gas exchange data were recorded for six walking trials at combinations of two speeds, 0.8 m/s and 1.3 m/s, and three inclines, −8\% (downhill), level, and 8\% (uphill). The metabolic cost, calculated with the metabolic energy models was compared to the metabolic cost from the pulmonary gas exchange rates. A repeated measures correlation showed that the model by Bhargava et al. [[7][1]] and the model by Lichtwark and Wilson [[21][2]] correlated best with the experimental data. It was found that for all metabolic energy models, the subject’s weight affected the calculated metabolic cost. [1]: \#ref-7 [2]: \#ref-21}, 
@@ -462,7 +462,7 @@
   year = {2019}
 }
 @article{Ackermann:2012, 
-  author = {Ackermann, Marko and Bogert, Antonie J. van den}, 
+  author = {Ackermann, Marko and van den Bogert, Antonie J.}, 
   title = {{Predictive simulation of gait at low gravity reveals skipping as the preferred locomotion strategy}}, 
   issn = {0021-9290}, 
   doi = {10.1016/j.jbiomech.2012.01.029}, 
@@ -500,7 +500,7 @@
   rating = {0}
 }
 @article{vandenBogert:2011fv, 
-  author = {Bogert, Antonie J. van den and Blana, Dimitra and Heinrich, Dieter}, 
+  author = {van den Bogert, Antonie J. and Blana, Dimitra and Heinrich, Dieter}, 
   title = {{Implicit methods for efficient musculoskeletal simulation and optimal control}}, 
   issn = {2210-9838}, 
   doi = {10.1016/j.piutam.2011.04.027}, 
@@ -513,7 +513,7 @@
   rating = {0}
 }
 @article{Koelewijn:2018kw, 
-  author = {Koelewijn, Anne D. and Dorschky, Eva and Bogert, Antonie J. van den}, 
+  author = {Koelewijn, Anne D. and Dorschky, Eva and van den Bogert, Antonie J.}, 
   title = {{A metabolic energy expenditure model with a continuous first derivative and its application to predictive simulations of gait}}, 
   issn = {1025-5842}, 
   doi = {10.1080/10255842.2018.1490954}, 
@@ -526,7 +526,7 @@
   rating = {0}
 }
 @article{KMoore:2018ea, 
-  author = {Moore, Jason K and Bogert, Antonie van den}, 
+  author = {Moore, Jason K and van den Bogert, Antonie J.}, 
   title = {{opty: Software for trajectory optimization and parameter identification using direct collocation}}, 
   doi = {10.21105/joss.00300}, 
   abstract = {The Journal of Open Source Software, a <strong>developer friendly</strong> journal for research software packages.}, 
@@ -548,7 +548,7 @@
   rating = {0}
 }
 @article{Groote:2016dq, 
-  author = {Groote, Friedl De and Kinney, Allison L. and Rao, Anil V. and Fregly, Benjamin J.}, 
+  author = {De Groote, Friedl and Kinney, Allison L. and Rao, Anil V. and Fregly, Benjamin J.}, 
   title = {{Evaluation of Direct Collocation Optimal Control Problem Formulations for Solving the Muscle Redundancy Problem}}, 
   issn = {0090-6964}, 
   doi = {10.1007/s10439-016-1591-9}, 
@@ -571,7 +571,7 @@
   rating = {0}
 }
 @article{Falisse:2016,
-  author = {Falisse, Antoine and Rossom, Sam Van and Jonkers, Ilse and Groote, Friedl De}, 
+  author = {Falisse, Antoine and Rossom, Sam Van and Jonkers, Ilse and De Groote, Friedl}, 
   title = {{EMG-Driven Optimal Estimation of Subject-SPECIFIC Hill Model Muscle–Tendon Parameters of the Knee Joint Actuators}}, 
   issn = {0018-9294}, 
   doi = {10.1109/tbme.2016.2630009}, 
@@ -584,7 +584,7 @@
   rating = {0}
 }
 @article{Ackermann:2010dd, 
-  author = {Ackermann, Marko and Bogert, Antonie J. van den}, 
+  author = {Ackermann, Marko and van den Bogert, Antonie J.}, 
   title = {{Optimality principles for model-based prediction of human gait}}, 
   issn = {0021-9290}, 
   doi = {10.1016/j.jbiomech.2009.12.012}, 
@@ -669,7 +669,7 @@
   abstract = {Movement is fundamental to human and animal life, emerging through interaction of complex neural, muscular, and skeletal systems. Study of movement draws from and contributes to diverse fields, including biology, neuroscience, mechanics, and robotics. OpenSim unites methods from these fields to create fast and accurate simulations of movement, enabling two fundamental tasks. First, the software can calculate variables that are difficult to measure experimentally, such as the forces generated by muscles and the stretch and recoil of tendons during movement. Second, OpenSim can predict novel movements from models of motor control, such as kinematic adaptations of human gait during loaded or inclined walking. Changes in musculoskeletal dynamics following surgery or due to human–device interaction can also be simulated; these simulations have played a vital role in several applications, including the design of implantable mechanical devices to improve human grasping in individuals with paralysis. OpenSim is an extensible and user-friendly software package built on decades of knowledge about computational modeling and simulation of biomechanical systems. OpenSim’s design enables computational scientists to create new state-of-the-art software tools and empowers others to use these tools in research and clinical applications. OpenSim supports a large and growing community of biomechanics and rehabilitation researchers, facilitating exchange of models and simulations for reproducing and extending discoveries. Examples, tutorials, documentation, and an active user forum support this community. The OpenSim software is covered by the Apache License 2.0, which permits its use for any purpose including both nonprofit and commercial applications. The source code is freely and anonymously accessible on GitHub, where the community is welcomed to make contributions. Platform-specific installers of OpenSim include a GUI and are available on simtk.org.}, 
   pages = {e1006223}, 
   volume = {14}, 
-  journal = {PLOS Computational Biology}, 
+  journal = {PLoS Computational Biology}, 
   year = {2018}, 
   rating = {0}
 }
@@ -750,7 +750,7 @@
   rating = {0}
 }
 @article{Koelewijn:2016bm, 
-  author = {Koelewijn, Anne D. and Bogert, Antonie J. van den}, 
+  author = {Koelewijn, Anne D. and van den Bogert, Antonie J.}, 
   title = {{Joint contact forces can be reduced by improving joint moment symmetry in below-knee amputee gait simulations}}, 
   issn = {0966-6362}, 
   doi = {10.1016/j.gaitpost.2016.07.007}, 

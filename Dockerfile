@@ -4,8 +4,14 @@ MAINTAINER Christopher Dembia
 
 # When building the Docker container on Windows or Mac, make sure the Docker
 # virtual machine has at least 8 GB of RAM. See Docker's settings/preferences.
-# Run the container to generate the results.
-# To run the container, use:
+# To generate the results, the paper PDF, and figures in your current
+# directory, run the following command:
+#
+#   docker run --volume $(pwd):/output <username>/mocopaper:preprint
+#
+# If you want to run your own copy of the mocopaper repository instead of using
+# the copy of mocopaper stored inside the container, use the following command
+# instead:
 #
 #   docker run --volume <local-mocopaper-repo>:/mocopaper <username>/mocopaper:preprint
 #
@@ -97,6 +103,10 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 
 # We need matplotlib 3.1.
 RUN pip3 install matplotlib
+
+# Mount a volume to the Docker container's /output folder to save outputs
+# to the local machine.
+RUN mkdir /output
 
 COPY . /mocopaper
 

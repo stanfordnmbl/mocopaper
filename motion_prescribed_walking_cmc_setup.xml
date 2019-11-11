@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <OpenSimDocument Version="40000">
-	<CMCTool name="motion_tracking_walking_cmc">
+	<CMCTool name="motion_prescribed_walking_cmc">
 		<!--Name of the .osim file used to construct a model.-->
 		<model_file>resources/Rajagopal2016/subject_walk_armless_for_cmc.osim</model_file>
 		<!--Replace the model's force set with sets specified in <force_set_files>? If false, the force set is appended to.-->
@@ -8,7 +8,7 @@
 		<!--List of xml files used to construct a force set for the model.-->
 		<force_set_files />
 		<!--Directory used for writing results.-->
-		<results_directory>results/motion_tracking_walking_cmc_results</results_directory>
+		<results_directory>results/motion_prescribed_walking_cmc_results</results_directory>
 		<!--Output precision.  It is 8 by default.-->
 		<output_precision>8</output_precision>
 		<!--Initial time for the simulation.-->
@@ -44,7 +44,7 @@
 		<!--Motion (.mot) or storage (.sto) file containing the desired kinematic trajectories.-->
 		<desired_kinematics_file>resources/Rajagopal2016/coordinates.mot</desired_kinematics_file>
 		<!--File containing the tracking tasks. Which coordinates are tracked and with what weights are specified here.-->
-		<task_set_file>motion_tracking_walking_cmc_tasks.xml</task_set_file>
+		<task_set_file>motion_prescribed_walking_cmc_tasks.xml</task_set_file>
 		<!--File containing the constraints on the controls.-->
 		<constraints_file />
 		<!--File containing the controls output by RRA. These can be used to place constraints on the residuals during CMC.-->

@@ -108,7 +108,7 @@ RUN pip3 install matplotlib
 # to the local machine.
 RUN mkdir /output
 
-COPY . /mocopaper
+RUN git clone https://github.com/stanfordnmbl/mocopaper /mocopaper
 
 # Matplotlib's default backend requires a DISPLAY / Xserver.
 # RUN echo 'backend : Agg' >> /mocopaper/matplotlibrc && \

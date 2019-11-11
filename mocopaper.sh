@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Generate the results and figures.
-# python3 code/mocopaper.py
+# TODO python3 code/mocopaper.py
 
 # Compile the paper.
 cd paper

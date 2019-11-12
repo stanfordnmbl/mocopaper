@@ -5,10 +5,10 @@ python3 code/mocopaper.py
 
 # Compile the paper.
 cd paper
-lualatex MocoPaper.tex
-bibtex MocoPaper.tex
-lualatex MocoPaper.tex
-lualatex MocoPaper.tex
+pdflatex -interaction=nonstopmode MocoPaper.tex
+bibtex MocoPaper
+pdflatex -interaction=nonstopmode MocoPaper.tex
+pdflatex -interaction=nonstopmode MocoPaper.tex
 cd ../
 
 # If this script is being run inside a Docker container, copy certain files

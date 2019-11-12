@@ -106,7 +106,7 @@ RUN pip3 install matplotlib
 
 # Mount a volume to the Docker container's /output folder to save outputs
 # to the local machine.
-RUN mkdir /output
+RUN echo "Making the output directory." && mkdir /output
 
 RUN git clone https://github.com/stanfordnmbl/mocopaper /mocopaper
 

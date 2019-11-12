@@ -574,7 +574,7 @@ class MotionTrackingWalking(MocoPaperResult):
                                    emg[muscle[3]] * np.max(inverse_activ),
                                    shift=False,
                                    fill=True,
-                                   color='lightgray',
+                                   color='darkgray',
                                    label='electromyography')
                 legend_musc.append((handle,
                                     'electromyography (normalized; peak '

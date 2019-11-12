@@ -519,7 +519,7 @@ Moco solves optimal control problems that users define using a library of cost a
 The modules of a \textit{MocoProblem} can be combined in diverse ways, as demonstrated by the following examples.
 \begin{itemize}
 \item \textbf{dynamically-constrained inverse kinematics}: minimize the error between experimental and model marker positions (marker tracking) and control effort while obeying multibody dynamics. The optimized variables are generalized coordinates, speeds, and forces.
-\item \textbf{electromyography-constrained muscle force estimation}: for a prescribed experimental motion, minimize muscle excitations while obeying multibody dynamics and the difference between muscle activations and electromyography data. The muscle excitations are the only variables in this problem.
+\item \textbf{electromyography-constrained muscle force estimation}: for a prescribed experimental motion, minimize muscle excitations while obeying multibody dynamics and the difference between muscle excitations and electromyography data. The muscle excitations are the only variables in this problem.
 \item \textbf{torso mass calibration}: for a prescribed experimental motion, minimize model residual forces at the pelvis while obeying multibody dynamics. The joint torques and torso mass are the variables.
 \item \textbf{prediction of muscle coordination adaptations to an exoskeleton}: minimize squared muscle excitations and the error between experimental joint angles and model coordinate values (state tracking) while obeying multibody and muscle activation dynamics. The model coordinates, speeds, muscle excitations, muscle activations, and exoskeleton torques are the variables.
 \end{itemize}
@@ -588,7 +588,7 @@ Currently, Moco provides two tools for solving standard problems (Figure 3):
     \centering
     \includegraphics{../figures/MocoToolDiagram.png}
     \caption{{\bf Solving prescribed motion, tracked motion, and predicted motion problems.}
-Moco provides the tools \textit{MocoTrack} and \textit{MocoInverse} for solving standard problems. Both require a \textit{Model} and kinematic data as inputs and produce controls and actuator states as outputs, but these tools solve different optimal control problems. \textit{MocoTrack} produces a new simulated motion, while \textit{MocoInverse} does not permit deviations from the provided kinematics data. Predicting a motion is not easily standardized and requires using a custom \textit{MocoStudy}.    }
+Moco provides the tools \textit{MocoTrack} and \textit{MocoInverse} for solving standard problems. Both require a \textit{Model} and kinematic data as inputs and produce controls and actuator states as outputs, but these tools solve different optimal control problems. \textit{MocoTrack} produces a new simulated motion, while \textit{MocoInverse} does not permit deviations from the provided kinematic data. Predicting a motion is not easily standardized and requires using a custom \textit{MocoStudy}.    }
     \label{mocotooldiagram}
     %\end{adjustwidth}
 \end{figure}
@@ -644,7 +644,7 @@ To demonstrate how Moco allows customization, we added a cost term to \textit{Mo
 
 \subsection*{Predicting and assisting a squat-to-stand motion}
 
-To show that Moco can predict motions and optimize parameters of a model, we predicted a squat-to-stand motion that minimized a combination of effort, expressed as sum of squared excitations, and the duration of the motion. The initial pose was prescribed to be squatting~\cite{Fregly:2015}, and the final pose was prescribed to be upright standing. No motion was tracked. The model contained a torso and leg with 9 muscles obeying activation dynamics and compliant tendon dynamics. To enforce mediolateral symmetry, we used a single leg and doubled muscle strengths, which we obtained from a previous study~\cite{Ong:2019a}. We used Moco's default initial guess, in which each variable's value is the midpoint of the variable's bounds. The predicted motion and muscle activations are shown in Figure 6. As expected, extensor muscles such as the gluteus maximus, hamstrings, and vasti exhibited the greatest activity.
+To show that Moco can predict motions and optimize parameters of a model, we predicted a squat-to-stand motion that minimized a combination of effort, expressed as the sum of squared excitations, and the duration of the motion. The initial pose was prescribed to be squatting~\cite{Fregly:2015}, and the final pose was prescribed to be upright standing. No motion was tracked. The model contained a torso and leg with 9 muscles obeying activation dynamics and compliant tendon dynamics. To enforce mediolateral symmetry, we used a single leg and doubled muscle strengths, which we obtained from a previous study~\cite{Ong:2019a}. We used Moco's default initial guess, in which each variable's value is the midpoint of the variable's bounds. The predicted motion and muscle activations are shown in Figure 6. As expected, extensor muscles such as the gluteus maximus, hamstrings, and vasti exhibited the greatest activity.
 
 % Place figure captions after the first paragraph in which they are cited.
 \begin{figure}[!h]

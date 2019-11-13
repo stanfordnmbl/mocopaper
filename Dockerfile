@@ -27,8 +27,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 # Must be careful to not embed the GitHub token in the image.
 RUN git clone https://github.com/opensim-org/opensim-moco.git /opensim-moco \
         && cd /opensim-moco \
-        && git checkout 0.1.0-preprint \
-        && rm ~/.gitconfig
+        && git checkout 0.1.0-preprint
 
 RUN cd /opensim-moco \
         && git submodule update --init \

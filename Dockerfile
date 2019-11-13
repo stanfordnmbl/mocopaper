@@ -2,48 +2,13 @@ FROM ubuntu
 
 MAINTAINER Christopher Dembia
 
-# When building the Docker container on Windows or Mac, make sure the Docker
-# virtual machine has at least 8 GB of RAM. See Docker's settings/preferences.
-# To generate the results, the paper PDF, and figures in your current
-# directory, run the following command:
+# Build this docker container with a command like the following:
 #
-#   docker run --volume $(pwd):/output <username>/mocopaper:preprint
+#   docker build --tag <username>/mocopaper:<tag> .
 #
-# If you want to run your own copy of the mocopaper repository instead of using
-# the copy of mocopaper stored inside the container, use the following command
-# instead:
-#
-#   docker run --volume <local-mocopaper-repo>:/mocopaper <username>/mocopaper:preprint
-#
-# The results are saved to the results and figures folders of
-# <local-mocopaper-repo>, and the paper is saved to
-# <local-mocopaper-repo>/paper/MocoPaper.pdf
-
-# opensim-moco is a private repository on GitHub, so we need permission to
-# access the repository within the Docker container. Create a Personal Access
-# Token on the GitHub website:
-# 1. Click user icon in the upper right corner.
-# 2. Click Settings.
-# 3. Click Developer settings.
-# 4. Click Personal access tokens.
-# 5. Click Generate new token.
-# 6. Give a name to your token, e.g., "opensim-moco Docker"
-# 7. Check the box next to "repo"
-# 8. Click Generate token.
-# 9. Copy the token to the clipboard.
-# 10. Run Docker build from this directory as follows:
-#
-#   docker build --build-arg GITHUBTOKEN=<paste> --tag <username>/mocopaper:preprint .
-#
-#     Include the period at the end of your command.
-
-# Make sure Docker has access to at least 16 GB of RAM.
+# When building the Docker container on Windows or Mac, make sure Docker has
+# access to at least 8 GB of RAM.
 # https://stackoverflow.com/questions/44533319/how-to-assign-more-memory-to-docker-container
-
-# TODO: Remove when opensim-moco is public.
-ARG GITHUBTOKEN
-
-ARG MOCOBRANCH=preprint
 
 # Set DEBIAN_FRONTEND to avoid interactive timezone prompt when installing
 # packages.
@@ -60,10 +25,9 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
         python3 python3-dev python3-numpy python3-setuptools
 
 # Must be careful to not embed the GitHub token in the image.
-RUN git config --global url."https://$GITHUBTOKEN:@github.com/".insteadOf "https://github.com/" \
-        && git clone https://github.com/stanfordnmbl/opensim-moco.git /opensim-moco \
+RUN git clone https://github.com/opensim-org/opensim-moco.git /opensim-moco \
         && cd /opensim-moco \
-        && git checkout $MOCOBRANCH \
+        && git checkout 0.1.0-preprint \
         && rm ~/.gitconfig
 
 RUN cd /opensim-moco \

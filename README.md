@@ -21,9 +21,13 @@ used in the paper. You must run the Docker container to obtain the results
 and figures; we do not commit the results to the repository.
 
 You can use Docker to reproduce the results and paper. First, install Docker
-on your computer. Then run the following command in your Terminal or 
-Command Prompt:
+on your computer. Then, run the following command:
 
+    # On Windows using Command Prompt (cmd).
+    docker run --volume %cd%:/output stanfordnmbl/mocopaper:preprint
+    # On Windows using PowerShell.
+    docker run --volume ${PWD}:/output stanfordnmbl/mocopaper:preprint
+    # On Mac/UNIX using bash.
     docker run --volume $(pwd):/output stanfordnmbl/mocopaper:preprint
 
 The container takes about 3 hours to run.

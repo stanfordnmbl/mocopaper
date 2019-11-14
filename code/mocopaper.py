@@ -3,6 +3,7 @@ import opensim as osim
 
 from analytic import Analytic
 from suspended_mass import SuspendedMass
+from prescribed_walking import MotionPrescribedWalking
 from tracking_walking import MotionTrackingWalking
 from squat_to_stand import SquatToStand
 
@@ -19,6 +20,7 @@ if __name__ == "__main__":
     results = {
         'analytic': Analytic(),
         'suspended-mass': SuspendedMass(),
+        'prescribed-walking': MotionPrescribedWalking(),
         'tracking-walking': MotionTrackingWalking(),
         # 'predicting-walking': MotionPredictionAndAssistanceWalking(),
         'squat-to-stand': SquatToStand(),

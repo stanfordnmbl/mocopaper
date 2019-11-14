@@ -49,8 +49,9 @@ class MotionPrescribedWalking(MocoPaperResult):
             else:
                 prefix = 'reserve_'
             actu.setName(prefix + coord)
-            # actu.setMinControl(-max_control)
-            # actu.setMaxControl(max_control)
+            actu.setMinControl(-max_control)
+            actu.setMaxControl(max_control)
+            actu.setOptimalForce(1)
             model.addForce(actu)
         add_reserve(model, 'lumbar_extension', 50)
         add_reserve(model, 'lumbar_bending', 50)
@@ -122,7 +123,6 @@ class MotionPrescribedWalking(MocoPaperResult):
         self.knee = False
         if len(args) == 0:
             # self.cmc = True
-            # self.track = True
             self.inverse = True
             self.knee = True
             return
@@ -195,8 +195,6 @@ class MotionPrescribedWalking(MocoPaperResult):
         problem = study.updProblem()
         problem.addGoal(reaction_r)
         problem.addGoal(reaction_l)
-
-
         solver = osim.MocoCasADiSolver.safeDownCast(study.updSolver())
 
         # 50 minutes.

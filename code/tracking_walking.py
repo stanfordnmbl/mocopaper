@@ -256,8 +256,8 @@ class MotionTrackingWalking(MocoPaperResult):
 
         # Set the guess
         # -------------
-        If the previous solution argument is empty, use the inverse solution
-        to construct a guess.
+        # If the previous solution argument is empty, use the inverse solution
+        # to construct a guess.
         guess = osim.MocoTrajectory()
         if previous_solution.empty():
             # Create a guess compatiable with this problem.
@@ -308,9 +308,9 @@ class MotionTrackingWalking(MocoPaperResult):
 
         # study.visualize(fullTraj)
 
-        solution = osim.MocoTrajectory(
-            self.get_solution_path(root_dir, tracking_weight, effort_weight))
-        study.visualize(solution)
+        # solution = osim.MocoTrajectory(
+        #     self.get_solution_path(root_dir, tracking_weight, effort_weight))
+        # study.visualize(solution)
 
         return solution
 

@@ -26,7 +26,7 @@ class MotionTrackingWalking(MocoPaperResult):
         self.tracking_weights = [1,  1, 0.001]
         self.effort_weights =   [0.001, 1, 1]
         self.cmap = 'viridis'
-        self.cmap_indices = [0.1, 0.5, 0.9]
+        self.cmap_indices = [0.25, 0.5, 0.9]
 
     def create_model_processor(self, root_dir, for_inverse=False):
 
@@ -483,20 +483,20 @@ class MotionTrackingWalking(MocoPaperResult):
             rad2deg = 180 / np.pi
             ax_hip.plot(pgc, rad2deg*full_traj.getStateMat(
                     '/jointset/hip_l/hip_flexion_l/value'), color=color, lw=lw)
-            ax_hip.set_ylabel('hip flexion (deg)')
+            ax_hip.set_ylabel('hip flexion (degrees)')
             ax_hip.set_ylim(-20, 50)
             # ax_hip.set_yticks([-0.2, 0, 0.2, 0.4, 0.6, 0.8])
             ax_hip.set_title('KINEMATICS', weight='bold', size=title_fs)
             ax_knee.plot(pgc, rad2deg*full_traj.getStateMat(
                     '/jointset/walker_knee_l/knee_angle_l/value'), color=color,
                     lw=lw)
-            ax_knee.set_ylabel('knee flexion (deg)')
+            ax_knee.set_ylabel('knee flexion (degrees)')
             ax_knee.set_ylim(0, 80)
             # ax_knee.set_yticks([0, 0.5, 1, 1.5])
             ax_ankle.plot(pgc, rad2deg*full_traj.getStateMat(
                     '/jointset/ankle_l/ankle_angle_l/value'), color=color, 
                     lw=lw)
-            ax_ankle.set_ylabel('ankle dorsiflexion (degree)')
+            ax_ankle.set_ylabel('ankle dorsiflexion (degrees)')
             ax_ankle.set_xlabel('gait cycle (%)')
             ax_ankle.set_ylim(-30, 20)
             # ax_ankle.set_yticks([-0.5, -0.3, -0.1, 0, 0.1, 0.3])

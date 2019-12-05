@@ -25,8 +25,8 @@ class MotionTrackingWalking(MocoPaperResult):
             'results/motion_tracking_walking_solution'
         self.tracking_weights = [1,  1, 0.001]
         self.effort_weights =   [0.001, 1, 1]
-        self.cmap = 'viridis'
-        self.cmap_indices = [0.25, 0.5, 0.9]
+        self.cmap = 'nipy_spectral'
+        self.cmap_indices = [0.2, 0.5, 0.9]
 
     def create_model_processor(self, root_dir, for_inverse=False):
 

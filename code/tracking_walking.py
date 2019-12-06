@@ -532,6 +532,8 @@ class MotionTrackingWalking(MocoPaperResult):
 
         with open(os.path.join(root_dir, 'results/'
                 'motion_tracking_walking_durations.txt'), 'w') as f:
+            iterate = zip(self.tracking_weights, self.effort_weights, 
+                    self.cmap_indices)
             for tracking_weight, effort_weight, cmap_index in iterate:
                 print('cmap_index', cmap_index)
                 sol_path = self.get_solution_path(root_dir, tracking_weight,
@@ -550,6 +552,9 @@ class MotionTrackingWalking(MocoPaperResult):
                 self.tracking_weights[-1], 
                 self.effort_weights[-1])
 
+
+        iterate = zip(self.tracking_weights, self.effort_weights, 
+                self.cmap_indices)
         ref_files = list()
         ref_files.append('tracking_walking_tracked_states.sto')
         for tracking_weight, effort_weight, cmap_index in iterate:

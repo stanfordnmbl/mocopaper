@@ -16,8 +16,6 @@ class MotionTrackingWalking(MocoPaperResult):
         self.initial_time = 0.81
         self.half_time = 1.385
         self.final_time = 1.96
-        self.grf_index = [1620, 3921]
-        self.coord_index = [81, 197]
         self.mesh_interval = 0.035
         self.inverse_solution_relpath = \
             'results/motion_tracking_walking_inverse_solution.sto'
@@ -414,28 +412,34 @@ class MotionTrackingWalking(MocoPaperResult):
         # experimental ground reactions
         grf_table = self.load_table(os.path.join(root_dir,
                 'resources', 'Rajagopal2016', 'grf_walk.mot'))
-        time_grfs = grf_table['time'][self.grf_index[0]:self.grf_index[1]]
+        grf_start = np.argmin(abs(grf_table['time']-self.initial_time))
+        grf_end = np.argmin(abs(grf_table['time']-self.final_time))
+
+        time_grfs = grf_table['time'][grf_start:grf_end]
         pgc_grfs = np.linspace(0, 100, len(time_grfs))
         ax_grf_x.plot(pgc_grfs, 
-            grf_table['ground_force_l_vx'][self.grf_index[0]:self.grf_index[1]]/BW, 
+            grf_table['ground_force_l_vx'][grf_start:grf_end]/BW, 
             color='black', lw=lw+1.0)
         ax_grf_y.plot(pgc_grfs, 
-            grf_table['ground_force_l_vy'][self.grf_index[0]:self.grf_index[1]]/BW, 
+            grf_table['ground_force_l_vy'][grf_start:grf_end]/BW, 
             color='black', lw=lw+1.0)
 
         # experimental coordinates
         coordinates = self.load_table(os.path.join(root_dir, 'resources', 
                 'Rajagopal2016', 'coordinates.mot'))
-        time_coords = coordinates['time'][self.coord_index[0]:self.coord_index[1]]
+        coords_start = np.argmin(abs(coordinates['time']-self.initial_time))
+        coords_end = np.argmin(abs(coordinates['time']-self.final_time))
+
+        time_coords = coordinates['time'][coords_start:coords_end]
         pgc_coords = np.linspace(0, 100, len(time_coords))
         ax_hip.plot(pgc_coords, 
-            coordinates['hip_flexion_l'][self.coord_index[0]:self.coord_index[1]], 
+            coordinates['hip_flexion_l'][coords_start:coords_end], 
             color='black', lw=lw+1.0)
         ax_knee.plot(pgc_coords, 
-            coordinates['knee_angle_l'][self.coord_index[0]:self.coord_index[1]], 
+            coordinates['knee_angle_l'][coords_start:coords_end], 
             color='black', lw=lw+1.0)
         ax_ankle.plot(pgc_coords, 
-            coordinates['ankle_angle_l'][self.coord_index[0]:self.coord_index[1]], 
+            coordinates['ankle_angle_l'][coords_start:coords_end], 
             color='black', lw=lw+1.0)
 
         # simulation results

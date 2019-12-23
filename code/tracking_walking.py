@@ -27,22 +27,25 @@ class MotionTrackingWalking(MocoPaperResult):
         self.cmap_indices = [0.2, 0.5, 0.9]
 
     def create_model_processor(self, root_dir, for_inverse=False):
-
+        
         model = osim.Model()
         if for_inverse:
             model = osim.Model(os.path.join(root_dir,
                 'resources/Rajagopal2016/'
-                'subject_walk_armless_lumbar_80musc.osim'))
+                'subject_walk_armless_80musc.osim'))
         else:
             model = osim.Model(os.path.join(root_dir,
                 'resources/Rajagopal2016/'
-                'subject_walk_armless_contact_bounded_lumbar_80musc.osim'))
+                'subject_walk_armless_contact_bounded_80musc.osim'))
+
 
         def add_reserve(model, coord, optimal_force, max_control):
             actu = osim.ActivationCoordinateActuator()
             actu.set_coordinate(coord)
             if coord.startswith('pelvis'):
                 prefix = 'residual_'
+            elif coord.startswith('lumbar'):
+                prefix = 'torque_'
             else:
                 prefix = 'reserve_'
             actu.setName(prefix + coord)
@@ -51,9 +54,9 @@ class MotionTrackingWalking(MocoPaperResult):
             actu.setMaxControl(max_control)
             model.addForce(actu)
         reserves_max = 250 if for_inverse else 1
-        add_reserve(model, 'lumbar_extension', 1, reserves_max)
-        add_reserve(model, 'lumbar_bending', 1, reserves_max)
-        add_reserve(model, 'lumbar_rotation', 1, reserves_max)
+        add_reserve(model, 'lumbar_extension', 1, 50)
+        add_reserve(model, 'lumbar_bending', 1, 50)
+        add_reserve(model, 'lumbar_rotation', 1, 50)
         add_reserve(model, 'pelvis_tilt', 1, reserves_max)
         add_reserve(model, 'pelvis_list', 1, reserves_max)
         add_reserve(model, 'pelvis_rotation', 1, reserves_max)
@@ -82,7 +85,14 @@ class MotionTrackingWalking(MocoPaperResult):
                     'resources/Rajagopal2016/grf_walk.xml')
             modelProcessor.append(osim.ModOpAddExternalLoads(ext_loads_xml))
 
-        return modelProcessor
+        model = modelProcessor.process()
+        muscles = model.updMuscles()
+        for imusc in np.arange(muscles.getSize()):
+            muscle = muscles.get(int(imusc))
+            if 'gas' in muscle.getName() or 'soleus' in muscle.getName():
+                muscle.set_ignore_tendon_compliance(False)
+
+        return osim.ModelProcessor(model)
 
     def get_solution_path(self, root_dir, tracking_weight, effort_weight):
         trackingWeight = str(tracking_weight).replace('.','_')
@@ -163,22 +173,40 @@ class MotionTrackingWalking(MocoPaperResult):
         track = osim.MocoTrack()
         track.setName('tracking_walking')
         track.setModel(modelProcessor);
-        tableProcessor = osim.TableProcessor(os.path.join(root_dir,
-                'resources/Rajagopal2016/coordinates.mot'))
-        tableProcessor.append(osim.TabOpLowPassFilter(6))
-        tableProcessor.append(osim.TabOpUseAbsoluteStateNames())
-        track.setStatesReference(tableProcessor)
-        track.set_allow_unused_references(True);
-        track.set_track_reference_position_derivatives(True);
-        # track.set_scale_state_weights_with_range(True);
-        if previous_solution.empty():
-            track.set_apply_tracked_states_to_guess(True);
+        
+        if self.coordinate_tracking:
+            tableProcessor = osim.TableProcessor(os.path.join(root_dir,
+                    'resources/Rajagopal2016/coordinates.mot'))
+            tableProcessor.append(osim.TabOpLowPassFilter(6))
+            tableProcessor.append(osim.TabOpUseAbsoluteStateNames())
+            track.setStatesReference(tableProcessor)
+            if previous_solution.empty():
+                track.set_apply_tracked_states_to_guess(True)
+            # track.set_scale_state_weights_with_range(True);
+        else:
+            track.setMarkersReferenceFromTRC(os.path.join(root_dir,
+                    'resources/Rajagopal2016/markers.trc'))
+            iktool = osim.InverseKinematicsTool(os.path.join(root_dir,
+                    'resources/Rajagopal2016/ik_setup_walk.xml'))
+            iktasks = iktool.getIKTaskSet()
+            markerWeights = osim.MocoWeightSet()
+            for marker in model.getComponentsList():
+                if not type(marker) is osim.Marker: continue
+                for i in np.arange(iktasks.getSize()):
+                    iktask = iktasks.get(int(i))
+                    if iktask.getName() == marker.getName():
+                        weight = osim.MocoWeight(marker.getAbsolutePathString(), 
+                            iktask.getWeight())
+                        markerWeights.cloneAndAppend(weight)
+
+        track.set_allow_unused_references(True)
+        track.set_track_reference_position_derivatives(True)
         track.set_states_global_tracking_weight(
                 tracking_weight / (2 * model.getNumCoordinates()))
-        track.set_control_effort_weight(20 * effort_weight / numForces);
-        track.set_initial_time(self.initial_time);
-        track.set_final_time(self.half_time);
-        track.set_mesh_interval(self.mesh_interval);
+        track.set_control_effort_weight(20 * effort_weight / numForces)
+        track.set_initial_time(self.initial_time)
+        track.set_final_time(self.half_time)
+        track.set_mesh_interval(self.mesh_interval)
 
         # Customize the base tracking problem
         # -----------------------------------
@@ -202,18 +230,23 @@ class MotionTrackingWalking(MocoPaperResult):
         speedGoal.set_desired_average_speed(1.235)
         problem.addGoal(speedGoal)
 
-        distanceConstraint = osim.MocoMinimumDistanceConstraint()
-        distanceConstraint.setName('distance_constraint')
-        distance = 0.15
-        distanceConstraint.addFramePair(osim.MocoMinimumDistanceConstraintPair(
-            '/bodyset/calcn_l', '/bodyset/calcn_r', distance))
-        distanceConstraint.addFramePair(osim.MocoMinimumDistanceConstraintPair(
-            '/bodyset/toes_l', '/bodyset/toes_r', distance))
-        distanceConstraint.addFramePair(osim.MocoMinimumDistanceConstraintPair(
-            '/bodyset/calcn_l', '/bodyset/toes_r', distance))
-        distanceConstraint.addFramePair(osim.MocoMinimumDistanceConstraintPair(
-            '/bodyset/toes_l', '/bodyset/calcn_r', distance))
-        problem.addPathConstraint(distanceConstraint)
+        if self.coordinate_tracking:
+            distanceConstraint = osim.MocoMinimumDistanceConstraint()
+            distanceConstraint.setName('distance_constraint')
+            distance = 0.15
+            distanceConstraint.addFramePair(
+                    osim.MocoMinimumDistanceConstraintPair(
+                    '/bodyset/calcn_l', '/bodyset/calcn_r', distance))
+            distanceConstraint.addFramePair(
+                    osim.MocoMinimumDistanceConstraintPair(
+                    '/bodyset/toes_l', '/bodyset/toes_r', distance))
+            distanceConstraint.addFramePair(
+                    osim.MocoMinimumDistanceConstraintPair(
+                    '/bodyset/calcn_l', '/bodyset/toes_r', distance))
+            distanceConstraint.addFramePair(
+                    osim.MocoMinimumDistanceConstraintPair(
+                    '/bodyset/toes_l', '/bodyset/calcn_r', distance))
+            problem.addPathConstraint(distanceConstraint)
 
         # Symmetry contraints
         # -------------------
@@ -352,10 +385,18 @@ class MotionTrackingWalking(MocoPaperResult):
 
         return solution
 
+    def parse_args(self, args):
+        self.coordinate_tracking = False
+        if len(args) == 0: return
+        print('Received arguments {}'.format(args))
+        if 'coordinate-tracking' in args:
+            self.coordinate_tracking = True
+
     def generate_results(self, root_dir, args):
+        self.parse_args(args)
 
         # Run inverse problem to generate first initial guess.
-        self.run_inverse_problem(root_dir)
+        # self.run_inverse_problem(root_dir)
 
         # Run tracking problem, sweeping across different effort weights.
         solution = osim.MocoTrajectory()
@@ -366,6 +407,7 @@ class MotionTrackingWalking(MocoPaperResult):
                     effort_weight=effort_weight)
 
     def report_results(self, root_dir, args):
+        self.parse_args(args)
 
         modelProcessor = self.create_model_processor(root_dir)
         model = modelProcessor.process()

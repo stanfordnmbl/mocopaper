@@ -2,6 +2,7 @@ import os
 import opensim as osim
 
 from analytic import Analytic
+from linear_tangent_steering import LinearTangentSteering
 from suspended_mass import SuspendedMass
 from tracking_walking import MotionTrackingWalking
 from squat_to_stand import SquatToStand
@@ -18,6 +19,7 @@ if __name__ == "__main__":
 
     results = {
         'analytic': Analytic(),
+        'linear-tangent-steering': LinearTangentSteering(),
         'suspended-mass': SuspendedMass(),
         'tracking-walking': MotionTrackingWalking(),
         # 'predicting-walking': MotionPredictionAndAssistanceWalking(),

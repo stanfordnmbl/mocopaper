@@ -148,10 +148,10 @@ class MotionTrackingWalking(MocoPaperResult):
         tableProcessor.append(osim.TabOpLowPassFilter(6))
         tableProcessor.append(osim.TabOpUseAbsoluteStateNames())
         inverse.setKinematics(tableProcessor)
-        inverse.set_kinematics_allow_extra_columns(True);
-        inverse.set_initial_time(self.initial_time);
-        inverse.set_final_time(self.half_time);
-        inverse.set_mesh_interval(self.mesh_interval);
+        inverse.set_kinematics_allow_extra_columns(True)
+        inverse.set_initial_time(self.initial_time)
+        inverse.set_final_time(self.half_time)
+        inverse.set_mesh_interval(self.mesh_interval)
 
         solution = inverse.solve()
         solution.getMocoSolution().write(
@@ -402,7 +402,7 @@ class MotionTrackingWalking(MocoPaperResult):
         self.parse_args(args)
 
         # Run inverse problem to generate first initial guess.
-        # self.run_inverse_problem(root_dir)
+        self.run_inverse_problem(root_dir)
 
         # Run tracking problem, sweeping across different effort weights.
         solution = osim.MocoTrajectory()

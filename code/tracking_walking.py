@@ -22,7 +22,7 @@ class MotionTrackingWalking(MocoPaperResult):
         self.tracking_solution_relpath_prefix = \
             'results/motion_tracking_walking_solution'
         self.tracking_weights = [1,  1, 0.001]
-        self.effort_weights =   [0.001, 1, 1]
+        self.effort_weights =   10 * [0.001, 1, 1]
         self.cmap = 'nipy_spectral'
         self.cmap_indices = [0.2, 0.5, 0.9]
 
@@ -36,8 +36,7 @@ class MotionTrackingWalking(MocoPaperResult):
         else:
             model = osim.Model(os.path.join(root_dir,
                 'resources/Rajagopal2016/'
-                'subject_walk_armless_contact_bounded_80musc.osim'))
-
+                'subject_walk_armless_contact_bounded_limited_markers_80musc.osim'))
 
         def add_reserve(model, coord, optimal_force, max_control):
             actu = osim.ActivationCoordinateActuator()
@@ -86,13 +85,18 @@ class MotionTrackingWalking(MocoPaperResult):
             modelProcessor.append(osim.ModOpAddExternalLoads(ext_loads_xml))
 
         model = modelProcessor.process()
+        model.initSystem()
         muscles = model.updMuscles()
         for imusc in np.arange(muscles.getSize()):
             muscle = muscles.get(int(imusc))
             if 'gas' in muscle.getName() or 'soleus' in muscle.getName():
                 muscle.set_ignore_tendon_compliance(False)
 
-        return osim.ModelProcessor(model)
+        modelProcessorTendonCompliance = osim.ModelProcessor(model)
+        modelProcessorTendonCompliance.append(
+                osim.ModOpUseImplicitTendonComplianceDynamicsDGF())
+
+        return modelProcessorTendonCompliance
 
     def get_solution_path(self, root_dir, tracking_weight, effort_weight):
         trackingWeight = str(tracking_weight).replace('.','_')
@@ -182,7 +186,7 @@ class MotionTrackingWalking(MocoPaperResult):
             track.setStatesReference(tableProcessor)
             if previous_solution.empty():
                 track.set_apply_tracked_states_to_guess(True)
-            # track.set_scale_state_weights_with_range(True);
+                # track.set_scale_state_weights_with_range(True);
         else:
             track.setMarkersReferenceFromTRC(os.path.join(root_dir,
                     'resources/Rajagopal2016/markers.trc'))
@@ -203,7 +207,9 @@ class MotionTrackingWalking(MocoPaperResult):
         track.set_track_reference_position_derivatives(True)
         track.set_states_global_tracking_weight(
                 tracking_weight / (2 * model.getNumCoordinates()))
-        track.set_control_effort_weight(20 * effort_weight / numForces)
+        track.set_markers_global_tracking_weight(
+                tracking_weight / (2 * model.getNumMarkers()))
+        track.set_control_effort_weight(effort_weight / numForces)
         track.set_initial_time(self.initial_time)
         track.set_final_time(self.half_time)
         track.set_mesh_interval(self.mesh_interval)
@@ -231,21 +237,21 @@ class MotionTrackingWalking(MocoPaperResult):
         problem.addGoal(speedGoal)
 
         if self.coordinate_tracking:
-            distanceConstraint = osim.MocoMinimumDistanceConstraint()
+            distanceConstraint = osim.MocoFrameDistanceConstraint()
             distanceConstraint.setName('distance_constraint')
             distance = 0.15
             distanceConstraint.addFramePair(
-                    osim.MocoMinimumDistanceConstraintPair(
-                    '/bodyset/calcn_l', '/bodyset/calcn_r', distance))
+                    osim.MocoFrameDistanceConstraintPair(
+                    '/bodyset/calcn_l', '/bodyset/calcn_r', distance, np.inf))
             distanceConstraint.addFramePair(
-                    osim.MocoMinimumDistanceConstraintPair(
-                    '/bodyset/toes_l', '/bodyset/toes_r', distance))
+                    osim.MocoFrameDistanceConstraintPair(
+                    '/bodyset/toes_l', '/bodyset/toes_r', distance, np.inf))
             distanceConstraint.addFramePair(
-                    osim.MocoMinimumDistanceConstraintPair(
-                    '/bodyset/calcn_l', '/bodyset/toes_r', distance))
+                    osim.MocoFrameDistanceConstraintPair(
+                    '/bodyset/calcn_l', '/bodyset/toes_r', distance, np.inf))
             distanceConstraint.addFramePair(
-                    osim.MocoMinimumDistanceConstraintPair(
-                    '/bodyset/toes_l', '/bodyset/calcn_r', distance))
+                    osim.MocoFrameDistanceConstraintPair(
+                    '/bodyset/toes_l', '/bodyset/calcn_r', distance, np.inf))
             problem.addPathConstraint(distanceConstraint)
 
         # Symmetry contraints

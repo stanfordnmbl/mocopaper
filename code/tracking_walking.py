@@ -429,14 +429,14 @@ class MotionTrackingWalking(MocoPaperResult):
                 self.cmap_indices)
         emg = self.load_electromyography(root_dir)
 
-        fig = plt.figure(figsize=(7, 7))
-        gs = gridspec.GridSpec(9, 9)
-        ax_time = fig.add_subplot(gs[0:3,0:3])
-        ax_grf_x = fig.add_subplot(gs[3:6,0:3])
-        ax_grf_y = fig.add_subplot(gs[6:9,0:3])
-        ax_hip = fig.add_subplot(gs[0:3,3:6])
-        ax_knee = fig.add_subplot(gs[3:6,3:6])
-        ax_ankle = fig.add_subplot(gs[6:9,3:6])
+        fig = plt.figure(figsize=(7.5, 7))
+        gs = gridspec.GridSpec(9, 3)
+        ax_time = fig.add_subplot(gs[0:3, 0])
+        ax_grf_x = fig.add_subplot(gs[3:6, 0])
+        ax_grf_y = fig.add_subplot(gs[6:9, 0])
+        ax_hip = fig.add_subplot(gs[0:3, 1])
+        ax_knee = fig.add_subplot(gs[3:6, 1])
+        ax_ankle = fig.add_subplot(gs[6:9, 1])
         ax_list = list()
         ax_list.append(ax_grf_x)
         ax_list.append(ax_grf_y)
@@ -444,15 +444,15 @@ class MotionTrackingWalking(MocoPaperResult):
         ax_list.append(ax_knee)
         ax_list.append(ax_ankle)
         muscles = [
-            (fig.add_subplot(gs[0,6:9]), 'glmax2', 'glut. max.', 'GMAX'),
-            (fig.add_subplot(gs[1,6:9]), 'psoas', 'psoas', 'PSOAS'),
-            (fig.add_subplot(gs[2,6:9]), 'semimem', 'semimem.', 'MH'),
-            (fig.add_subplot(gs[3,6:9]), 'recfem', 'rec. fem.', 'RF'),
-            (fig.add_subplot(gs[4,6:9]), 'bfsh', 'bi. fem. sh.', 'BF'),
-            (fig.add_subplot(gs[5,6:9]), 'vaslat', 'vas. lat.', 'VL'),
-            (fig.add_subplot(gs[6,6:9]), 'gasmed', 'med. gas.', 'GAS'),
-            (fig.add_subplot(gs[7,6:9]), 'soleus', 'soleus', 'SOL'),
-            (fig.add_subplot(gs[8,6:9]), 'tibant', 'tib. ant.', 'TA'),
+            (fig.add_subplot(gs[0, 2]), 'glmax2', 'gluteus maximus', 'GMAX'),
+            (fig.add_subplot(gs[1, 2]), 'psoas', 'psoas', 'PSOAS'),
+            (fig.add_subplot(gs[2, 2]), 'semimem', 'semimembranosus', 'MH'),
+            (fig.add_subplot(gs[3, 2]), 'recfem', 'rectus femoris', 'RF'),
+            (fig.add_subplot(gs[4, 2]), 'bfsh', 'biceps femoris short head', 'BF'),
+            (fig.add_subplot(gs[5, 2]), 'vaslat', 'vastus lateralis', 'VL'),
+            (fig.add_subplot(gs[6, 2]), 'gasmed', 'medial gastrocnemius', 'GAS'),
+            (fig.add_subplot(gs[7, 2]), 'soleus', 'soleus', 'SOL'),
+            (fig.add_subplot(gs[8, 2]), 'tibant', 'tibialis anterior', 'TA'),
         ]
         cmap = cm.get_cmap(self.cmap)
         title_fs = 10
@@ -504,11 +504,7 @@ class MotionTrackingWalking(MocoPaperResult):
             ax.set_yticks([0, 1])
             ax.set_xlim(0, 100)
             ax.set_xticks([0, 50, 100])
-            ax.set_ylabel(muscle[2])
             utilities.publication_spines(ax)
-            if im == 0: 
-                ax.set_title('ACTIVATIONS', weight='bold', size=title_fs)
-            if im == 8: ax.set_xlabel('gait cycle (%)')
 
         # simulation results
         for i, (tracking_weight, effort_weight, cmap_index) in enumerate(iterate):
@@ -531,7 +527,7 @@ class MotionTrackingWalking(MocoPaperResult):
             ax_time.set_xticks([0, 1, 2, 3])
             ax_time.set_xticklabels(
                     ['data', 'track', 'track\n + \neffort', 'effort'])
-            ax_time.set_title('STRIDE TIME', weight='bold', size=title_fs)
+            ax_time.set_title('STRIDE TIME\n', weight='bold', size=title_fs)
             ax_time.set_aspect(1.0/ax_time.get_data_ratio()*0.8, anchor='N')
             utilities.publication_spines(ax_time)
 
@@ -543,11 +539,12 @@ class MotionTrackingWalking(MocoPaperResult):
             ax_grf_x.set_yticks([-0.4, -0.2, 0, 0.2, 0.4])
             ax_grf_x.set_title('GROUND REACTIONS', weight='bold', 
                     size=title_fs)
+            ax_grf_x.set_xticklabels([])
 
             ax_grf_y.plot(pgc, grf_table['ground_force_l_vy']/BW, color=color,
                 lw=lw)
             ax_grf_y.set_ylabel('vertical force (BW)')
-            ax_grf_y.set_xlabel('gait cycle (%)')
+            ax_grf_y.set_xlabel('time (% gait cycle)')
             ax_grf_y.set_ylim(0, 1.5)
             ax_grf_y.set_yticks([0, 0.5, 1, 1.5])
 
@@ -558,24 +555,26 @@ class MotionTrackingWalking(MocoPaperResult):
             ax_hip.set_ylabel('hip flexion (degrees)')
             ax_hip.set_ylim(-20, 50)
             # ax_hip.set_yticks([-0.2, 0, 0.2, 0.4, 0.6, 0.8])
-            ax_hip.set_title('KINEMATICS', weight='bold', size=title_fs)
+            ax_hip.set_xticklabels([])
+            ax_hip.set_title('KINEMATICS\n', weight='bold', size=title_fs)
             ax_knee.plot(pgc, rad2deg*full_traj.getStateMat(
                     '/jointset/walker_knee_l/knee_angle_l/value'), color=color,
                     lw=lw)
             ax_knee.set_ylabel('knee flexion (degrees)')
             ax_knee.set_ylim(0, 80)
             # ax_knee.set_yticks([0, 0.5, 1, 1.5])
+            ax_knee.set_xticklabels([])
             ax_ankle.plot(pgc, rad2deg*full_traj.getStateMat(
                     '/jointset/ankle_l/ankle_angle_l/value'), color=color, 
                     lw=lw)
             ax_ankle.set_ylabel('ankle dorsiflexion (degrees)')
-            ax_ankle.set_xlabel('gait cycle (%)')
-            ax_ankle.set_ylim(-30, 20)
+            ax_ankle.set_xlabel('time (% gait cycle)')
+            # ax_ankle.set_ylim(-30, 20)
             # ax_ankle.set_yticks([-0.5, -0.3, -0.1, 0, 0.1, 0.3])
 
             for ax in ax_list:
                 utilities.publication_spines(ax)
-                ax.set_xlim(0,100)
+                ax.set_xlim(0, 100)
                 ax.set_xticks([0, 50, 100])
 
             # muscle activations
@@ -584,18 +583,27 @@ class MotionTrackingWalking(MocoPaperResult):
                 ax = muscle[0]
                 ax.plot(pgc, full_traj.getStateMat(activation_path),
                         color=color, lw=lw)
-                ax.set_ylim(0,1)
-                ax.set_yticks([0,1])
-                ax.set_xlim(0,100)
+                ax.set_ylim(0, 1)
+                ax.set_yticks([0, 1])
+                ax.set_xlim(0, 100)
                 ax.set_xticks([0, 50, 100])
-                ax.set_ylabel(muscle[2])
+                if im < 8:
+                    ax.set_xticklabels([])
+                ax.text(0.5, 1.2, muscle[2],
+                       horizontalalignment='center',
+                       verticalalignment='top',
+                       transform=ax.transAxes)
                 utilities.publication_spines(ax)
-                if im == 0: 
-                    ax.set_title('ACTIVATIONS', weight='bold', size=title_fs)
-                if im == 8: ax.set_xlabel('gait cycle (%)')
+                if im == 0:
+                    ax.set_title('ACTIVATIONS\n', weight='bold', size=title_fs)
+                if im == 8: ax.set_xlabel('time (% gait cycle)')
 
-        fig.tight_layout()
-        fig.savefig(os.path.join(root_dir, 
+
+        # fig.tight_layout()
+        fig.subplots_adjust(left=0.07, right=0.97, top=0.94, bottom=0.065,
+                            hspace=0.6,
+                            wspace=0.5)
+        fig.savefig(os.path.join(root_dir,
                 'figures/motion_tracking_walking.png'), dpi=600)
 
         with open(os.path.join(root_dir, 'results/'

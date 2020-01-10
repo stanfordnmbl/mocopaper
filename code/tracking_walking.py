@@ -113,8 +113,8 @@ class MotionTrackingWalking(MocoPaperResult):
         return modelProcessorTendonCompliance
 
     def get_solution_path(self, root_dir, tracking_weight, effort_weight):
-        trackingWeight = str(tracking_weight).replace('.','_')
-        effortWeight = str(effort_weight).replace('.','_')
+        trackingWeight = str(tracking_weight).replace('.', '_')
+        effortWeight = str(effort_weight).replace('.', '_')
         return os.path.join(root_dir, 
                     f'{self.tracking_solution_relpath_prefix}'
                     f'_trackingWeight{trackingWeight}'
@@ -122,8 +122,8 @@ class MotionTrackingWalking(MocoPaperResult):
 
     def get_solution_path_fullcycle(self, root_dir, tracking_weight,
             effort_weight):
-        trackingWeight = str(tracking_weight).replace('.','_')
-        effortWeight = str(effort_weight).replace('.','_')
+        trackingWeight = str(tracking_weight).replace('.', '_')
+        effortWeight = str(effort_weight).replace('.', '_')
         return os.path.join(root_dir, 
                     f'{self.tracking_solution_relpath_prefix}'
                     f'_trackingWeight{trackingWeight}'
@@ -131,8 +131,8 @@ class MotionTrackingWalking(MocoPaperResult):
 
     def get_solution_path_grfs(self, root_dir, tracking_weight,
             effort_weight):
-        trackingWeight = str(tracking_weight).replace('.','_')
-        effortWeight = str(effort_weight).replace('.','_')
+        trackingWeight = str(tracking_weight).replace('.', '_')
+        effortWeight = str(effort_weight).replace('.', '_')
         return os.path.join(root_dir, 
                     f'{self.tracking_solution_relpath_prefix}'
                     f'_trackingWeight{trackingWeight}'
@@ -147,31 +147,31 @@ class MotionTrackingWalking(MocoPaperResult):
                 else:
                     break
         return np.genfromtxt(table_path, names=True, delimiter='\t',
-                                 skip_header=num_header_rows)
+                             skip_header=num_header_rows)
 
     def run_inverse_problem(self, root_dir):
 
-        modelProcessor = self.create_model_processor(root_dir, 
-            for_inverse=True)
+        modelProcessor = self.create_model_processor(root_dir,
+                                                     for_inverse=True)
 
         inverse = osim.MocoInverse()
-        inverse.setModel(modelProcessor);
+        inverse.setModel(modelProcessor)
         tableProcessor = osim.TableProcessor(os.path.join(root_dir,
                 'resources/Rajagopal2016/coordinates.mot'))
         tableProcessor.append(osim.TabOpLowPassFilter(6))
         tableProcessor.append(osim.TabOpUseAbsoluteStateNames())
         inverse.setKinematics(tableProcessor)
-        inverse.set_kinematics_allow_extra_columns(True);
-        inverse.set_initial_time(self.initial_time);
-        inverse.set_final_time(self.half_time);
-        inverse.set_mesh_interval(self.mesh_interval);
+        inverse.set_kinematics_allow_extra_columns(True)
+        inverse.set_initial_time(self.initial_time)
+        inverse.set_final_time(self.half_time)
+        inverse.set_mesh_interval(self.mesh_interval)
 
         solution = inverse.solve()
         solution.getMocoSolution().write(
             os.path.join(root_dir, self.inverse_solution_relpath))
 
-    def run_tracking_problem(self, root_dir, previous_solution, 
-            tracking_weight=1, effort_weight=1):
+    def run_tracking_problem(self, root_dir, previous_solution,
+                             tracking_weight=1, effort_weight=1):
 
         modelProcessor = self.create_model_processor(root_dir)
         model = modelProcessor.process()
@@ -181,15 +181,15 @@ class MotionTrackingWalking(MocoPaperResult):
         # normalize the control effort cost.
         numForces = 0
         for actu in model.getComponentsList():
-            if (actu.getConcreteClassName().endswith('Muscle') or 
-                actu.getConcreteClassName().endswith('Actuator')):
+            if (actu.getConcreteClassName().endswith('Muscle') or
+                    actu.getConcreteClassName().endswith('Actuator')):
                 numForces += 1
 
         # Construct the base tracking problem
         # -----------------------------------
         track = osim.MocoTrack()
         track.setName('tracking_walking')
-        track.setModel(modelProcessor);
+        track.setModel(modelProcessor)
         
         if self.coordinate_tracking:
             tableProcessor = osim.TableProcessor(os.path.join(root_dir,
@@ -219,7 +219,6 @@ class MotionTrackingWalking(MocoPaperResult):
                         weight = osim.MocoWeight(iktask.getName(), 
                             iktask.getWeight())
                         markerWeights.cloneAndAppend(weight)
-
             track.set_markers_weight_set(markerWeights)
 
         track.set_allow_unused_references(True)
@@ -251,6 +250,8 @@ class MotionTrackingWalking(MocoPaperResult):
         speedGoal.set_desired_average_speed(1.235)
         problem.addGoal(speedGoal)
 
+        # MocoFrameDistanceConstraint
+        # ---------------------------
         if self.coordinate_tracking:
             distanceConstraint = osim.MocoFrameDistanceConstraint()
             distanceConstraint.setName('distance_constraint')
@@ -269,8 +270,8 @@ class MotionTrackingWalking(MocoPaperResult):
                     '/bodyset/toes_l', '/bodyset/calcn_r', distance, np.inf))
             problem.addPathConstraint(distanceConstraint)
 
-        # Symmetry contraints
-        # -------------------
+        # Symmetry constraints
+        # --------------------
         statesRef = osim.TimeSeriesTable('tracking_walking_tracked_states.sto')
         initIndex = statesRef.getNearestRowIndexForTime(self.initial_time)
         symmetry = osim.MocoPeriodicityGoal('symmetry')
@@ -368,8 +369,8 @@ class MotionTrackingWalking(MocoPaperResult):
         # Solve and print solution.
         # -------------------------
         solution = study.solve()
-        trackingWeight = str(tracking_weight).replace('.','_')
-        effortWeight = str(effort_weight).replace('.','_')
+        trackingWeight = str(tracking_weight).replace('.', '_')
+        effortWeight = str(effort_weight).replace('.', '_')
         solution.write(os.path.join(root_dir, 
             f'{self.tracking_solution_relpath_prefix}'
             f'_trackingWeight{trackingWeight}_effortWeight{effortWeight}.sto'))
@@ -608,7 +609,7 @@ class MotionTrackingWalking(MocoPaperResult):
 
         fig.tight_layout()
         fig.savefig(os.path.join(root_dir, 
-                'figures/motion_tracking_walking.png'))
+                'figures/motion_tracking_walking.png'), dpi=600)
 
         with open(os.path.join(root_dir, 'results/'
                 'motion_tracking_walking_durations.txt'), 'w') as f:
@@ -618,10 +619,11 @@ class MotionTrackingWalking(MocoPaperResult):
                 print('cmap_index', cmap_index)
                 sol_path = self.get_solution_path(root_dir, tracking_weight,
                         effort_weight)
-                trackingWeight = str(tracking_weight).replace('.','_')
-                effortWeight = str(effort_weight).replace('.','_')
+                trackingWeight = str(tracking_weight).replace('.', '_')
+                effortWeight = str(effort_weight).replace('.', '_')
                 sol_table = osim.TimeSeriesTable(sol_path)
                 duration = sol_table.getTableMetaDataString('solver_duration')
+                # Convert duration from seconds to hours.
                 duration = float(duration) / 60.0 / 60.0
                 print(f'duration (track={trackingWeight}, '
                       f'effort={effortWeight}): ', duration)              

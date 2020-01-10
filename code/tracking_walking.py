@@ -206,8 +206,6 @@ class MotionTrackingWalking(MocoPaperResult):
                         weight = osim.MocoWeight(iktask.getName(), 
                             iktask.getWeight())
                         markerWeights.cloneAndAppend(weight)
-        track.set_marker_weight_set(markerWeights)
-
             track.set_markers_weight_set(markerWeights)
 
         track.set_allow_unused_references(True)

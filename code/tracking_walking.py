@@ -13,6 +13,7 @@ import utilities
 
 class MotionTrackingWalking(MocoPaperResult):
     def __init__(self):
+        super(MotionTrackingWalking, self).__init__()
         self.initial_time = 0.81
         self.half_time = 1.385
         self.final_time = 1.96
@@ -134,7 +135,6 @@ class MotionTrackingWalking(MocoPaperResult):
                     break
         return np.genfromtxt(table_path, names=True, delimiter='\t',
                                  skip_header=num_header_rows)
-
 
     def run_inverse_problem(self, root_dir):
 
@@ -389,7 +389,7 @@ class MotionTrackingWalking(MocoPaperResult):
         # solution = osim.MocoTrajectory(
         #     self.get_solution_path_fullcycle(root_dir, tracking_weight,
         #           effort_weight))
-        # study.visualize(solution)
+        # study.visualize(fullTraj)
 
         return solution
 
@@ -426,6 +426,7 @@ class MotionTrackingWalking(MocoPaperResult):
 
         iterate = zip(self.tracking_weights, self.effort_weights, 
                 self.cmap_indices)
+        emg = self.load_electromyography(root_dir)
 
         fig = plt.figure(figsize=(7, 7))
         gs = gridspec.GridSpec(9, 9)
@@ -491,6 +492,22 @@ class MotionTrackingWalking(MocoPaperResult):
         ax_ankle.plot(pgc_coords, 
             coordinates['ankle_angle_l'][coords_start:coords_end], 
             color='black', lw=lw+1.0)
+
+        # electromyography data
+        for im, muscle in enumerate(muscles):
+            ax = muscle[0]
+            if 'PSOAS' not in muscle:
+                self.plot(ax, emg['time'], emg[muscle[3]], shift=False, 
+                    fill=True, color='lightgray', label='electromyography')
+            ax.set_ylim(0, 1)
+            ax.set_yticks([0, 1])
+            ax.set_xlim(0, 100)
+            ax.set_xticks([0, 50, 100])
+            ax.set_ylabel(muscle[2])
+            utilities.publication_spines(ax)
+            if im == 0: 
+                ax.set_title('ACTIVATIONS', weight='bold', size=title_fs)
+            if im == 8: ax.set_xlabel('gait cycle (%)')
 
         # simulation results
         for i, (tracking_weight, effort_weight, cmap_index) in enumerate(iterate):

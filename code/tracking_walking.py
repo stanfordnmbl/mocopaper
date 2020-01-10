@@ -13,6 +13,7 @@ import utilities
 
 class MotionTrackingWalking(MocoPaperResult):
     def __init__(self):
+        super(MotionTrackingWalking, self).__init__()
         self.initial_time = 0.81
         self.half_time = 1.385
         self.final_time = 1.96
@@ -21,8 +22,8 @@ class MotionTrackingWalking(MocoPaperResult):
             'results/motion_tracking_walking_inverse_solution.sto'
         self.tracking_solution_relpath_prefix = \
             'results/motion_tracking_walking_solution'
-        self.tracking_weights = [1,  1, 0.001]
-        self.effort_weights =   10 * [0.001, 1, 1]
+        self.tracking_weights = [1,  0.5, 0.001]
+        self.effort_weights = [0.001, 0.5, 1]
         self.cmap = 'nipy_spectral'
         self.cmap_indices = [0.2, 0.5, 0.9]
 
@@ -36,7 +37,7 @@ class MotionTrackingWalking(MocoPaperResult):
         else:
             model = osim.Model(os.path.join(root_dir,
                 'resources/Rajagopal2016/'
-                'subject_walk_armless_contact_bounded_limited_markers_80musc.osim'))
+                'subject_walk_armless_contact_bounded_80musc.osim'))
 
         def add_reserve(model, coord, optimal_force, max_control):
             actu = osim.ActivationCoordinateActuator()
@@ -135,7 +136,6 @@ class MotionTrackingWalking(MocoPaperResult):
         return np.genfromtxt(table_path, names=True, delimiter='\t',
                              skip_header=num_header_rows)
 
-
     def run_inverse_problem(self, root_dir):
 
         modelProcessor = self.create_model_processor(root_dir,
@@ -184,12 +184,16 @@ class MotionTrackingWalking(MocoPaperResult):
             tableProcessor.append(osim.TabOpLowPassFilter(6))
             tableProcessor.append(osim.TabOpUseAbsoluteStateNames())
             track.setStatesReference(tableProcessor)
+            track.set_states_global_tracking_weight(
+                tracking_weight / (2 * model.getNumCoordinates()))
             if previous_solution.empty():
                 track.set_apply_tracked_states_to_guess(True)
                 # track.set_scale_state_weights_with_range(True);
         else:
             track.setMarkersReferenceFromTRC(os.path.join(root_dir,
                     'resources/Rajagopal2016/markers.trc'))
+            track.set_markers_global_tracking_weight(
+                tracking_weight / (2 * model.getNumMarkers()))
             iktool = osim.InverseKinematicsTool(os.path.join(root_dir,
                     'resources/Rajagopal2016/ik_setup_walk.xml'))
             iktasks = iktool.getIKTaskSet()
@@ -199,17 +203,15 @@ class MotionTrackingWalking(MocoPaperResult):
                 for i in np.arange(iktasks.getSize()):
                     iktask = iktasks.get(int(i))
                     if iktask.getName() == marker.getName():
-                        weight = osim.MocoWeight(marker.getAbsolutePathString(), 
+                        weight = osim.MocoWeight(iktask.getName(), 
                             iktask.getWeight())
                         markerWeights.cloneAndAppend(weight)
         track.set_marker_weight_set(markerWeights)
 
+            track.set_markers_weight_set(markerWeights)
+
         track.set_allow_unused_references(True)
         track.set_track_reference_position_derivatives(True)
-        track.set_states_global_tracking_weight(
-                tracking_weight / (2 * model.getNumCoordinates()))
-        track.set_markers_global_tracking_weight(
-                tracking_weight / (2 * model.getNumMarkers()))
         track.set_control_effort_weight(effort_weight / numForces)
         track.set_initial_time(self.initial_time)
         track.set_final_time(self.half_time)
@@ -390,7 +392,7 @@ class MotionTrackingWalking(MocoPaperResult):
         # solution = osim.MocoTrajectory(
         #     self.get_solution_path_fullcycle(root_dir, tracking_weight,
         #           effort_weight))
-        # study.visualize(solution)
+        # study.visualize(fullTraj)
 
         return solution
 
@@ -427,6 +429,7 @@ class MotionTrackingWalking(MocoPaperResult):
 
         iterate = zip(self.tracking_weights, self.effort_weights, 
                 self.cmap_indices)
+        emg = self.load_electromyography(root_dir)
 
         fig = plt.figure(figsize=(7, 7))
         gs = gridspec.GridSpec(9, 9)
@@ -492,6 +495,22 @@ class MotionTrackingWalking(MocoPaperResult):
         ax_ankle.plot(pgc_coords, 
             coordinates['ankle_angle_l'][coords_start:coords_end], 
             color='black', lw=lw+1.0)
+
+        # electromyography data
+        for im, muscle in enumerate(muscles):
+            ax = muscle[0]
+            if 'PSOAS' not in muscle:
+                self.plot(ax, emg['time'], emg[muscle[3]], shift=False, 
+                    fill=True, color='lightgray', label='electromyography')
+            ax.set_ylim(0, 1)
+            ax.set_yticks([0, 1])
+            ax.set_xlim(0, 100)
+            ax.set_xticks([0, 50, 100])
+            ax.set_ylabel(muscle[2])
+            utilities.publication_spines(ax)
+            if im == 0: 
+                ax.set_title('ACTIVATIONS', weight='bold', size=title_fs)
+            if im == 8: ax.set_xlabel('gait cycle (%)')
 
         # simulation results
         for i, (tracking_weight, effort_weight, cmap_index) in enumerate(iterate):

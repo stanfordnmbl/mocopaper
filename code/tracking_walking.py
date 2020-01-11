@@ -465,7 +465,7 @@ class MotionTrackingWalking(MocoPaperResult):
             (fig.add_subplot(gs[0:4, 2]), 'glmax2', 'gluteus maximus', 'GMAX'),
             (fig.add_subplot(gs[4:8, 2]), 'psoas', 'psoas', 'PSOAS'),
             # TODO: prescribed-walking uses semiten.
-            (fig.add_subplot(gs[8:12, 2]), 'semimem', 'semimembranosus', 'MH'),
+            (fig.add_subplot(gs[8:12, 2]), 'semiten', 'semitendinosus', 'MH'),
             (fig.add_subplot(gs[12:16, 2]), 'recfem', 'rectus femoris', 'RF'),
             (fig.add_subplot(gs[16:20, 2]), 'bfsh', 'biceps femoris short head', 'BF'),
             (fig.add_subplot(gs[20:24, 2]), 'vaslat', 'vastus lateralis', 'VL'),

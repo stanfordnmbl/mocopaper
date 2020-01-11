@@ -11,6 +11,8 @@ from moco_paper_result import MocoPaperResult
 
 import utilities
 
+# TODO: compute reserve RMS
+
 class MotionTrackingWalking(MocoPaperResult):
     def __init__(self):
         super(MotionTrackingWalking, self).__init__()
@@ -22,10 +24,11 @@ class MotionTrackingWalking(MocoPaperResult):
             'results/motion_tracking_walking_inverse_solution.sto'
         self.tracking_solution_relpath_prefix = \
             'results/motion_tracking_walking_solution'
-        self.tracking_weights = [1,  0.5, 0.001]
+        self.tracking_weights = [1, 0.5, 0.001]
         self.effort_weights = [0.001, 0.5, 1]
         self.cmap = 'nipy_spectral'
         self.cmap_indices = [0.2, 0.5, 0.9]
+        self.legend_entries = ['track', 'track\n+\neffort', 'effort']
 
     def create_model_processor(self, root_dir, for_inverse=False):
         
@@ -448,6 +451,7 @@ class MotionTrackingWalking(MocoPaperResult):
         muscles = [
             (fig.add_subplot(gs[0:4, 2]), 'glmax2', 'gluteus maximus', 'GMAX'),
             (fig.add_subplot(gs[4:8, 2]), 'psoas', 'psoas', 'PSOAS'),
+            # TODO: prescribed-walking uses semiten.
             (fig.add_subplot(gs[8:12, 2]), 'semimem', 'semimembranosus', 'MH'),
             (fig.add_subplot(gs[12:16, 2]), 'recfem', 'rectus femoris', 'RF'),
             (fig.add_subplot(gs[16:20, 2]), 'bfsh', 'biceps femoris short head', 'BF'),
@@ -461,7 +465,7 @@ class MotionTrackingWalking(MocoPaperResult):
         lw = 2.5
 
         # experimental stride time
-        ax_time.bar(0, self.final_time - self.initial_time, color='black')
+        # ax_time.bar(0, self.final_time - self.initial_time, color='black')
 
         # experimental ground reactions
         grf_table = self.load_table(os.path.join(root_dir,
@@ -517,22 +521,45 @@ class MotionTrackingWalking(MocoPaperResult):
             full_path = self.get_solution_path_fullcycle(root_dir, 
                     tracking_weight, effort_weight)
             full_traj = osim.MocoTrajectory(full_path)
+
+            sol_path = self.get_solution_path(root_dir, tracking_weight,
+                                              effort_weight)
+            trackingWeight = str(tracking_weight).replace('.', '_')
+            effortWeight = str(effort_weight).replace('.', '_')
+            sol_table = osim.TimeSeriesTable(sol_path)
+            if self.coordinate_tracking:
+                trackingCostStr = \
+                    sol_table.getTableMetaDataString('objective_state_tracking')
+            else:
+                trackingCostStr = \
+                    sol_table.getTableMetaDataString('objective_marker_tracking')
+            trackingCost = float(trackingCostStr) / tracking_weight
+
+            effortCostStr = \
+                sol_table.getTableMetaDataString('objective_control_effort')
+            effortCost = float(effortCostStr) / effort_weight
+
             grf_path = self.get_solution_path_grfs(root_dir, 
                     tracking_weight, effort_weight)
             grf_table = self.load_table(grf_path)
 
+
             time = full_traj.getTimeMat()
             pgc = np.linspace(0, 100, len(time))
 
-            # stride time
-            ax_time.bar(i+1, time[-1]-time[0], color=color)
-            ax_time.set_ylim(0, 1.2)
-            ax_time.set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2])
-            ax_time.set_ylabel('time (s)')
-            ax_time.set_xticks([0, 1, 2, 3])
-            ax_time.set_xticklabels(
-                    ['data', 'track', 'track\n + \neffort', 'effort'])
-            ax_time.set_title('STRIDE TIME\n', weight='bold', size=title_fs)
+            # pareto front
+            ax_time.plot(effortCost, trackingCost, color=color,
+                         marker='o')
+            ax_time.text(effortCost, trackingCost, self.legend_entries[i])
+            # ax_time.bar(i+1, time[-1]-time[0], color=color)
+            # ax_time.set_ylim(0, 1.2)
+            # ax_time.set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2])
+            ax_time.set_ylabel('tracking error')
+            ax_time.set_xlabel('control effort')
+            # ax_time.set_xticks([0, 1, 2, 3])
+            # ax_time.set_xticklabels(
+            #         ['data', 'track', 'track\n + \neffort', 'effort'])
+            ax_time.set_title('COSTS\n', weight='bold', size=title_fs)
             ax_time.set_aspect(1.0/ax_time.get_data_ratio()*0.8, anchor='N')
             utilities.publication_spines(ax_time)
 

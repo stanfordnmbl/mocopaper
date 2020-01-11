@@ -430,29 +430,31 @@ class MotionTrackingWalking(MocoPaperResult):
         emg = self.load_electromyography(root_dir)
 
         fig = plt.figure(figsize=(7.5, 7))
-        gs = gridspec.GridSpec(9, 3)
-        ax_time = fig.add_subplot(gs[0:3, 0])
-        ax_grf_x = fig.add_subplot(gs[3:6, 0])
-        ax_grf_y = fig.add_subplot(gs[6:9, 0])
-        ax_hip = fig.add_subplot(gs[0:3, 1])
-        ax_knee = fig.add_subplot(gs[3:6, 1])
-        ax_ankle = fig.add_subplot(gs[6:9, 1])
+        gs = gridspec.GridSpec(36, 3)
+        ax_time = fig.add_subplot(gs[0:12, 0])
+        ax_grf_x = fig.add_subplot(gs[12:24, 0])
+        ax_grf_y = fig.add_subplot(gs[24:36, 0])
+        ax_add = fig.add_subplot(gs[0:9, 1])
+        ax_hip = fig.add_subplot(gs[9:18, 1])
+        ax_knee = fig.add_subplot(gs[18:27, 1])
+        ax_ankle = fig.add_subplot(gs[27:36, 1])
         ax_list = list()
         ax_list.append(ax_grf_x)
         ax_list.append(ax_grf_y)
+        ax_list.append(ax_add)
         ax_list.append(ax_hip)
         ax_list.append(ax_knee)
         ax_list.append(ax_ankle)
         muscles = [
-            (fig.add_subplot(gs[0, 2]), 'glmax2', 'gluteus maximus', 'GMAX'),
-            (fig.add_subplot(gs[1, 2]), 'psoas', 'psoas', 'PSOAS'),
-            (fig.add_subplot(gs[2, 2]), 'semimem', 'semimembranosus', 'MH'),
-            (fig.add_subplot(gs[3, 2]), 'recfem', 'rectus femoris', 'RF'),
-            (fig.add_subplot(gs[4, 2]), 'bfsh', 'biceps femoris short head', 'BF'),
-            (fig.add_subplot(gs[5, 2]), 'vaslat', 'vastus lateralis', 'VL'),
-            (fig.add_subplot(gs[6, 2]), 'gasmed', 'medial gastrocnemius', 'GAS'),
-            (fig.add_subplot(gs[7, 2]), 'soleus', 'soleus', 'SOL'),
-            (fig.add_subplot(gs[8, 2]), 'tibant', 'tibialis anterior', 'TA'),
+            (fig.add_subplot(gs[0:4, 2]), 'glmax2', 'gluteus maximus', 'GMAX'),
+            (fig.add_subplot(gs[4:8, 2]), 'psoas', 'psoas', 'PSOAS'),
+            (fig.add_subplot(gs[8:12, 2]), 'semimem', 'semimembranosus', 'MH'),
+            (fig.add_subplot(gs[12:16, 2]), 'recfem', 'rectus femoris', 'RF'),
+            (fig.add_subplot(gs[16:20, 2]), 'bfsh', 'biceps femoris short head', 'BF'),
+            (fig.add_subplot(gs[20:24, 2]), 'vaslat', 'vastus lateralis', 'VL'),
+            (fig.add_subplot(gs[24:28, 2]), 'gasmed', 'medial gastrocnemius', 'GAS'),
+            (fig.add_subplot(gs[28:32, 2]), 'soleus', 'soleus', 'SOL'),
+            (fig.add_subplot(gs[32:36, 2]), 'tibant', 'tibialis anterior', 'TA'),
         ]
         cmap = cm.get_cmap(self.cmap)
         title_fs = 10
@@ -484,15 +486,18 @@ class MotionTrackingWalking(MocoPaperResult):
 
         time_coords = coordinates['time'][coords_start:coords_end]
         pgc_coords = np.linspace(0, 100, len(time_coords))
-        ax_hip.plot(pgc_coords, 
-            coordinates['hip_flexion_l'][coords_start:coords_end], 
-            color='black', lw=lw+1.0)
-        ax_knee.plot(pgc_coords, 
-            coordinates['knee_angle_l'][coords_start:coords_end], 
-            color='black', lw=lw+1.0)
-        ax_ankle.plot(pgc_coords, 
-            coordinates['ankle_angle_l'][coords_start:coords_end], 
-            color='black', lw=lw+1.0)
+        ax_add.plot(pgc_coords,
+                    coordinates['hip_adduction_l'][coords_start:coords_end],
+                    color='black', lw=lw + 1.0)
+        ax_hip.plot(pgc_coords,
+                    coordinates['hip_flexion_l'][coords_start:coords_end],
+                    color='black', lw=lw + 1.0)
+        ax_knee.plot(pgc_coords,
+                     coordinates['knee_angle_l'][coords_start:coords_end],
+                     color='black', lw=lw + 1.0)
+        ax_ankle.plot(pgc_coords,
+                      coordinates['ankle_angle_l'][coords_start:coords_end],
+                      color='black', lw=lw + 1.0)
 
         # electromyography data
         for im, muscle in enumerate(muscles):
@@ -550,13 +555,18 @@ class MotionTrackingWalking(MocoPaperResult):
 
             # kinematics
             rad2deg = 180 / np.pi
+            ax_add.plot(pgc, rad2deg*full_traj.getStateMat(
+                '/jointset/hip_l/hip_adduction_l/value'), color=color, lw=lw)
+            ax_add.set_ylabel('hip adduction (degrees)')
+            # ax_add.set_yticks([-0.2, 0, 0.2, 0.4, 0.6, 0.8])
+            ax_add.set_xticklabels([])
+            ax_add.set_title('KINEMATICS\n', weight='bold', size=title_fs)
             ax_hip.plot(pgc, rad2deg*full_traj.getStateMat(
                     '/jointset/hip_l/hip_flexion_l/value'), color=color, lw=lw)
             ax_hip.set_ylabel('hip flexion (degrees)')
             ax_hip.set_ylim(-20, 50)
             # ax_hip.set_yticks([-0.2, 0, 0.2, 0.4, 0.6, 0.8])
             ax_hip.set_xticklabels([])
-            ax_hip.set_title('KINEMATICS\n', weight='bold', size=title_fs)
             ax_knee.plot(pgc, rad2deg*full_traj.getStateMat(
                     '/jointset/walker_knee_l/knee_angle_l/value'), color=color,
                     lw=lw)
@@ -571,6 +581,7 @@ class MotionTrackingWalking(MocoPaperResult):
             ax_ankle.set_xlabel('time (% gait cycle)')
             # ax_ankle.set_ylim(-30, 20)
             # ax_ankle.set_yticks([-0.5, -0.3, -0.1, 0, 0.1, 0.3])
+
 
             for ax in ax_list:
                 utilities.publication_spines(ax)
@@ -598,10 +609,12 @@ class MotionTrackingWalking(MocoPaperResult):
                     ax.set_title('ACTIVATIONS\n', weight='bold', size=title_fs)
                 if im == 8: ax.set_xlabel('time (% gait cycle)')
 
+        fig.align_ylabels([ax_grf_x, ax_grf_y])
+        fig.align_ylabels([ax_time, ax_add, ax_hip, ax_knee, ax_ankle])
 
         # fig.tight_layout()
         fig.subplots_adjust(left=0.07, right=0.97, top=0.94, bottom=0.065,
-                            hspace=0.6,
+                            hspace=200,
                             wspace=0.5)
         fig.savefig(os.path.join(root_dir,
                 'figures/motion_tracking_walking.png'), dpi=600)

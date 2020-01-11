@@ -32,15 +32,27 @@ class MotionTrackingWalking(MocoPaperResult):
 
     def create_model_processor(self, root_dir, for_inverse=False):
         
-        model = osim.Model()
+        # model = osim.Model()
+        model = osim.Model(os.path.join(root_dir,
+                'resources/Rajagopal2016/'
+                'subject_walk_armless_contact_bounded_80musc_temp.osim'))
+
         if for_inverse:
-            model = osim.Model(os.path.join(root_dir,
-                'resources/Rajagopal2016/'
-                'subject_walk_armless_80musc.osim'))
-        else:
-            model = osim.Model(os.path.join(root_dir,
-                'resources/Rajagopal2016/'
-                'subject_walk_armless_contact_bounded_80musc.osim'))
+            forceSet = model.getForceSet()
+            numContacts = 0
+            for i in np.arange(forceSet.getSize()):
+                forceName = forceSet.get(int(i)).getName()
+                if 'contact' in forceName: numContacts += 1
+
+            contactsRemoved = 0
+            while contactsRemoved < numContacts:
+                for i in np.arange(forceSet.getSize()):
+                    forceName = forceSet.get(int(i)).getName()
+                    if 'contact' in forceName: 
+                        print('Force removed: ', forceSet.get(int(i)).getName())
+                        forceSet.remove(int(i))
+                        contactsRemoved += 1
+                        break
 
         def add_reserve(model, coord, optimal_force, max_control):
             actu = osim.ActivationCoordinateActuator()
@@ -78,6 +90,7 @@ class MotionTrackingWalking(MocoPaperResult):
         add_reserve(model, 'ankle_angle_l', 0.1, reserves_max)
 
         modelProcessor = osim.ModelProcessor(model)
+
         modelProcessor.append(osim.ModOpReplaceJointsWithWelds(
             ['subtalar_r', 'mtp_r', 'subtalar_l', 'mtp_l']))
         modelProcessor.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())

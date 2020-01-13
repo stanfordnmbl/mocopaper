@@ -50,47 +50,47 @@
 
 				<!-- Lower-body anatomical markers -->
 				<IKMarkerTask name="R.ASIS">
-					<apply>true</apply> <weight>50</weight> </IKMarkerTask>
+					<apply>true</apply> <weight>150</weight> </IKMarkerTask>
 				<IKMarkerTask name="L.ASIS">
-					<apply>true</apply> <weight>50</weight> </IKMarkerTask>
+					<apply>true</apply> <weight>150</weight> </IKMarkerTask>
 				<IKMarkerTask name="S2">
-					<apply>true</apply> <weight>5</weight> </IKMarkerTask>
+					<apply>true</apply> <weight>50</weight> </IKMarkerTask>
 				<IKMarkerTask name="R.PSIS">
-					<apply>true</apply> <weight>40</weight> </IKMarkerTask>
+					<apply>true</apply> <weight>150</weight> </IKMarkerTask>
 				<IKMarkerTask name="L.PSIS">
-					<apply>true</apply> <weight>40</weight> </IKMarkerTask>
+					<apply>true</apply> <weight>150</weight> </IKMarkerTask>
 				<IKMarkerTask name="R_HJC">
 					<apply>false</apply> <weight>1</weight> </IKMarkerTask>
 				<IKMarkerTask name="L_HJC">
 					<apply>false</apply> <weight>1</weight> </IKMarkerTask>
 				<IKMarkerTask name="R.Knee">
-					<apply>true</apply> <weight>35</weight> </IKMarkerTask>
+					<apply>true</apply> <weight>250</weight> </IKMarkerTask>
 				<IKMarkerTask name="L.Knee">
-					<apply>true</apply> <weight>35</weight> </IKMarkerTask>
+					<apply>true</apply> <weight>250</weight> </IKMarkerTask>
 				<IKMarkerTask name="R.MKnee">
 					<apply>false</apply> <weight>0</weight> </IKMarkerTask>
 				<IKMarkerTask name="L.MKnee">
 					<apply>false</apply> <weight>0</weight> </IKMarkerTask>
 				<IKMarkerTask name="R.Ankle">
-					<apply>true</apply> <weight>25</weight> </IKMarkerTask>
+					<apply>true</apply> <weight>50</weight> </IKMarkerTask>
 				<IKMarkerTask name="L.Ankle">
-					<apply>true</apply> <weight>25</weight> </IKMarkerTask>
+					<apply>true</apply> <weight>50</weight> </IKMarkerTask>
 				<IKMarkerTask name="R.MAnkle">
 					<apply>false</apply> <weight>0</weight> </IKMarkerTask>
 				<IKMarkerTask name="L.MAnkle">
 					<apply>false</apply> <weight>0</weight> </IKMarkerTask>
 				<IKMarkerTask name="R.Toe">
-					<apply>true</apply> <weight>1</weight> </IKMarkerTask>
+					<apply>true</apply> <weight>100</weight> </IKMarkerTask>
 				<IKMarkerTask name="L.Toe">
-					<apply>true</apply> <weight>1</weight> </IKMarkerTask>
+					<apply>true</apply> <weight>100</weight> </IKMarkerTask>
 				<IKMarkerTask name="R.MT5">
-					<apply>true</apply> <weight>10</weight> </IKMarkerTask>
+					<apply>true</apply> <weight>100</weight> </IKMarkerTask>
 				<IKMarkerTask name="L.MT5">
-					<apply>true</apply> <weight>10</weight> </IKMarkerTask>
+					<apply>true</apply> <weight>100</weight> </IKMarkerTask>
 				<IKMarkerTask name="R.Heel">
-					<apply>true</apply> <weight>15</weight> </IKMarkerTask>
+					<apply>true</apply> <weight>500</weight> </IKMarkerTask>
 				<IKMarkerTask name="L.Heel">
-					<apply>true</apply> <weight>15</weight> </IKMarkerTask>
+					<apply>true</apply> <weight>500</weight> </IKMarkerTask>
 
 				<!-- Lower-body tracking markers. -->
 				<IKMarkerTask name="R.TH1">
@@ -100,11 +100,11 @@
 				<IKMarkerTask name="R.TH3">
 					<apply>true</apply> <weight>5</weight> </IKMarkerTask>
 				<IKMarkerTask name="R.SH1">
-					<apply>true</apply> <weight>1</weight> </IKMarkerTask>
+					<apply>true</apply> <weight>5</weight> </IKMarkerTask>
 				<IKMarkerTask name="R.SH2">
-					<apply>true</apply> <weight>1</weight> </IKMarkerTask>
+					<apply>true</apply> <weight>5</weight> </IKMarkerTask>
 				<IKMarkerTask name="R.SH3">
-					<apply>true</apply> <weight>1</weight> </IKMarkerTask>
+					<apply>true</apply> <weight>5</weight> </IKMarkerTask>
 				<IKMarkerTask name="R.SH4">
 					<apply>true</apply> <weight>1</weight> </IKMarkerTask>
 				<IKMarkerTask name="L.TH1">
@@ -116,11 +116,11 @@
 				<IKMarkerTask name="L.TH4">
 					<apply>true</apply> <weight>15</weight> </IKMarkerTask>
 				<IKMarkerTask name="L.SH1">
-					<apply>true</apply> <weight>1</weight> </IKMarkerTask>
+					<apply>true</apply> <weight>5</weight> </IKMarkerTask>
 				<IKMarkerTask name="L.SH2">
-					<apply>true</apply> <weight>1</weight> </IKMarkerTask>
+					<apply>true</apply> <weight>5</weight> </IKMarkerTask>
 				<IKMarkerTask name="L.SH3">
-					<apply>true</apply> <weight>1</weight> </IKMarkerTask>
+					<apply>true</apply> <weight>5</weight> </IKMarkerTask>
 			</objects>
 			<groups />
 		</IKTaskSet>

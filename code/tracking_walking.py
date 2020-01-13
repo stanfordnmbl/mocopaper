@@ -11,7 +11,7 @@ from moco_paper_result import MocoPaperResult
 
 import utilities
 
-# TODO: compute reserve RMS
+# TODO: normalize EMG.
 
 class MotionTrackingWalking(MocoPaperResult):
     def __init__(self):
@@ -106,8 +106,8 @@ class MotionTrackingWalking(MocoPaperResult):
             ['subtalar_r', 'mtp_r', 'subtalar_l', 'mtp_l']))
         modelProcessor.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())
         modelProcessor.append(osim.ModOpIgnoreTendonCompliance())
+        modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
         if for_inverse:
-            modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
             ext_loads_xml = os.path.join(root_dir,
                     'resources/Rajagopal2016/grf_walk.xml')
             modelProcessor.append(osim.ModOpAddExternalLoads(ext_loads_xml))
@@ -711,7 +711,7 @@ class MotionTrackingWalking(MocoPaperResult):
         for tracking_weight, effort_weight, cmap_index in iterate:
             print(f'reserves for track={trackingWeight}, '
                   f'effort={effortWeight}):')
-        sol_path = self.get_solution_path(root_dir, tracking_weight,
+            sol_path = self.get_solution_path(root_dir, tracking_weight,
                                               effort_weight)
             reserves = self.calc_reserves(root_dir,
                                           osim.MocoTrajectory(sol_path))

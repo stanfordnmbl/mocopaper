@@ -424,11 +424,6 @@ class MotionTrackingWalking(MocoPaperResult):
 
         # study.visualize(fullTraj)
 
-        # solution = osim.MocoTrajectory(
-        #     self.get_solution_path_fullcycle(root_dir, tracking_weight,
-        #           effort_weight))
-        # study.visualize(fullTraj)
-
         return solution
 
     def parse_args(self, args):
@@ -469,6 +464,13 @@ class MotionTrackingWalking(MocoPaperResult):
 
         iterate = zip(self.tracking_weights, self.effort_weights, 
                 self.cmap_indices)
+
+        # for tracking_weight, effort_weight, cmap_index in iterate:
+        #     solution = osim.MocoTrajectory(
+        #         self.get_solution_path_fullcycle(root_dir, tracking_weight,
+        #               effort_weight))
+        #     osim.visualize(model, solution.exportToStatesTable())
+
         emg = self.load_electromyography(root_dir)
 
         fig = plt.figure(figsize=(7.5, 7))
@@ -554,7 +556,8 @@ class MotionTrackingWalking(MocoPaperResult):
             utilities.publication_spines(ax)
 
         # simulation results
-        for i, (tracking_weight, effort_weight, cmap_index) in enumerate(iterate):
+        for i, (tracking_weight, effort_weight, cmap_index) in enumerate(
+                iterate):
             color = cmap(cmap_index)
             full_path = self.get_solution_path_fullcycle(root_dir, 
                     tracking_weight, effort_weight)

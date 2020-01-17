@@ -580,18 +580,6 @@ class MotionTrackingWalking(MocoPaperResult):
                       coordinates['ankle_angle_l'][coords_start:coords_end],
                       color='black', lw=lw + 1.0)
 
-        # electromyography data
-        for im, muscle in enumerate(muscles):
-            ax = muscle[0]
-            if 'PSOAS' not in muscle:
-                self.plot(ax, emg['time'], emg[muscle[3]], shift=False, 
-                    fill=True, color='lightgray', label='electromyography')
-            ax.set_ylim(0, 1)
-            ax.set_yticks([0, 1])
-            ax.set_xlim(0, 100)
-            ax.set_xticks([0, 50, 100])
-            utilities.publication_spines(ax)
-
         # simulation results
         iterate = zip(
             self.tracking_weights, self.effort_weights,
@@ -709,12 +697,20 @@ class MotionTrackingWalking(MocoPaperResult):
             for im, muscle in enumerate(muscles):
                 activation_path = f'/forceset/{muscle[1]}_l/activation'
                 ax = muscle[0]
-                ax.plot(pgc, full_traj.getStateMat(activation_path),
-                        color=color, lw=lw)
+                activation = full_traj.getStateMat(activation_path)
+                ax.plot(pgc, activation, color=color, lw=lw)
+
+                # electromyography data
+                if i == 0 and 'PSOAS' not in muscle:
+                    self.plot(ax, emg['time'],
+                              emg[muscle[3]] * np.max(activation), shift=False,
+                              fill=True, color='lightgray',
+                              label='electromyography')
                 ax.set_ylim(0, 1)
                 ax.set_yticks([0, 1])
                 ax.set_xlim(0, 100)
                 ax.set_xticks([0, 50, 100])
+
                 if im < 8:
                     ax.set_xticklabels([])
                 ax.text(0.5, 1.2, muscle[2],

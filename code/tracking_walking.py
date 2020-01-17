@@ -12,6 +12,13 @@ from moco_paper_result import MocoPaperResult
 import utilities
 
 # TODO: normalize EMG.
+# TODO: do not track pelvis coordinates
+# TODO: track GRFz.
+# TODO: How can the model fall over if there's symmetry?
+# TODO: try different foot spacing
+# TODO: set coronal initial angles to 0.
+# TODO: do not track pelvis_list.
+# TODO: set initial pelvis_list to 0.
 
 class MotionTrackingWalking(MocoPaperResult):
     def __init__(self):
@@ -304,33 +311,35 @@ class MotionTrackingWalking(MocoPaperResult):
         for coord in model.getComponentsList():
             if not type(coord) is osim.Coordinate: continue
 
-            if coord.getName().endswith('_r'):
+            coordName = coord.getName()
+            coordValue = coord.getStateVariableNames().get(0)
+            coordSpeed = coord.getStateVariableNames().get(1)
+
+            if coordName.endswith('_r'):
                 symmetry.addStatePair(osim.MocoPeriodicityGoalPair(
-                    coord.getStateVariableNames().get(0),
-                    coord.getStateVariableNames().get(0).replace('_r/', '_l/')))
+                    coordValue, coordValue.replace('_r/', '_l/')))
                 symmetry.addStatePair(osim.MocoPeriodicityGoalPair(
-                    coord.getStateVariableNames().get(1),
-                    coord.getStateVariableNames().get(1).replace('_r/', '_l/')))
-            elif coord.getName().endswith('_l'):
+                    coordSpeed, coordSpeed.replace('_r/', '_l/')))
+            elif coordName.endswith('_l'):
                 symmetry.addStatePair(osim.MocoPeriodicityGoalPair(
-                    coord.getStateVariableNames().get(0),
-                    coord.getStateVariableNames().get(0).replace('_l/', '_r/')))
+                    coordValue, coordValue.replace('_l/', '_r/')))
                 symmetry.addStatePair(osim.MocoPeriodicityGoalPair(
-                    coord.getStateVariableNames().get(1),
-                    coord.getStateVariableNames().get(1).replace('_l/', '_r/')))
-            elif (coord.getName().endswith('_bending') or 
-                  coord.getName().endswith('_rotation') or 
-                  coord.getName().endswith('_tz') or
-                  coord.getName().endswith('_list')): 
+                    coordSpeed, coordSpeed.replace('_l/', '_r/')))
+            elif (coordName.endswith('_bending') or
+                  coordName.endswith('_rotation') or
+                  coordName.endswith('_tz') or
+                  coordName.endswith('_list')):
+                # This does not include hip rotation,
+                # because that ends with _l or _r.
                 symmetry.addStatePair(osim.MocoPeriodicityGoalPair(
-                    coord.getStateVariableNames().get(0)))
+                    coordValue))
                 symmetry.addNegatedStatePair(osim.MocoPeriodicityGoalPair(
-                    coord.getStateVariableNames().get(1)))
-            elif not coord.getName().endswith('_tx'):
+                    coordSpeed))
+            elif not coordName.endswith('_tx'):
                 symmetry.addStatePair(osim.MocoPeriodicityGoalPair(
-                    coord.getStateVariableNames().get(0)))
+                    coordValue))
                 symmetry.addStatePair(osim.MocoPeriodicityGoalPair(
-                    coord.getStateVariableNames().get(1)))
+                    coordSpeed))
         symmetry.addStatePair(osim.MocoPeriodicityGoalPair(
             '/jointset/ground_pelvis/pelvis_tx/speed'))
         # Symmetric activations.

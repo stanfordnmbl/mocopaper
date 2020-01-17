@@ -24,8 +24,8 @@ class MotionTrackingWalking(MocoPaperResult):
             'results/motion_tracking_walking_inverse_solution.sto'
         self.tracking_solution_relpath_prefix = \
             'results/motion_tracking_walking_solution'
-        self.tracking_weights = [1, 0.5, 0.001]
-        self.effort_weights = [0.001, 0.5, 1]
+        self.tracking_weights = [10, 10, 0.001]
+        self.effort_weights = [0.001, 10, 10]
         self.cmap = 'nipy_spectral'
         self.cmap_indices = [0.2, 0.5, 0.9]
         self.legend_entries = ['track', 'track\n+\neffort', 'effort']

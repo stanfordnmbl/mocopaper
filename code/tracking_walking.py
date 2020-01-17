@@ -478,10 +478,9 @@ class MotionTrackingWalking(MocoPaperResult):
         gravity = model.getGravity()
         BW = mass*abs(gravity[1])
 
-        iterate = zip(self.tracking_weights, self.effort_weights, 
-                self.cmap_indices)
-
-        # for tracking_weight, effort_weight, cmap_index in iterate:
+        # for tracking_weight, effort_weight, cmap_index in zip(
+        #         self.tracking_weights, self.effort_weights,
+        #         self.cmap_indices):
         #     solution = osim.MocoTrajectory(
         #         self.get_solution_path_fullcycle(root_dir, tracking_weight,
         #               effort_weight))
@@ -577,6 +576,10 @@ class MotionTrackingWalking(MocoPaperResult):
             utilities.publication_spines(ax)
 
         # simulation results
+        iterate = zip(
+            self.tracking_weights, self.effort_weights,
+            self.cmap_indices)
+
         for i, (tracking_weight, effort_weight, cmap_index) in enumerate(
                 iterate):
             color = cmap(cmap_index)

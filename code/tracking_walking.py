@@ -261,11 +261,14 @@ class MotionTrackingWalking(MocoPaperResult):
         problem.setStateInfo('/jointset/back/lumbar_extension/value', [], -0.12)
         problem.setStateInfo('/jointset/back/lumbar_bending/value', [], 0)
         problem.setStateInfo('/jointset/back/lumbar_rotation/value', [], 0.04)
-        # if self.coordinate_tracking:
-        #     tracking = osim.MocoStateTrackingGoal().safeDownCast(
-        #         problem.updGoal('state_tracking'))
-        #     tracking.setWeightForState(
-        #         "/jointset/ground_pelvis/pelvis_tz/value", 50.0)
+        problem.setStateInfo('/jointset/ground_pelvis/pelvis_list/value', [], 0)
+        if self.coordinate_tracking:
+            tracking = osim.MocoStateTrackingGoal().safeDownCast(
+                problem.updGoal('state_tracking'))
+            tracking.setWeightForState(
+                "/jointset/ground_pelvis/pelvis_tz/value", 0.0)
+            tracking.setWeightForState(
+                "/jointset/ground_pelvis/pelvis_list/value", 0.0)
         # Update the control effort goal to a cost of transport type cost.
         effort = osim.MocoControlGoal().safeDownCast(
                 problem.updGoal('control_effort'))

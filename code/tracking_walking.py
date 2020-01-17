@@ -31,8 +31,8 @@ class MotionTrackingWalking(MocoPaperResult):
             'results/motion_tracking_walking_inverse_solution.sto'
         self.tracking_solution_relpath_prefix = \
             'results/motion_tracking_walking_solution'
-        self.tracking_weights = [1, 0.5, 0.001]
-        self.effort_weights = [0.001, 0.5, 1]
+        self.tracking_weights = [10, 10, 0.001]
+        self.effort_weights = [0.001, 10, 10]
         self.cmap = 'nipy_spectral'
         self.cmap_indices = [0.2, 0.5, 0.9]
         self.legend_entries = ['track', 'track\n+\neffort', 'effort']
@@ -268,11 +268,14 @@ class MotionTrackingWalking(MocoPaperResult):
         problem.setStateInfo('/jointset/back/lumbar_extension/value', [], -0.12)
         problem.setStateInfo('/jointset/back/lumbar_bending/value', [], 0)
         problem.setStateInfo('/jointset/back/lumbar_rotation/value', [], 0.04)
-        # if self.coordinate_tracking:
-        #     tracking = osim.MocoStateTrackingGoal().safeDownCast(
-        #         problem.updGoal('state_tracking'))
-        #     tracking.setWeightForState(
-        #         "/jointset/ground_pelvis/pelvis_tz/value", 50.0)
+        problem.setStateInfo('/jointset/ground_pelvis/pelvis_list/value', [], 0)
+        if self.coordinate_tracking:
+            tracking = osim.MocoStateTrackingGoal().safeDownCast(
+                problem.updGoal('state_tracking'))
+            tracking.setWeightForState(
+                "/jointset/ground_pelvis/pelvis_tz/value", 0.0)
+            tracking.setWeightForState(
+                "/jointset/ground_pelvis/pelvis_list/value", 0.0)
         # Update the control effort goal to a cost of transport type cost.
         effort = osim.MocoControlGoal().safeDownCast(
                 problem.updGoal('control_effort'))

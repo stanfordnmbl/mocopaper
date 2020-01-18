@@ -173,6 +173,16 @@ class MotionTrackingWalking(MocoPaperResult):
         output = osim.analyze(model, solution, ['.*reserve.*actuation'])
         return output
 
+    def calc_muscle_mechanics(self, root_dir, solution):
+        modelProcessor = self.create_model_processor(root_dir)
+        model = modelProcessor.process()
+        output = osim.analyze(model, solution,
+                              ['.*gasmed.*\|tendon_force',
+                               '.*gasmed.*\|normalized_fiber_length',
+                               '.*semimem.*\|tendon_force',
+                               '.*semimem.*\|normalized_fiber_length'])
+        return output
+
     def run_inverse_problem(self, root_dir):
 
         modelProcessor = self.create_model_processor(root_dir,
@@ -755,8 +765,8 @@ class MotionTrackingWalking(MocoPaperResult):
                   f'effort={effortWeight}):')
             sol_path = self.get_solution_path(root_dir, tracking_weight,
                                               effort_weight)
-            reserves = self.calc_reserves(root_dir,
-                                          osim.MocoTrajectory(sol_path))
+            solution = osim.MocoTrajectory(sol_path)
+            reserves = self.calc_reserves(root_dir, solution)
             column_labels = reserves.getColumnLabels()
             max_res = -np.inf
             for icol in range(reserves.getNumColumns()):
@@ -765,7 +775,13 @@ class MotionTrackingWalking(MocoPaperResult):
                 max = np.max(np.abs(column))
                 max_res = np.max([max_res, max])
                 print(f' max abs {column_labels[icol]}: {max}')
-
+            muscle_mechanics = self.calc_muscle_mechanics(root_dir, solution)
+            trackingWeight = str(tracking_weight).replace('.', '_')
+            effortWeight = str(effort_weight).replace('.', '_')
+            osim.STOFileAdapter.write(muscle_mechanics,
+                                      'results/tracking_walking_muscle_mechanics'
+                                      f'_trackingWeight{trackingWeight}'
+                                      f'_effortWeight{effortWeight}.sto')
         trajectory_filepath = self.get_solution_path_fullcycle(root_dir,
                                                                self.tracking_weights[-1],
                                                                self.effort_weights[-1])
@@ -774,7 +790,8 @@ class MotionTrackingWalking(MocoPaperResult):
         ref_files.append('tracking_walking_tracked_states.sto')
         for tracking_weight, effort_weight, cmap_index in iterate:
             ref_files.append(self.get_solution_path_fullcycle(root_dir,
-                tracking_weight, effort_weight))
+                                                              tracking_weight,
+                                                              effort_weight))
 
         report = osim.report.Report(model=model, 
                 trajectory_filepath=trajectory_filepath, 

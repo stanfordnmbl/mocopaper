@@ -11,14 +11,11 @@ from moco_paper_result import MocoPaperResult
 
 import utilities
 
-# TODO: normalize EMG.
-# TODO: do not track pelvis coordinates
-# TODO: track GRFz.
-# TODO: How can the model fall over if there's symmetry?
 # TODO: try different foot spacing
-# TODO: set coronal initial angles to 0.
-# TODO: do not track pelvis_list.
-# TODO: set initial pelvis_list to 0.
+# TODO: fix oscillations in GRFz.
+# TODO: semimem and gasmed forces are negative.
+# TODO: feet are crossing over too much (b/c adductor passive force?)
+# TODO: remove reserves from tracking problem?
 
 class MotionTrackingWalking(MocoPaperResult):
     def __init__(self):
@@ -31,8 +28,8 @@ class MotionTrackingWalking(MocoPaperResult):
             'results/motion_tracking_walking_inverse_solution.sto'
         self.tracking_solution_relpath_prefix = \
             'results/motion_tracking_walking_solution'
-        self.tracking_weights = [10, 10, 0.001]
-        self.effort_weights = [0.001, 10, 10]
+        self.tracking_weights = [1, 10, 0.01]
+        self.effort_weights = [0.01, 10, 1]
         self.cmap = 'nipy_spectral'
         self.cmap_indices = [0.2, 0.5, 0.9]
         self.legend_entries = ['track', 'track\n+\neffort', 'effort']
@@ -640,8 +637,8 @@ class MotionTrackingWalking(MocoPaperResult):
             ax_grf_x.plot(pgc, grf_table['ground_force_l_vx']/BW, color=color,
                 lw=lw)
             ax_grf_x.set_ylabel('horizontal force (BW)')
-            ax_grf_x.set_ylim(-0.4, 0.4)
-            ax_grf_x.set_yticks([-0.4, -0.2, 0, 0.2, 0.4])
+            ax_grf_x.set_ylim(-0.35, 0.35)
+            ax_grf_x.set_yticks([-0.2, 0, 0.2])
             ax_grf_x.set_title('GROUND REACTIONS', weight='bold', 
                     size=title_fs)
             ax_grf_x.set_xticklabels([])
@@ -669,15 +666,14 @@ class MotionTrackingWalking(MocoPaperResult):
             ax_hip.plot(pgc, rad2deg*full_traj.getStateMat(
                     '/jointset/hip_l/hip_flexion_l/value'), color=color, lw=lw)
             ax_hip.set_ylabel('hip flexion (degrees)')
-            ax_hip.set_ylim(-20, 50)
+            # ax_hip.set_ylim(-20, 50)
             # ax_hip.set_yticks([-0.2, 0, 0.2, 0.4, 0.6, 0.8])
             ax_hip.set_xticklabels([])
             ax_knee.plot(pgc, rad2deg*full_traj.getStateMat(
                     '/jointset/walker_knee_l/knee_angle_l/value'), color=color,
                     lw=lw)
             ax_knee.set_ylabel('knee flexion (degrees)')
-            ax_knee.set_ylim(0, 80)
-            # ax_knee.set_yticks([0, 0.5, 1, 1.5])
+            ax_knee.set_ylim(0, 90)
             ax_knee.set_xticklabels([])
             ax_ankle.plot(pgc, rad2deg*full_traj.getStateMat(
                     '/jointset/ankle_l/ankle_angle_l/value'), color=color, 
@@ -701,6 +697,7 @@ class MotionTrackingWalking(MocoPaperResult):
                 ax.plot(pgc, activation, color=color, lw=lw)
 
                 # electromyography data
+                # TODO: do not assume we want to normalize EMG via simulation 0.
                 if i == 0 and 'PSOAS' not in muscle:
                     self.plot(ax, emg['time'],
                               emg[muscle[3]] * np.max(activation), shift=False,

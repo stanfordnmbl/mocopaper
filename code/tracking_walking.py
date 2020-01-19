@@ -16,6 +16,7 @@ import utilities
 # TODO: semimem and gasmed forces are negative.
 # TODO: feet are crossing over too much (b/c adductor passive force?)
 # TODO: remove reserves from tracking problem?
+# TODO: reduce tracking weight to 5 or 1.
 
 class MotionTrackingWalking(MocoPaperResult):
     def __init__(self):
@@ -28,25 +29,16 @@ class MotionTrackingWalking(MocoPaperResult):
             'results/motion_tracking_walking_inverse_solution.sto'
         self.tracking_solution_relpath_prefix = \
             'results/motion_tracking_walking_solution'
-        self.tracking_weights = [1, 10, 0.01]
-        self.effort_weights = [0.01, 10, 1]
+        self.suffixes = [''] # TODO , '_assist']
         self.cmap = 'nipy_spectral'
-        self.cmap_indices = [0.2, 0.5, 0.9]
-        self.legend_entries = ['track', 'track\n+\neffort', 'effort']
-        self.legend_kwargs = [{'horizontalalignment': 'left',
-                               'verticalalignment': 'middle',
-                               'bbox': {'boxstyle': 'square,pad=1'}},
-                              {'horizontalalignment': 'left',
-                               'verticalalignment': 'middle',
-                               'bbox': {'boxstyle': 'square,pad=1'}},
-                              {'horizontalalignment': 'center',
-                               'verticalalignment': 'bottom',
-                               'bbox': {'boxstyle': 'square,pad=1'}},
-                              ]
+        self.cmap_indices = [0.2, 0.5]
+        self.legend_entries = ['unassisted', 'assisted']
+        self.tracking_weight = 10
+        self.effort_weight = 10
 
-    def create_model_processor(self, root_dir, for_inverse=False):
+    def create_model_processor(self, root_dir, for_inverse=False,
+                               suffix=''):
         
-        # model = osim.Model()
         model = osim.Model(os.path.join(root_dir,
                 'resources/Rajagopal2016/'
                 'subject_walk_armless_contact_bounded_80musc_temp.osim'))
@@ -82,16 +74,18 @@ class MotionTrackingWalking(MocoPaperResult):
             actu.setMinControl(-max_control)
             actu.setMaxControl(max_control)
             model.addForce(actu)
-        reserves_max = 250 if for_inverse else 1
         add_reserve(model, 'lumbar_extension', 1, 50)
         add_reserve(model, 'lumbar_bending', 1, 50)
         add_reserve(model, 'lumbar_rotation', 1, 50)
+
+        reserves_max = 250 if for_inverse else 1
         add_reserve(model, 'pelvis_tilt', 1, reserves_max)
         add_reserve(model, 'pelvis_list', 1, reserves_max)
         add_reserve(model, 'pelvis_rotation', 1, reserves_max)
         add_reserve(model, 'pelvis_tx', 1, reserves_max)
         add_reserve(model, 'pelvis_ty', 1, reserves_max)
         add_reserve(model, 'pelvis_tz', 1, reserves_max)
+
         optimal_force = 0.1
         add_reserve(model, 'hip_flexion_r', optimal_force, reserves_max)
         add_reserve(model, 'hip_adduction_r', optimal_force, reserves_max)
@@ -103,6 +97,18 @@ class MotionTrackingWalking(MocoPaperResult):
         add_reserve(model, 'hip_rotation_l', optimal_force, reserves_max)
         add_reserve(model, 'knee_angle_l', optimal_force, reserves_max)
         add_reserve(model, 'ankle_angle_l', optimal_force, reserves_max)
+
+        def add_device(model, coord):
+            actu = osim.ActivationCoordinateActuator()
+            actu.set_coordinate(coord)
+            actu.setName(f'device_{coord}')
+            actu.setOptimalForce(1000.0)
+            actu.setMinControl(-1.0)
+            actu.setMaxControl(1.0)
+            model.addForce(actu)
+        if suffix == '_assist':
+            add_device(model, 'ankle_angle_r')
+            add_device(model, 'ankle_angle_l')
 
         modelProcessor = osim.ModelProcessor(model)
 
@@ -130,31 +136,20 @@ class MotionTrackingWalking(MocoPaperResult):
 
         return modelProcessorTendonCompliance
 
-    def get_solution_path(self, root_dir, tracking_weight, effort_weight):
-        trackingWeight = str(tracking_weight).replace('.', '_')
-        effortWeight = str(effort_weight).replace('.', '_')
-        return os.path.join(root_dir, 
-                    f'{self.tracking_solution_relpath_prefix}'
-                    f'_trackingWeight{trackingWeight}'
-                    f'_effortWeight{effortWeight}.sto')
+    def get_solution_path(self, root_dir, suffix=''):
+        return os.path.join(root_dir,
+                            f'{self.tracking_solution_relpath_prefix}'
+                            + suffix + '.sto')
 
-    def get_solution_path_fullcycle(self, root_dir, tracking_weight,
-            effort_weight):
-        trackingWeight = str(tracking_weight).replace('.', '_')
-        effortWeight = str(effort_weight).replace('.', '_')
-        return os.path.join(root_dir, 
-                    f'{self.tracking_solution_relpath_prefix}'
-                    f'_trackingWeight{trackingWeight}'
-                    f'_effortWeight{effortWeight}_fullcycle.sto')
+    def get_solution_path_fullcycle(self, root_dir, suffix=''):
+        return os.path.join(root_dir,
+                            f'{self.tracking_solution_relpath_prefix}'
+                            + suffix + '_fullcycle.sto')
 
-    def get_solution_path_grfs(self, root_dir, tracking_weight,
-            effort_weight):
-        trackingWeight = str(tracking_weight).replace('.', '_')
-        effortWeight = str(effort_weight).replace('.', '_')
-        return os.path.join(root_dir, 
-                    f'{self.tracking_solution_relpath_prefix}'
-                    f'_trackingWeight{trackingWeight}'
-                    f'_effortWeight{effortWeight}_fullcycle_grfs.sto')
+    def get_solution_path_grfs(self, root_dir, suffix):
+        return os.path.join(root_dir,
+                            f'{self.tracking_solution_relpath_prefix}'
+                            + suffix + '_fullcycle_grfs.sto')
 
     def load_table(self, table_path):
         num_header_rows = 1
@@ -167,14 +162,14 @@ class MotionTrackingWalking(MocoPaperResult):
         return np.genfromtxt(table_path, names=True, delimiter='\t',
                              skip_header=num_header_rows)
 
-    def calc_reserves(self, root_dir, solution):
-        modelProcessor = self.create_model_processor(root_dir)
+    def calc_reserves(self, root_dir, suffix, solution):
+        modelProcessor = self.create_model_processor(root_dir, suffix=suffix)
         model = modelProcessor.process()
         output = osim.analyze(model, solution, ['.*reserve.*actuation'])
         return output
 
-    def calc_muscle_mechanics(self, root_dir, solution):
-        modelProcessor = self.create_model_processor(root_dir)
+    def calc_muscle_mechanics(self, root_dir, suffix, solution):
+        modelProcessor = self.create_model_processor(root_dir, suffix=suffix)
         model = modelProcessor.process()
         output = osim.analyze(model, solution,
                               ['.*gasmed.*\|tendon_force',
@@ -204,10 +199,11 @@ class MotionTrackingWalking(MocoPaperResult):
         solution.getMocoSolution().write(
             os.path.join(root_dir, self.inverse_solution_relpath))
 
-    def run_tracking_problem(self, root_dir, previous_solution,
-                             tracking_weight=1, effort_weight=1):
+    def run_tracking_problem(self, root_dir, suffix=''):
 
-        modelProcessor = self.create_model_processor(root_dir)
+        modelProcessor = self.create_model_processor(root_dir,
+                                                     for_inverse=False,
+                                                     suffix=suffix)
         model = modelProcessor.process()
         model.initSystem()
 
@@ -232,15 +228,13 @@ class MotionTrackingWalking(MocoPaperResult):
             tableProcessor.append(osim.TabOpUseAbsoluteStateNames())
             track.setStatesReference(tableProcessor)
             track.set_states_global_tracking_weight(
-                tracking_weight / (2 * model.getNumCoordinates()))
-            if previous_solution.empty():
-                track.set_apply_tracked_states_to_guess(True)
-                # track.set_scale_state_weights_with_range(True);
+                self.tracking_weight / (2 * model.getNumCoordinates()))
+            track.set_apply_tracked_states_to_guess(True)
         else:
             track.setMarkersReferenceFromTRC(os.path.join(root_dir,
                     'resources/Rajagopal2016/markers.trc'))
             track.set_markers_global_tracking_weight(
-                tracking_weight / (2 * model.getNumMarkers()))
+                self.tracking_weight / (2 * model.getNumMarkers()))
             iktool = osim.InverseKinematicsTool(os.path.join(root_dir,
                     'resources/Rajagopal2016/ik_setup_walk.xml'))
             iktasks = iktool.getIKTaskSet()
@@ -257,7 +251,7 @@ class MotionTrackingWalking(MocoPaperResult):
 
         track.set_allow_unused_references(True)
         track.set_track_reference_position_derivatives(True)
-        track.set_control_effort_weight(effort_weight / numForces)
+        track.set_control_effort_weight(self.effort_weight / numForces)
         track.set_initial_time(self.initial_time)
         track.set_final_time(self.half_time)
         track.set_mesh_interval(self.mesh_interval)
@@ -416,47 +410,32 @@ class MotionTrackingWalking(MocoPaperResult):
 
         # Set the guess
         # -------------
-        # If the previous solution argument is empty, use the inverse solution
-        # to construct a guess.
-        guess = osim.MocoTrajectory()
-        if previous_solution.empty():
-            # Create a guess compatiable with this problem.
-            guess = solver.createGuess()
-            # Load the inverse problem solution and set its states and controls 
-            # trajectories to the guess.
-            inverseSolution = osim.MocoTrajectory(
-                os.path.join(root_dir, self.inverse_solution_relpath))
-            inverseStatesTable = inverseSolution.exportToStatesTable()
-            guess.insertStatesTrajectory(inverseStatesTable, True)
-            inverseControlsTable = inverseSolution.exportToControlsTable()
-            guess.insertControlsTrajectory(inverseControlsTable, True)
-        else:
-            guess = previous_solution
+        # Create a guess compatible with this problem.
+        guess = solver.createGuess()
+        # Load the inverse problem solution and set its states and controls
+        # trajectories to the guess.
+        inverseSolution = osim.MocoTrajectory(
+            os.path.join(root_dir, self.inverse_solution_relpath))
+        inverseStatesTable = inverseSolution.exportToStatesTable()
+        guess.insertStatesTrajectory(inverseStatesTable, True)
+        inverseControlsTable = inverseSolution.exportToControlsTable()
+        guess.insertControlsTrajectory(inverseControlsTable, True)
         solver.setGuess(guess)
 
         # Solve and print solution.
         # -------------------------
         solution = study.solve()
-        trackingWeight = str(tracking_weight).replace('.', '_')
-        effortWeight = str(effort_weight).replace('.', '_')
-        solution.write(os.path.join(root_dir, 
-            f'{self.tracking_solution_relpath_prefix}'
-            f'_trackingWeight{trackingWeight}_effortWeight{effortWeight}.sto'))
+        solution.write(self.get_solution_path(root_dir, suffix))
         # Create a full gait cycle trajectory from the periodic solution.
         fullTraj = osim.createPeriodicTrajectory(solution)
-        fullTraj.write(os.path.join(root_dir, 
-            f'{self.tracking_solution_relpath_prefix}'
-            f'_trackingWeight{trackingWeight}'
-            f'_effortWeight{effortWeight}_fullcycle.sto'))
+        fullTraj.write(self.get_solution_path_fullcycle(root_dir, suffix))
 
         # Compute ground reaction forces generated by contact sphere from the 
         # full gait cycle trajectory.
         externalLoads = osim.createExternalLoadsTableForGait(
                 model, fullTraj, forceNamesRightFoot, forceNamesLeftFoot)
-        osim.writeTableToFile(externalLoads, os.path.join(root_dir, 
-                f'{self.tracking_solution_relpath_prefix}'
-                f'_trackingWeight{trackingWeight}'
-                f'_effortWeight{effortWeight}_fullcycle_grfs.sto'))
+        osim.writeTableToFile(externalLoads,
+                              self.get_solution_path_grfs(root_dir, suffix))
 
         # study.visualize(fullTraj)
 
@@ -475,8 +454,6 @@ class MotionTrackingWalking(MocoPaperResult):
         if 'contact-tracking' in args:
             self.contact_tracking = True
 
-
-
     def generate_results(self, root_dir, args):
         self.parse_args(args)
 
@@ -484,13 +461,9 @@ class MotionTrackingWalking(MocoPaperResult):
         if not self.skip_inverse:
             self.run_inverse_problem(root_dir)
 
-        # Run tracking problem, sweeping across different effort weights.
-        solution = osim.MocoTrajectory()
-        weights = zip(self.tracking_weights, self.effort_weights)
-        for tracking_weight, effort_weight in weights:
-            solution = self.run_tracking_problem(root_dir, solution, 
-                    tracking_weight=tracking_weight,
-                    effort_weight=effort_weight)
+        # Run tracking problem.
+        for suffix in self.suffixes:
+            self.run_tracking_problem(root_dir, suffix)
 
     def report_results(self, root_dir, args):
         self.parse_args(args)
@@ -588,21 +561,13 @@ class MotionTrackingWalking(MocoPaperResult):
                       color='black', lw=lw + 1.0)
 
         # simulation results
-        iterate = zip(
-            self.tracking_weights, self.effort_weights,
-            self.cmap_indices)
-
-        for i, (tracking_weight, effort_weight, cmap_index) in enumerate(
-                iterate):
+        iterate = zip(self.suffixes, self.cmap_indices)
+        for i, (suffix, cmap_index) in enumerate(iterate):
             color = cmap(cmap_index)
-            full_path = self.get_solution_path_fullcycle(root_dir, 
-                    tracking_weight, effort_weight)
+            full_path = self.get_solution_path_fullcycle(root_dir, suffix)
             full_traj = osim.MocoTrajectory(full_path)
 
-            sol_path = self.get_solution_path(root_dir, tracking_weight,
-                                              effort_weight)
-            trackingWeight = str(tracking_weight).replace('.', '_')
-            effortWeight = str(effort_weight).replace('.', '_')
+            sol_path = self.get_solution_path(root_dir, suffix)
             sol_table = osim.TimeSeriesTable(sol_path)
             if self.coordinate_tracking:
                 trackingCostStr = \
@@ -610,17 +575,16 @@ class MotionTrackingWalking(MocoPaperResult):
             else:
                 trackingCostStr = \
                     sol_table.getTableMetaDataString('objective_marker_tracking')
-            trackingCost = float(trackingCostStr) / tracking_weight
+            trackingCost = float(trackingCostStr) / self.tracking_weight
 
 
             effortCostStr = \
                 sol_table.getTableMetaDataString('objective_control_effort')
-            effortCost = float(effortCostStr) / effort_weight
-            print(f'effort and tracking costs (track={trackingWeight}, '
-                  f'effort={effortWeight}): ', effortCost, trackingCost)
+            effortCost = float(effortCostStr) / self.effort_weight
+            print(f'effort and tracking costs (suffix: {suffix}): ',
+                  effortCost, trackingCost)
 
-            grf_path = self.get_solution_path_grfs(root_dir,
-                    tracking_weight, effort_weight)
+            grf_path = self.get_solution_path_grfs(root_dir, suffix)
             grf_table = self.load_table(grf_path)
 
 
@@ -670,14 +634,11 @@ class MotionTrackingWalking(MocoPaperResult):
             ax_add.plot(pgc, rad2deg*full_traj.getStateMat(
                 '/jointset/hip_l/hip_adduction_l/value'), color=color, lw=lw)
             ax_add.set_ylabel('hip adduction (degrees)')
-            # ax_add.set_yticks([-0.2, 0, 0.2, 0.4, 0.6, 0.8])
             ax_add.set_xticklabels([])
             ax_add.set_title('KINEMATICS\n', weight='bold', size=title_fs)
             ax_hip.plot(pgc, rad2deg*full_traj.getStateMat(
                     '/jointset/hip_l/hip_flexion_l/value'), color=color, lw=lw)
             ax_hip.set_ylabel('hip flexion (degrees)')
-            # ax_hip.set_ylim(-20, 50)
-            # ax_hip.set_yticks([-0.2, 0, 0.2, 0.4, 0.6, 0.8])
             ax_hip.set_xticklabels([])
             ax_knee.plot(pgc, rad2deg*full_traj.getStateMat(
                     '/jointset/walker_knee_l/knee_angle_l/value'), color=color,
@@ -690,8 +651,6 @@ class MotionTrackingWalking(MocoPaperResult):
                     lw=lw)
             ax_ankle.set_ylabel('ankle dorsiflexion (degrees)')
             ax_ankle.set_xlabel('time (% gait cycle)')
-            # ax_ankle.set_ylim(-30, 20)
-            # ax_ankle.set_yticks([-0.5, -0.3, -0.1, 0, 0.1, 0.3])
 
 
             for ax in ax_list:
@@ -741,32 +700,20 @@ class MotionTrackingWalking(MocoPaperResult):
 
         with open(os.path.join(root_dir, 'results/'
                 'motion_tracking_walking_durations.txt'), 'w') as f:
-            iterate = zip(self.tracking_weights, self.effort_weights,
-                          self.cmap_indices)
-            for tracking_weight, effort_weight, cmap_index in iterate:
-                print('cmap_index', cmap_index)
-                sol_path = self.get_solution_path(root_dir, tracking_weight,
-                        effort_weight)
-                trackingWeight = str(tracking_weight).replace('.', '_')
-                effortWeight = str(effort_weight).replace('.', '_')
+            for suffix in self.suffixes:
+                sol_path = self.get_solution_path(root_dir, suffix)
                 sol_table = osim.TimeSeriesTable(sol_path)
                 duration = sol_table.getTableMetaDataString('solver_duration')
                 # Convert duration from seconds to hours.
                 duration = float(duration) / 60.0 / 60.0
-                print(f'duration (track={trackingWeight}, '
-                      f'effort={effortWeight}): ', duration)              
-                f.write(f'(track={trackingWeight}, effort={effortWeight}): '
-                        f'{duration:.2f}\n')
+                print(f'duration (suffix {suffix}): ', duration)
+                f.write(f'(suffix {suffix}): {duration:.2f}\n')
 
-        iterate = zip(self.tracking_weights, self.effort_weights,
-                      self.cmap_indices)
-        for tracking_weight, effort_weight, cmap_index in iterate:
-            print(f'reserves for track={trackingWeight}, '
-                  f'effort={effortWeight}):')
-            sol_path = self.get_solution_path(root_dir, tracking_weight,
-                                              effort_weight)
+        for suffix in self.suffixes:
+            print(f'reserves for suffix {suffix}:')
+            sol_path = self.get_solution_path(root_dir, suffix)
             solution = osim.MocoTrajectory(sol_path)
-            reserves = self.calc_reserves(root_dir, solution)
+            reserves = self.calc_reserves(root_dir, suffix, solution)
             column_labels = reserves.getColumnLabels()
             max_res = -np.inf
             for icol in range(reserves.getNumColumns()):
@@ -775,23 +722,19 @@ class MotionTrackingWalking(MocoPaperResult):
                 max = np.max(np.abs(column))
                 max_res = np.max([max_res, max])
                 print(f' max abs {column_labels[icol]}: {max}')
-            muscle_mechanics = self.calc_muscle_mechanics(root_dir, solution)
-            trackingWeight = str(tracking_weight).replace('.', '_')
-            effortWeight = str(effort_weight).replace('.', '_')
+            muscle_mechanics = self.calc_muscle_mechanics(root_dir, suffix,
+                                                          solution)
             osim.STOFileAdapter.write(muscle_mechanics,
                                       'results/tracking_walking_muscle_mechanics'
-                                      f'_trackingWeight{trackingWeight}'
-                                      f'_effortWeight{effortWeight}.sto')
+                                      f'{suffix}.sto')
         trajectory_filepath = self.get_solution_path_fullcycle(root_dir,
-                                                               self.tracking_weights[-1],
-                                                               self.effort_weights[-1])
+                                                               self.suffixes[-1]
+                                                               )
 
         ref_files = list()
         ref_files.append('tracking_walking_tracked_states.sto')
-        for tracking_weight, effort_weight, cmap_index in iterate:
-            ref_files.append(self.get_solution_path_fullcycle(root_dir,
-                                                              tracking_weight,
-                                                              effort_weight))
+        for suffix in self.suffixes:
+            ref_files.append(self.get_solution_path_fullcycle(root_dir, suffix))
 
         report = osim.report.Report(model=model, 
                 trajectory_filepath=trajectory_filepath, 

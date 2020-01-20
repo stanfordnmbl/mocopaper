@@ -11,7 +11,11 @@ from moco_paper_result import MocoPaperResult
 
 import utilities
 
-# TODO: compute reserve RMS
+# TODO: try different foot spacing
+# TODO: fix oscillations in GRFz.
+# TODO: semimem and gasmed forces are negative.
+# TODO: feet are crossing over too much (b/c adductor passive force?)
+# TODO: remove reserves from tracking problem?
 
 class MotionTrackingWalking(MocoPaperResult):
     def __init__(self):
@@ -168,6 +172,16 @@ class MotionTrackingWalking(MocoPaperResult):
         output = osim.analyze(model, solution, ['.*reserve.*actuation'])
         return output
 
+    def calc_muscle_mechanics(self, root_dir, solution):
+        modelProcessor = self.create_model_processor(root_dir)
+        model = modelProcessor.process()
+        output = osim.analyze(model, solution,
+                              ['.*gasmed.*\|tendon_force',
+                               '.*gasmed.*\|normalized_fiber_length',
+                               '.*semimem.*\|tendon_force',
+                               '.*semimem.*\|normalized_fiber_length'])
+        return output
+
     def run_inverse_problem(self, root_dir):
 
         modelProcessor = self.create_model_processor(root_dir,
@@ -286,6 +300,14 @@ class MotionTrackingWalking(MocoPaperResult):
         problem.setStateInfo('/jointset/back/lumbar_extension/value', [], -0.12)
         problem.setStateInfo('/jointset/back/lumbar_bending/value', [], 0)
         problem.setStateInfo('/jointset/back/lumbar_rotation/value', [], 0.04)
+        problem.setStateInfo('/jointset/ground_pelvis/pelvis_list/value', [], 0)
+        if self.coordinate_tracking:
+            tracking = osim.MocoStateTrackingGoal().safeDownCast(
+                problem.updGoal('state_tracking'))
+            tracking.setWeightForState(
+                "/jointset/ground_pelvis/pelvis_tz/value", 0.0)
+            tracking.setWeightForState(
+                "/jointset/ground_pelvis/pelvis_list/value", 0.0)
         # Update the control effort goal to a cost of transport type cost.
         effort = osim.MocoControlGoal().safeDownCast(
                 problem.updGoal('control_effort'))
@@ -329,33 +351,35 @@ class MotionTrackingWalking(MocoPaperResult):
         for coord in model.getComponentsList():
             if not type(coord) is osim.Coordinate: continue
 
-            if coord.getName().endswith('_r'):
+            coordName = coord.getName()
+            coordValue = coord.getStateVariableNames().get(0)
+            coordSpeed = coord.getStateVariableNames().get(1)
+
+            if coordName.endswith('_r'):
                 symmetry.addStatePair(osim.MocoPeriodicityGoalPair(
-                    coord.getStateVariableNames().get(0),
-                    coord.getStateVariableNames().get(0).replace('_r/', '_l/')))
+                    coordValue, coordValue.replace('_r/', '_l/')))
                 symmetry.addStatePair(osim.MocoPeriodicityGoalPair(
-                    coord.getStateVariableNames().get(1),
-                    coord.getStateVariableNames().get(1).replace('_r/', '_l/')))
-            elif coord.getName().endswith('_l'):
+                    coordSpeed, coordSpeed.replace('_r/', '_l/')))
+            elif coordName.endswith('_l'):
                 symmetry.addStatePair(osim.MocoPeriodicityGoalPair(
-                    coord.getStateVariableNames().get(0),
-                    coord.getStateVariableNames().get(0).replace('_l/', '_r/')))
+                    coordValue, coordValue.replace('_l/', '_r/')))
                 symmetry.addStatePair(osim.MocoPeriodicityGoalPair(
-                    coord.getStateVariableNames().get(1),
-                    coord.getStateVariableNames().get(1).replace('_l/', '_r/')))
-            elif (coord.getName().endswith('_bending') or 
-                  coord.getName().endswith('_rotation') or 
-                  coord.getName().endswith('_tz') or
-                  coord.getName().endswith('_list')): 
+                    coordSpeed, coordSpeed.replace('_l/', '_r/')))
+            elif (coordName.endswith('_bending') or
+                  coordName.endswith('_rotation') or
+                  coordName.endswith('_tz') or
+                  coordName.endswith('_list')):
+                # This does not include hip rotation,
+                # because that ends with _l or _r.
                 symmetry.addStatePair(osim.MocoPeriodicityGoalPair(
-                    coord.getStateVariableNames().get(0)))
+                    coordValue))
                 symmetry.addNegatedStatePair(osim.MocoPeriodicityGoalPair(
-                    coord.getStateVariableNames().get(1)))
-            elif not coord.getName().endswith('_tx'):
+                    coordSpeed))
+            elif not coordName.endswith('_tx'):
                 symmetry.addStatePair(osim.MocoPeriodicityGoalPair(
-                    coord.getStateVariableNames().get(0)))
+                    coordValue))
                 symmetry.addStatePair(osim.MocoPeriodicityGoalPair(
-                    coord.getStateVariableNames().get(1)))
+                    coordSpeed))
         symmetry.addStatePair(osim.MocoPeriodicityGoalPair(
             '/jointset/ground_pelvis/pelvis_tx/speed'))
         # Symmetric activations.
@@ -382,6 +406,30 @@ class MotionTrackingWalking(MocoPaperResult):
                     actu.getStateVariableNames().get(0),
                     actu.getStateVariableNames().get(0)))
         problem.addGoal(symmetry)
+
+        # Contact tracking
+        # ----------------
+        forceNamesRightFoot = ['forceset/contactSphereHeel_r',
+                               'forceset/contactLateralRearfoot_r',
+                               'forceset/contactLateralMidfoot_r',
+                               'forceset/contactLateralToe_r',
+                               'forceset/contactMedialToe_r',
+                               'forceset/contactMedialMidfoot_r']
+        forceNamesLeftFoot = ['forceset/contactSphereHeel_l',
+                              'forceset/contactLateralRearfoot_l',
+                              'forceset/contactLateralMidfoot_l',
+                              'forceset/contactLateralToe_l',
+                              'forceset/contactMedialToe_l',
+                              'forceset/contactMedialMidfoot_l']
+        if self.contact_tracking:
+            contactTracking = osim.MocoContactTrackingGoal('contact', 0.001)
+            contactTracking.setExternalLoadsFile(
+                'resources/Rajagopal2016/grf_walk.xml')
+            contactTracking.addContactGroup(forceNamesRightFoot, 'Right_GRF')
+            contactTracking.addContactGroup(forceNamesLeftFoot, 'Left_GRF')
+            contactTracking.setProjection("plane")
+            contactTracking.setProjectionVector(osim.Vec3(0, 0, 1))
+            problem.addGoal(contactTracking)
 
         # Configure the solver
         # --------------------
@@ -434,18 +482,6 @@ class MotionTrackingWalking(MocoPaperResult):
 
         # Compute ground reaction forces generated by contact sphere from the 
         # full gait cycle trajectory.
-        forceNamesRightFoot = ['forceset/contactSphereHeel_r',
-                               'forceset/contactLateralRearfoot_r',
-                               'forceset/contactLateralMidfoot_r',
-                               'forceset/contactLateralToe_r',
-                               'forceset/contactMedialToe_r',
-                               'forceset/contactMedialMidfoot_r']
-        forceNamesLeftFoot = ['forceset/contactSphereHeel_l',
-                              'forceset/contactLateralRearfoot_l',
-                              'forceset/contactLateralMidfoot_l',
-                              'forceset/contactLateralToe_l',
-                              'forceset/contactMedialToe_l',
-                              'forceset/contactMedialMidfoot_l']
         externalLoads = osim.createExternalLoadsTableForGait(
                 model, fullTraj, forceNamesRightFoot, forceNamesLeftFoot)
         osim.writeTableToFile(externalLoads, os.path.join(root_dir, 
@@ -463,14 +499,18 @@ class MotionTrackingWalking(MocoPaperResult):
         return solution
 
     def parse_args(self, args):
-        self.coordinate_tracking = False
         self.skip_inverse = False
+        self.coordinate_tracking = False
+        self.contact_tracking = False
         if len(args) == 0: return
         print('Received arguments {}'.format(args))
-        if 'coordinate-tracking' in args:
-            self.coordinate_tracking = True
         if 'skip-inverse' in args:
             self.skip_inverse = True
+        if 'coordinate-tracking' in args:
+            self.coordinate_tracking = True
+        if 'contact-tracking' in args:
+            self.contact_tracking = True
+
 
 
     def generate_results(self, root_dir, args):
@@ -500,15 +540,22 @@ class MotionTrackingWalking(MocoPaperResult):
         gravity = model.getGravity()
         BW = mass*abs(gravity[1])
 
-        iterate = zip(self.tracking_weights, self.effort_weights, 
-                self.cmap_indices)
+        # for tracking_weight, effort_weight, cmap_index in zip(
+        #         self.tracking_weights, self.effort_weights,
+        #         self.cmap_indices):
+        #     solution = osim.MocoTrajectory(
+        #         self.get_solution_path_fullcycle(root_dir, tracking_weight,
+        #               effort_weight))
+        #     osim.visualize(model, solution.exportToStatesTable())
+
         emg = self.load_electromyography(root_dir)
 
         fig = plt.figure(figsize=(7.5, 7))
         gs = gridspec.GridSpec(36, 3)
         ax_time = fig.add_subplot(gs[0:12, 0])
-        ax_grf_x = fig.add_subplot(gs[12:24, 0])
-        ax_grf_y = fig.add_subplot(gs[24:36, 0])
+        ax_grf_x = fig.add_subplot(gs[12:20, 0])
+        ax_grf_y = fig.add_subplot(gs[20:28, 0])
+        ax_grf_z = fig.add_subplot(gs[28:36, 0])
         ax_add = fig.add_subplot(gs[0:9, 1])
         ax_hip = fig.add_subplot(gs[9:18, 1])
         ax_knee = fig.add_subplot(gs[18:27, 1])
@@ -516,6 +563,7 @@ class MotionTrackingWalking(MocoPaperResult):
         ax_list = list()
         ax_list.append(ax_grf_x)
         ax_list.append(ax_grf_y)
+        ax_list.append(ax_grf_z)
         ax_list.append(ax_add)
         ax_list.append(ax_hip)
         ax_list.append(ax_knee)
@@ -552,6 +600,9 @@ class MotionTrackingWalking(MocoPaperResult):
         ax_grf_y.plot(pgc_grfs, 
             grf_table['ground_force_l_vy'][grf_start:grf_end]/BW, 
             color='black', lw=lw+1.0)
+        ax_grf_z.plot(pgc_grfs,
+                      grf_table['ground_force_l_vz'][grf_start:grf_end]/BW,
+                      color='black', lw=lw+1.0)
 
         # experimental coordinates
         coordinates = self.load_table(os.path.join(root_dir, 'resources', 
@@ -574,20 +625,13 @@ class MotionTrackingWalking(MocoPaperResult):
                       coordinates['ankle_angle_l'][coords_start:coords_end],
                       color='black', lw=lw + 1.0)
 
-        # electromyography data
-        for im, muscle in enumerate(muscles):
-            ax = muscle[0]
-            if 'PSOAS' not in muscle:
-                self.plot(ax, emg['time'], emg[muscle[3]], shift=False, 
-                    fill=True, color='lightgray', label='electromyography')
-            ax.set_ylim(0, 1)
-            ax.set_yticks([0, 1])
-            ax.set_xlim(0, 100)
-            ax.set_xticks([0, 50, 100])
-            utilities.publication_spines(ax)
-
         # simulation results
-        for i, (tracking_weight, effort_weight, cmap_index) in enumerate(iterate):
+        iterate = zip(
+            self.tracking_weights, self.effort_weights,
+            self.cmap_indices)
+
+        for i, (tracking_weight, effort_weight, cmap_index) in enumerate(
+                iterate):
             color = cmap(cmap_index)
             full_path = self.get_solution_path_fullcycle(root_dir, 
                     tracking_weight, effort_weight)
@@ -642,8 +686,8 @@ class MotionTrackingWalking(MocoPaperResult):
             ax_grf_x.plot(pgc, grf_table['ground_force_l_vx']/BW, color=color,
                 lw=lw)
             ax_grf_x.set_ylabel('horizontal force (BW)')
-            ax_grf_x.set_ylim(-0.4, 0.4)
-            ax_grf_x.set_yticks([-0.4, -0.2, 0, 0.2, 0.4])
+            ax_grf_x.set_ylim(-0.35, 0.35)
+            ax_grf_x.set_yticks([-0.2, 0, 0.2])
             ax_grf_x.set_title('GROUND REACTIONS', weight='bold', 
                     size=title_fs)
             ax_grf_x.set_xticklabels([])
@@ -651,9 +695,14 @@ class MotionTrackingWalking(MocoPaperResult):
             ax_grf_y.plot(pgc, grf_table['ground_force_l_vy']/BW, color=color,
                 lw=lw)
             ax_grf_y.set_ylabel('vertical force (BW)')
-            ax_grf_y.set_xlabel('time (% gait cycle)')
             ax_grf_y.set_ylim(0, 1.5)
             ax_grf_y.set_yticks([0, 0.5, 1, 1.5])
+            ax_grf_y.set_xticklabels([])
+
+            ax_grf_z.plot(pgc, grf_table['ground_force_l_vz']/BW, color=color,
+                          lw=lw)
+            ax_grf_z.set_ylabel('transverse force (BW)')
+            ax_grf_z.set_xlabel('time (% gait cycle)')
 
             # kinematics
             rad2deg = 180 / np.pi
@@ -666,15 +715,14 @@ class MotionTrackingWalking(MocoPaperResult):
             ax_hip.plot(pgc, rad2deg*full_traj.getStateMat(
                     '/jointset/hip_l/hip_flexion_l/value'), color=color, lw=lw)
             ax_hip.set_ylabel('hip flexion (degrees)')
-            ax_hip.set_ylim(-20, 50)
+            # ax_hip.set_ylim(-20, 50)
             # ax_hip.set_yticks([-0.2, 0, 0.2, 0.4, 0.6, 0.8])
             ax_hip.set_xticklabels([])
             ax_knee.plot(pgc, rad2deg*full_traj.getStateMat(
                     '/jointset/walker_knee_l/knee_angle_l/value'), color=color,
                     lw=lw)
             ax_knee.set_ylabel('knee flexion (degrees)')
-            ax_knee.set_ylim(0, 80)
-            # ax_knee.set_yticks([0, 0.5, 1, 1.5])
+            ax_knee.set_ylim(0, 90)
             ax_knee.set_xticklabels([])
             ax_ankle.plot(pgc, rad2deg*full_traj.getStateMat(
                     '/jointset/ankle_l/ankle_angle_l/value'), color=color, 
@@ -694,12 +742,21 @@ class MotionTrackingWalking(MocoPaperResult):
             for im, muscle in enumerate(muscles):
                 activation_path = f'/forceset/{muscle[1]}_l/activation'
                 ax = muscle[0]
-                ax.plot(pgc, full_traj.getStateMat(activation_path),
-                        color=color, lw=lw)
+                activation = full_traj.getStateMat(activation_path)
+                ax.plot(pgc, activation, color=color, lw=lw)
+
+                # electromyography data
+                # TODO: do not assume we want to normalize EMG via simulation 0.
+                if i == 0 and 'PSOAS' not in muscle:
+                    self.plot(ax, emg['time'],
+                              emg[muscle[3]] * np.max(activation), shift=False,
+                              fill=True, color='lightgray',
+                              label='electromyography')
                 ax.set_ylim(0, 1)
                 ax.set_yticks([0, 1])
                 ax.set_xlim(0, 100)
                 ax.set_xticks([0, 50, 100])
+
                 if im < 8:
                     ax.set_xticklabels([])
                 ax.text(0.5, 1.2, muscle[2],
@@ -747,8 +804,8 @@ class MotionTrackingWalking(MocoPaperResult):
                   f'effort={effortWeight}):')
             sol_path = self.get_solution_path(root_dir, tracking_weight,
                                               effort_weight)
-            reserves = self.calc_reserves(root_dir,
-                                          osim.MocoTrajectory(sol_path))
+            solution = osim.MocoTrajectory(sol_path)
+            reserves = self.calc_reserves(root_dir, solution)
             column_labels = reserves.getColumnLabels()
             max_res = -np.inf
             for icol in range(reserves.getNumColumns()):
@@ -757,7 +814,13 @@ class MotionTrackingWalking(MocoPaperResult):
                 max = np.max(np.abs(column))
                 max_res = np.max([max_res, max])
                 print(f' max abs {column_labels[icol]}: {max}')
-
+            muscle_mechanics = self.calc_muscle_mechanics(root_dir, solution)
+            trackingWeight = str(tracking_weight).replace('.', '_')
+            effortWeight = str(effort_weight).replace('.', '_')
+            osim.STOFileAdapter.write(muscle_mechanics,
+                                      'results/tracking_walking_muscle_mechanics'
+                                      f'_trackingWeight{trackingWeight}'
+                                      f'_effortWeight{effortWeight}.sto')
         trajectory_filepath = self.get_solution_path_fullcycle(root_dir,
                                                                self.tracking_weights[-1],
                                                                self.effort_weights[-1])
@@ -768,7 +831,8 @@ class MotionTrackingWalking(MocoPaperResult):
                       self.cmap_indices[:-1])
         for tracking_weight, effort_weight, cmap_index in iterate:
             ref_files.append(self.get_solution_path_fullcycle(root_dir,
-                tracking_weight, effort_weight))
+                                                              tracking_weight,
+                                                              effort_weight))
 
         report = osim.report.Report(model=model, 
                 trajectory_filepath=trajectory_filepath, 

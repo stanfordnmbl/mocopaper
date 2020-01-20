@@ -24,10 +24,10 @@ class MotionTrackingWalking(MocoPaperResult):
             'results/motion_tracking_walking_inverse_solution.sto'
         self.tracking_solution_relpath_prefix = \
             'results/motion_tracking_walking_solution'
-        self.tracking_weights = [1] # 1, 0.5, 0.001, 0]
-        self.effort_weights = [0] # 0.001, 0.5, 1, 1]
+        self.tracking_weights = [0.1]
+        self.effort_weights = [0.01]
         self.cmap = 'nipy_spectral'
-        self.cmap_indices = [0.2, 0.35, 0.5, 0.75, 0.9]
+        self.cmap_indices = [0.2, 0.5, 0.9]
         self.legend_entries = ['track', 'track\n+\neffort', 'effort']
         self.legend_kwargs = [{'horizontalalignment': 'left',
                                'verticalalignment': 'middle',
@@ -105,8 +105,8 @@ class MotionTrackingWalking(MocoPaperResult):
             ['subtalar_r', 'mtp_r', 'subtalar_l', 'mtp_l']))
         modelProcessor.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())
         modelProcessor.append(osim.ModOpIgnoreTendonCompliance())
+        modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
         if for_inverse:
-            modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
             ext_loads_xml = os.path.join(root_dir,
                     'resources/Rajagopal2016/grf_walk.xml')
             modelProcessor.append(osim.ModOpAddExternalLoads(ext_loads_xml))
@@ -218,6 +218,22 @@ class MotionTrackingWalking(MocoPaperResult):
             track.setStatesReference(tableProcessor)
             track.set_states_global_tracking_weight(
                 tracking_weight / (2 * model.getNumCoordinates()))
+            stateWeights = osim.MocoWeightSet()
+            weightList = list()
+            weightList.append(('/jointset/ground_pelvis/pelvis_tz/value', 0))
+            weightList.append(('/jointset/ground_pelvis/pelvis_list/value', 0))
+            weightList.append(('/jointset/ground_pelvis/pelvis_tilt/value', 0))
+            weightList.append(('/jointset/ground_pelvis/pelvis_rotation/value', 0))
+
+            # weightList.append(('/jointset/hip_r/hip_rotation_r/value', 10))
+            # weightList.append(('/jointset/hip_l/hip_rotation_l/value', 10))
+            # weightList.append(('/jointset/walker_knee_r/knee_angle_r/value', 10))
+            # weightList.append(('/jointset/walker_knee_l/knee_angle_l/value', 10))
+            # weightList.append(('/jointset/ankle_r/ankle_angle_r/value', 10))
+            # weightList.append(('/jointset/ankle_l/ankle_angle_l/value', 10))
+            for weight in weightList:
+                stateWeights.cloneAndAppend(osim.MocoWeight(weight[0], weight[1]))
+            track.set_states_weight_set(stateWeights)
             if previous_solution.empty():
                 track.set_apply_tracked_states_to_guess(True)
                 # track.set_scale_state_weights_with_range(True);
@@ -253,8 +269,18 @@ class MotionTrackingWalking(MocoPaperResult):
         problem = study.updProblem()
         problem.setTimeBounds(self.initial_time, 
                 [self.half_time-0.2, self.half_time+0.2])
-        problem.setStateInfo('/jointset/ground_pelvis/pelvis_tx/value', [], 
-                0.446)
+        problem.setStateInfo('/jointset/ground_pelvis/pelvis_tx/value', [], 0.446)
+        # problem.setStateInfo('/jointset/ground_pelvis/pelvis_tz/value', [], 0)
+        problem.setStateInfo('/jointset/ground_pelvis/pelvis_tilt/value', [], 0) #-0.01)
+        problem.setStateInfo('/jointset/ground_pelvis/pelvis_list/value', [], 0) #0.01)
+        problem.setStateInfo('/jointset/ground_pelvis/pelvis_rotation/value', [], 0) # 0.02)
+        # problem.setStateInfo('/jointset/hip_r/hip_adduction_r/value', [], 0.05) 
+        # problem.setStateInfo('/jointset/hip_l/hip_adduction_l/value', [], 0.02)
+        # problem.setStateInfo('/jointset/hip_r/hip_rotation_r/value', [], -0.11) 
+        # problem.setStateInfo('/jointset/hip_l/hip_rotation_l/value', [], 0.02)
+        # problem.setStateInfo('/jointset/walker_knee_r/knee_angle_r/value', [], 0)
+        # problem.setStateInfo('/jointset/walker_knee_l/knee_angle_l/value', [], 0)  
+
         # Set the initial values for the lumbar coordinates to avoid 
         # weird torso movements. 
         problem.setStateInfo('/jointset/back/lumbar_extension/value', [], -0.12)
@@ -268,9 +294,7 @@ class MotionTrackingWalking(MocoPaperResult):
             for actu in model.getComponentsList():
                 if actu.getConcreteClassName().endswith('Actuator'):
                     effort.setWeightForControl(actu.getAbsolutePathString(), 
-                        0.0001 / effort_weight)
-        else:
-            effort.setEnabled(False)
+                        0.001)
 
         speedGoal = osim.MocoAverageSpeedGoal('speed')
         speedGoal.set_desired_average_speed(1.235)
@@ -368,7 +392,7 @@ class MotionTrackingWalking(MocoPaperResult):
         solver.set_multibody_dynamics_mode('implicit')
         solver.set_minimize_implicit_multibody_accelerations(True)
         solver.set_implicit_multibody_accelerations_weight(
-            0.0001 / model.getNumCoordinates())
+            1e-6 / model.getNumCoordinates())
         solver.set_implicit_multibody_acceleration_bounds(
                 osim.MocoBounds(-200, 200))
 
@@ -433,7 +457,7 @@ class MotionTrackingWalking(MocoPaperResult):
 
         # solution = osim.MocoTrajectory(
         #     self.get_solution_path_fullcycle(root_dir, tracking_weight,
-        #           effort_weight))`
+        #           effort_weight))
         # study.visualize(solution)
 
         return solution
@@ -457,10 +481,9 @@ class MotionTrackingWalking(MocoPaperResult):
             self.run_inverse_problem(root_dir)
 
         # Run tracking problem, sweeping across different effort weights.
-        # solution = osim.MocoTrajectory()
-        solution = osim.MocoTrajectory(
-            self.get_solution_path(root_dir, self.tracking_weights[0],
-                  self.effort_weights[0]))
+        solution = osim.MocoTrajectory()
+        # solution = osim.MocoTrajectory(self.get_solution_path(root_dir,
+            # self.tracking_weights[0], self.effort_weights[0]))
         weights = zip(self.tracking_weights, self.effort_weights)
         for tracking_weight, effort_weight in weights:
             solution = self.run_tracking_problem(root_dir, solution, 
@@ -580,13 +603,14 @@ class MotionTrackingWalking(MocoPaperResult):
                     sol_table.getTableMetaDataString('objective_state_tracking')
             else:
                 trackingCostStr = \
-                    sol_table.getTableMetaDataString('objective_marker_tracking')
+                    sol_table.getTableMetaDataString('objective_marking_tracking')
             trackingCost = float(trackingCostStr) / tracking_weight
 
-
-            effortCostStr = \
-                sol_table.getTableMetaDataString('objective_control_effort')
-            effortCost = float(effortCostStr) / effort_weight
+            effortCost = 0
+            if effort_weight:
+                effortCostStr = \
+                    sol_table.getTableMetaDataString('objective_control_effort')
+                effortCost = float(effortCostStr) / effort_weight
             print(f'effort and tracking costs (track={trackingWeight}, '
                   f'effort={effortWeight}): ', effortCost, trackingCost)
 
@@ -721,7 +745,7 @@ class MotionTrackingWalking(MocoPaperResult):
         for tracking_weight, effort_weight, cmap_index in iterate:
             print(f'reserves for track={trackingWeight}, '
                   f'effort={effortWeight}):')
-        sol_path = self.get_solution_path(root_dir, tracking_weight,
+            sol_path = self.get_solution_path(root_dir, tracking_weight,
                                               effort_weight)
             reserves = self.calc_reserves(root_dir,
                                           osim.MocoTrajectory(sol_path))
@@ -740,6 +764,8 @@ class MotionTrackingWalking(MocoPaperResult):
 
         ref_files = list()
         ref_files.append('tracking_walking_tracked_states.sto')
+        iterate = zip(self.tracking_weights[:-1], self.effort_weights[:-1],
+                      self.cmap_indices[:-1])
         for tracking_weight, effort_weight, cmap_index in iterate:
             ref_files.append(self.get_solution_path_fullcycle(root_dir,
                 tracking_weight, effort_weight))

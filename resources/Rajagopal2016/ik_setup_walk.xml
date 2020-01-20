@@ -19,14 +19,14 @@
 					<!--Whether or not this task will be used during inverse kinematics solve.-->
 					<apply>true</apply>
 					<!--Weight given to a marker or coordinate for solving inverse kinematics problems.-->
-					<weight>5</weight>
+					<weight>250</weight>
 				</IKMarkerTask>
 				<IKMarkerTask name="L.Shoulder">
-					<apply>true</apply> <weight>5</weight> </IKMarkerTask>
+					<apply>true</apply> <weight>250</weight> </IKMarkerTask>
 				<IKMarkerTask name="R.Clavicle">
-					<apply>true</apply> <weight>5</weight> </IKMarkerTask>
+					<apply>true</apply> <weight>250</weight> </IKMarkerTask>
 				<IKMarkerTask name="L.Clavicle">
-					<apply>true</apply> <weight>5</weight> </IKMarkerTask>
+					<apply>true</apply> <weight>250</weight> </IKMarkerTask>
 				<IKMarkerTask name="R.Biceps">
 					<apply>false</apply> <weight>1</weight> </IKMarkerTask>
 				<IKMarkerTask name="L.Biceps">
@@ -50,15 +50,15 @@
 
 				<!-- Lower-body anatomical markers -->
 				<IKMarkerTask name="R.ASIS">
-					<apply>true</apply> <weight>150</weight> </IKMarkerTask>
+					<apply>true</apply> <weight>250</weight> </IKMarkerTask>
 				<IKMarkerTask name="L.ASIS">
-					<apply>true</apply> <weight>150</weight> </IKMarkerTask>
+					<apply>true</apply> <weight>250</weight> </IKMarkerTask>
 				<IKMarkerTask name="S2">
 					<apply>true</apply> <weight>50</weight> </IKMarkerTask>
 				<IKMarkerTask name="R.PSIS">
-					<apply>true</apply> <weight>150</weight> </IKMarkerTask>
+					<apply>true</apply> <weight>250</weight> </IKMarkerTask>
 				<IKMarkerTask name="L.PSIS">
-					<apply>true</apply> <weight>150</weight> </IKMarkerTask>
+					<apply>true</apply> <weight>250</weight> </IKMarkerTask>
 				<IKMarkerTask name="R_HJC">
 					<apply>false</apply> <weight>1</weight> </IKMarkerTask>
 				<IKMarkerTask name="L_HJC">
@@ -84,9 +84,9 @@
 				<IKMarkerTask name="L.Toe">
 					<apply>true</apply> <weight>100</weight> </IKMarkerTask>
 				<IKMarkerTask name="R.MT5">
-					<apply>true</apply> <weight>100</weight> </IKMarkerTask>
+					<apply>true</apply> <weight>250</weight> </IKMarkerTask>
 				<IKMarkerTask name="L.MT5">
-					<apply>true</apply> <weight>100</weight> </IKMarkerTask>
+					<apply>true</apply> <weight>250</weight> </IKMarkerTask>
 				<IKMarkerTask name="R.Heel">
 					<apply>true</apply> <weight>500</weight> </IKMarkerTask>
 				<IKMarkerTask name="L.Heel">

@@ -28,8 +28,8 @@ class MotionTrackingWalking(MocoPaperResult):
             'results/motion_tracking_walking_inverse_solution.sto'
         self.tracking_solution_relpath_prefix = \
             'results/motion_tracking_walking_solution'
-        self.tracking_weights = [0.1]
-        self.effort_weights = [0.01]
+        self.tracking_weights = [1, 1, 0.01]
+        self.effort_weights = [0.1, 10, 10]
         self.cmap = 'nipy_spectral'
         self.cmap_indices = [0.2, 0.5, 0.9]
         self.legend_entries = ['track', 'track\n+\neffort', 'effort']
@@ -122,6 +122,7 @@ class MotionTrackingWalking(MocoPaperResult):
             muscle = muscles.get(int(imusc))
             if 'gas' in muscle.getName() or 'soleus' in muscle.getName():
                 muscle.set_ignore_tendon_compliance(False)
+                muscle.set_max_isometric_force(0.25*muscle.get_max_isometric_force())
 
         modelProcessorTendonCompliance = osim.ModelProcessor(model)
         modelProcessorTendonCompliance.append(
@@ -232,19 +233,14 @@ class MotionTrackingWalking(MocoPaperResult):
             track.setStatesReference(tableProcessor)
             track.set_states_global_tracking_weight(
                 tracking_weight / (2 * model.getNumCoordinates()))
+            # Don't track some pelvis coordinates to avoid poor walking motion
+            # solutions.
             stateWeights = osim.MocoWeightSet()
             weightList = list()
             weightList.append(('/jointset/ground_pelvis/pelvis_tz/value', 0))
             weightList.append(('/jointset/ground_pelvis/pelvis_list/value', 0))
             weightList.append(('/jointset/ground_pelvis/pelvis_tilt/value', 0))
             weightList.append(('/jointset/ground_pelvis/pelvis_rotation/value', 0))
-
-            # weightList.append(('/jointset/hip_r/hip_rotation_r/value', 10))
-            # weightList.append(('/jointset/hip_l/hip_rotation_l/value', 10))
-            # weightList.append(('/jointset/walker_knee_r/knee_angle_r/value', 10))
-            # weightList.append(('/jointset/walker_knee_l/knee_angle_l/value', 10))
-            # weightList.append(('/jointset/ankle_r/ankle_angle_r/value', 10))
-            # weightList.append(('/jointset/ankle_l/ankle_angle_l/value', 10))
             for weight in weightList:
                 stateWeights.cloneAndAppend(osim.MocoWeight(weight[0], weight[1]))
             track.set_states_weight_set(stateWeights)
@@ -283,35 +279,23 @@ class MotionTrackingWalking(MocoPaperResult):
         problem = study.updProblem()
         problem.setTimeBounds(self.initial_time, 
                 [self.half_time-0.2, self.half_time+0.2])
-        problem.setStateInfo('/jointset/ground_pelvis/pelvis_tx/value', [], 0.446)
-        # problem.setStateInfo('/jointset/ground_pelvis/pelvis_tz/value', [], 0)
-        problem.setStateInfo('/jointset/ground_pelvis/pelvis_tilt/value', [], 0) #-0.01)
-        problem.setStateInfo('/jointset/ground_pelvis/pelvis_list/value', [], 0) #0.01)
-        problem.setStateInfo('/jointset/ground_pelvis/pelvis_rotation/value', [], 0) # 0.02)
-        # problem.setStateInfo('/jointset/hip_r/hip_adduction_r/value', [], 0.05) 
-        # problem.setStateInfo('/jointset/hip_l/hip_adduction_l/value', [], 0.02)
-        # problem.setStateInfo('/jointset/hip_r/hip_rotation_r/value', [], -0.11) 
-        # problem.setStateInfo('/jointset/hip_l/hip_rotation_l/value', [], 0.02)
-        # problem.setStateInfo('/jointset/walker_knee_r/knee_angle_r/value', [], 0)
-        # problem.setStateInfo('/jointset/walker_knee_l/knee_angle_l/value', [], 0)  
-
-        # Set the initial values for the lumbar coordinates to avoid 
-        # weird torso movements. 
+        
+        # Set the initial values for the lumbar and pelvis coordinates that 
+        # produce "normal" walking motions.
         problem.setStateInfo('/jointset/back/lumbar_extension/value', [], -0.12)
         problem.setStateInfo('/jointset/back/lumbar_bending/value', [], 0)
         problem.setStateInfo('/jointset/back/lumbar_rotation/value', [], 0.04)
+        problem.setStateInfo('/jointset/ground_pelvis/pelvis_tx/value', [], 0.446)
+        problem.setStateInfo('/jointset/ground_pelvis/pelvis_tilt/value', [], 0) 
         problem.setStateInfo('/jointset/ground_pelvis/pelvis_list/value', [], 0)
-        if self.coordinate_tracking:
-            tracking = osim.MocoStateTrackingGoal().safeDownCast(
-                problem.updGoal('state_tracking'))
-            tracking.setWeightForState(
-                "/jointset/ground_pelvis/pelvis_tz/value", 0.0)
-            tracking.setWeightForState(
-                "/jointset/ground_pelvis/pelvis_list/value", 0.0)
+        problem.setStateInfo('/jointset/ground_pelvis/pelvis_rotation/value', [], 0)
+
         # Update the control effort goal to a cost of transport type cost.
         effort = osim.MocoControlGoal().safeDownCast(
                 problem.updGoal('control_effort'))
-        effort.setDivideByDisplacement(True)    
+        effort.setDivideByDisplacement(True)
+        # Weight residual and reserve actuators low in the effort cost since they
+        # are already weak.    
         if effort_weight:
             for actu in model.getComponentsList():
                 if actu.getConcreteClassName().endswith('Actuator'):
@@ -489,12 +473,7 @@ class MotionTrackingWalking(MocoPaperResult):
                 f'_trackingWeight{trackingWeight}'
                 f'_effortWeight{effortWeight}_fullcycle_grfs.sto'))
 
-        study.visualize(fullTraj)
-
-        # solution = osim.MocoTrajectory(
-        #     self.get_solution_path_fullcycle(root_dir, tracking_weight,
-        #           effort_weight))
-        # study.visualize(solution)
+        # study.visualize(fullTraj)
 
         return solution
 
@@ -510,8 +489,6 @@ class MotionTrackingWalking(MocoPaperResult):
             self.coordinate_tracking = True
         if 'contact-tracking' in args:
             self.contact_tracking = True
-
-
 
     def generate_results(self, root_dir, args):
         self.parse_args(args)
@@ -540,13 +517,13 @@ class MotionTrackingWalking(MocoPaperResult):
         gravity = model.getGravity()
         BW = mass*abs(gravity[1])
 
-        # for tracking_weight, effort_weight, cmap_index in zip(
-        #         self.tracking_weights, self.effort_weights,
-        #         self.cmap_indices):
-        #     solution = osim.MocoTrajectory(
-        #         self.get_solution_path_fullcycle(root_dir, tracking_weight,
-        #               effort_weight))
-        #     osim.visualize(model, solution.exportToStatesTable())
+        for tracking_weight, effort_weight, cmap_index in zip(
+                self.tracking_weights, self.effort_weights,
+                self.cmap_indices):
+            solution = osim.MocoTrajectory(
+                self.get_solution_path_fullcycle(root_dir, tracking_weight,
+                      effort_weight))
+            osim.visualize(model, solution.exportToStatesTable())
 
         emg = self.load_electromyography(root_dir)
 

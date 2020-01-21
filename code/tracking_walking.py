@@ -29,10 +29,10 @@ class MotionTrackingWalking(MocoPaperResult):
             'results/motion_tracking_walking_inverse_solution.sto'
         self.tracking_solution_relpath_prefix = \
             'results/motion_tracking_walking_solution'
-        self.suffixes = [''] # TODO , '_assist']
+        self.suffixes = ['', '_weaksoleus', '_weakvas']
         self.cmap = 'nipy_spectral'
-        self.cmap_indices = [0.2, 0.5]
-        self.legend_entries = ['unassisted', 'assisted']
+        self.cmap_indices = [0.2, 0.5, 0.9]
+        self.legend_entries = ['normal', 'weak soleus', 'weak vasti']
         self.tracking_weight = 10
         self.effort_weight = 10
 
@@ -109,6 +109,21 @@ class MotionTrackingWalking(MocoPaperResult):
         if suffix == '_assist':
             add_device(model, 'ankle_angle_r')
             add_device(model, 'ankle_angle_l')
+
+        if suffix == '_weaksoleus':
+            soleus_r = model.updMuscles().get('soleus_r')
+            soleus_r.set_max_isometric_force(
+                0.25 * soleus_r.get_max_isometric_force())
+            soleus_l = model.updMuscles().get('soleus_l')
+            soleus_l.set_max_isometric_force(
+                0.25 * soleus_l.get_max_isometric_force())
+        if suffix == '_weakvas':
+            for muscle in ['vasmed', 'vasint', 'vaslat']:
+                for side in ['_l', '_r']:
+                    musc = model.updMuscles().get('%s%s' % (muscle, side))
+                    musc.set_max_isometric_force(
+                        0.25 * musc.get_max_isometric_force())
+
 
         modelProcessor = osim.ModelProcessor(model)
 

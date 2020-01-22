@@ -68,6 +68,12 @@ class MotionTrackingWalking(MocoPaperResult):
             #                 effort_weight=10,
             #                 cmap_index=0.6,
             #                 flags=['weaksoleus']),
+            MocoTrackConfig(name='assistankle',
+                            legend_entry='assisted ankle',
+                            tracking_weight=1,
+                            effort_weight=10,
+                            cmap_index=0.9,
+                            flags=['assistankle']),
         ]
 
     def create_model_processor(self, root_dir, for_inverse=False, config=None):

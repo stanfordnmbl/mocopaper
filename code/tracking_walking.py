@@ -29,12 +29,12 @@ class MotionTrackingWalking(MocoPaperResult):
             'results/motion_tracking_walking_inverse_solution.sto'
         self.tracking_solution_relpath_prefix = \
             'results/motion_tracking_walking_solution'
-        self.suffixes = ['', '_weaksoleus', '_weakvas']
+        self.suffixes = ['', '_weakvas'] # '_weaksoleus',
         self.cmap = 'nipy_spectral'
         self.cmap_indices = [0.2, 0.5, 0.9]
-        self.legend_entries = ['normal', 'weak soleus', 'weak vasti']
-        self.tracking_weight = 10
-        self.effort_weight = 10
+        self.legend_entries = ['normal', 'weak vasti'] # soleus', 'weak vasti']
+        self.tracking_weight = 1
+        self.effort_weight = 1
 
     def create_model_processor(self, root_dir, for_inverse=False,
                                suffix=''):
@@ -122,7 +122,7 @@ class MotionTrackingWalking(MocoPaperResult):
                 for side in ['_l', '_r']:
                     musc = model.updMuscles().get('%s%s' % (muscle, side))
                     musc.set_max_isometric_force(
-                        0.25 * musc.get_max_isometric_force())
+                        0.10 * musc.get_max_isometric_force())
 
 
         modelProcessor = osim.ModelProcessor(model)
@@ -419,7 +419,7 @@ class MotionTrackingWalking(MocoPaperResult):
         solver.set_multibody_dynamics_mode('implicit')
         solver.set_minimize_implicit_multibody_accelerations(True)
         solver.set_implicit_multibody_accelerations_weight(
-            0.0001 / model.getNumCoordinates())
+            0.00001 / model.getNumCoordinates())
         solver.set_implicit_multibody_acceleration_bounds(
                 osim.MocoBounds(-200, 200))
 

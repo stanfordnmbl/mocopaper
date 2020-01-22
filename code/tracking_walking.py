@@ -1,7 +1,9 @@
 import os
 import numpy as np
+import re
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+import matplotlib.cm as cm
 
 import opensim as osim
 
@@ -9,316 +11,161 @@ from moco_paper_result import MocoPaperResult
 
 import utilities
 
+# TODO: try different foot spacing
+# TODO: fix oscillations in GRFz.
+# TODO: semimem and gasmed forces are negative.
+# TODO: feet are crossing over too much (b/c adductor passive force?)
+# TODO: remove reserves from tracking problem?
 
 class MotionTrackingWalking(MocoPaperResult):
     def __init__(self):
-        self.initial_time = 0.83 # 0.450
-        self.final_time = 2.0 # 1.565
-        # self.footstrike = 0.836 # 1.424
-        self.mocotrack_solution_file = \
-            '%s/results/motion_tracking_walking_track_solution.sto'
-        self.mocoinverse_solution_file = \
-            '%s/results/motion_tracking_walking_inverse_solution.sto'
-        self.mocoinverse_jointreaction_solution_file = \
-            '%s/results/motion_tracking_walking_inverse_jointreaction_solution.sto'
-        self.side = 'l'
-        self.emg_sensor_names = [
-            'SOL', 'GAS', 'TA', 'MH', 'BF', 'VL', 'VM', 'RF', 'GMAX', 'GMED'
-        ]
+        super(MotionTrackingWalking, self).__init__()
+        self.initial_time = 0.81
+        self.half_time = 1.385
+        self.final_time = 1.96
+        self.mesh_interval = 0.035
+        self.inverse_solution_relpath = \
+            'results/motion_tracking_walking_inverse_solution.sto'
+        self.tracking_solution_relpath_prefix = \
+            'results/motion_tracking_walking_solution'
+        self.tracking_weights = [1, 1, 0.01]
+        self.effort_weights = [0.1, 10, 10]
+        self.cmap = 'nipy_spectral'
+        self.cmap_indices = [0.2, 0.5, 0.9]
+        self.legend_entries = ['track', 'track\n+\neffort', 'effort']
+        self.legend_kwargs = [{'horizontalalignment': 'left',
+                               'verticalalignment': 'middle',
+                               'bbox': {'boxstyle': 'square,pad=1'}},
+                              {'horizontalalignment': 'left',
+                               'verticalalignment': 'middle',
+                               'bbox': {'boxstyle': 'square,pad=1'}},
+                              {'horizontalalignment': 'center',
+                               'verticalalignment': 'bottom',
+                               'bbox': {'boxstyle': 'square,pad=1'}},
+                              ]
 
-    def shift(self, time, y, initial_time=None, final_time=None, starting_time=None):
-        if not initial_time:
-            initial_time = self.initial_time
-        if not final_time:
-            final_time = self.final_time
-        if not starting_time:
-            starting_time = self.initial_time
-        return utilities.shift_data_to_cycle(initial_time, final_time,
-                                             starting_time, time, y, cut_off=True)
+    def create_model_processor(self, root_dir, for_inverse=False):
+        
+        model = osim.Model(os.path.join(root_dir,
+                'resources/Rajagopal2016/'
+                'subject_walk_armless_contact_bounded_80musc.osim'))
 
-    def create_model_processor(self, root_dir):
+        if for_inverse:
+            forceSet = model.getForceSet()
+            numContacts = 0
+            for i in np.arange(forceSet.getSize()):
+                forceName = forceSet.get(int(i)).getName()
+                if 'contact' in forceName: numContacts += 1
 
-        # Create base model without reserves.
-        model = osim.Model(
-            os.path.join(root_dir, "resources/Rajagopal2016/"
-                                   "subject_walk_armless_80musc.osim"))
-        def add_reserve(model, coord, max_control):
-            actu = osim.CoordinateActuator(coord)
-            if coord.startswith('lumbar'):
-                prefix = 'torque_'
-            elif coord.startswith('pelvis'):
+            print('Removing contact force elements from model...')
+            contactsRemoved = 0
+            while contactsRemoved < numContacts:
+                for i in np.arange(forceSet.getSize()):
+                    forceName = forceSet.get(int(i)).getName()
+                    if 'contact' in forceName: 
+                        print('  --> removed', forceSet.get(int(i)).getName())
+                        forceSet.remove(int(i))
+                        contactsRemoved += 1
+                        break
+
+        def add_reserve(model, coord, optimal_force, max_control):
+            actu = osim.ActivationCoordinateActuator()
+            actu.set_coordinate(coord)
+            if coord.startswith('pelvis'):
                 prefix = 'residual_'
+            elif coord.startswith('lumbar'):
+                prefix = 'torque_'
             else:
                 prefix = 'reserve_'
             actu.setName(prefix + coord)
-            # actu.setMinControl(-max_control)
-            # actu.setMaxControl(max_control)
+            actu.setOptimalForce(optimal_force)
+            actu.setMinControl(-max_control)
+            actu.setMaxControl(max_control)
             model.addForce(actu)
-        add_reserve(model, 'lumbar_extension', 50)
-        add_reserve(model, 'lumbar_bending', 50)
-        add_reserve(model, 'lumbar_rotation', 20)
-        add_reserve(model, 'pelvis_tilt', 60)
-        add_reserve(model, 'pelvis_list', 30)
-        add_reserve(model, 'pelvis_rotation', 15)
-        add_reserve(model, 'pelvis_tx', 60)
-        add_reserve(model, 'pelvis_ty', 200)
-        add_reserve(model, 'pelvis_tz', 35)
+        reserves_max = 250 if for_inverse else 1
+        add_reserve(model, 'lumbar_extension', 1, 50)
+        add_reserve(model, 'lumbar_bending', 1, 50)
+        add_reserve(model, 'lumbar_rotation', 1, 50)
+        add_reserve(model, 'pelvis_tilt', 1, reserves_max)
+        add_reserve(model, 'pelvis_list', 1, reserves_max)
+        add_reserve(model, 'pelvis_rotation', 1, reserves_max)
+        add_reserve(model, 'pelvis_tx', 1, reserves_max)
+        add_reserve(model, 'pelvis_ty', 1, reserves_max)
+        add_reserve(model, 'pelvis_tz', 1, reserves_max)
+        optimal_force = 0.1
+        add_reserve(model, 'hip_flexion_r', optimal_force, reserves_max)
+        add_reserve(model, 'hip_adduction_r', optimal_force, reserves_max)
+        add_reserve(model, 'hip_rotation_r', optimal_force, reserves_max)
+        add_reserve(model, 'knee_angle_r', optimal_force, reserves_max)
+        add_reserve(model, 'ankle_angle_r', optimal_force, reserves_max)
+        add_reserve(model, 'hip_flexion_l', optimal_force, reserves_max)
+        add_reserve(model, 'hip_adduction_l', optimal_force, reserves_max)
+        add_reserve(model, 'hip_rotation_l', optimal_force, reserves_max)
+        add_reserve(model, 'knee_angle_l', optimal_force, reserves_max)
+        add_reserve(model, 'ankle_angle_l', optimal_force, reserves_max)
 
         modelProcessor = osim.ModelProcessor(model)
+
         modelProcessor.append(osim.ModOpReplaceJointsWithWelds(
             ['subtalar_r', 'mtp_r', 'subtalar_l', 'mtp_l']))
         modelProcessor.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())
-        modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
         modelProcessor.append(osim.ModOpIgnoreTendonCompliance())
-        modelProcessor.append(osim.ModOpAddReserves(1, 15, True))
-        baseModel = modelProcessor.process()
+        modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
+        if for_inverse:
+            ext_loads_xml = os.path.join(root_dir,
+                    'resources/Rajagopal2016/grf_walk.xml')
+            modelProcessor.append(osim.ModOpAddExternalLoads(ext_loads_xml))
 
-
-        # Create model for CMC
-        modelProcessorCMC = osim.ModelProcessor(baseModel)
-        cmcModel = modelProcessorCMC.process()
-
-        tasks = osim.CMC_TaskSet()
-        for coord in cmcModel.getCoordinateSet():
-            cname = coord.getName()
-            if cname.endswith('_beta'):
-                continue
-            task = osim.CMC_Joint()
-            task.setName(cname)
-            task.setCoordinateName(cname)
-            task.setKP(400, 1, 1)
-            task.setKV(80, 1, 1)
-            task.setActive(True, False, False)
-            tasks.cloneAndAppend(task)
-        tasks.printToXML(os.path.join(root_dir, 'code',
-                                      'motion_tracking_walking_cmc_tasks.xml'))
-
-        cmcModel.printToXML(os.path.join(root_dir, "resources/Rajagopal2016/"
-                            "subject_walk_armless_for_cmc.osim"))
-
-        # Create direct collocation model:
-        #   - implicit tendon compliance mode
-        #   - add external loads
-        ext_loads_xml = os.path.join(root_dir,
-                                     "resources/Rajagopal2016/grf_walk.xml")
-        baseModel.initSystem()
-        muscles = baseModel.updMuscles()
+        model = modelProcessor.process()
+        model.initSystem()
+        muscles = model.updMuscles()
         for imusc in np.arange(muscles.getSize()):
             muscle = muscles.get(int(imusc))
             if 'gas' in muscle.getName() or 'soleus' in muscle.getName():
                 muscle.set_ignore_tendon_compliance(False)
 
-        modelProcessorDC = osim.ModelProcessor(baseModel)
-        modelProcessorDC.append(
-            osim.ModOpTendonComplianceDynamicsModeDGF('implicit'))
+        modelProcessorTendonCompliance = osim.ModelProcessor(model)
+        modelProcessorTendonCompliance.append(
+                osim.ModOpUseImplicitTendonComplianceDynamicsDGF())
 
-        ext_loads_xml = os.path.join(root_dir,
-                                     "resources/Rajagopal2016/grf_walk.xml")
-        modelProcessorDC.append(osim.ModOpAddExternalLoads(ext_loads_xml))
+        return modelProcessorTendonCompliance
 
-        return modelProcessorDC
+    def get_solution_path(self, root_dir, tracking_weight, effort_weight):
+        trackingWeight = str(tracking_weight).replace('.', '_')
+        effortWeight = str(effort_weight).replace('.', '_')
+        return os.path.join(root_dir, 
+                    f'{self.tracking_solution_relpath_prefix}'
+                    f'_trackingWeight{trackingWeight}'
+                    f'_effortWeight{effortWeight}.sto')
 
-    def parse_args(self, args):
-        self.cmc = False
-        self.track = False
-        self.inverse = False
-        self.knee = False
-        if len(args) == 0:
-            # self.cmc = True
-            # self.track = True
-            self.inverse = True
-            self.knee = True
-            return
-        print('Received arguments {}'.format(args))
-        if 'cmc' in args:
-            self.cmc = True
-        if 'track' in args:
-            print('Ignoring track.')
-            # self.track = True
-        if 'inverse' in args:
-            self.inverse = True
-        if 'knee' in args:
-            self.knee = True
+    def get_solution_path_fullcycle(self, root_dir, tracking_weight,
+            effort_weight):
+        trackingWeight = str(tracking_weight).replace('.', '_')
+        effortWeight = str(effort_weight).replace('.', '_')
+        return os.path.join(root_dir, 
+                    f'{self.tracking_solution_relpath_prefix}'
+                    f'_trackingWeight{trackingWeight}'
+                    f'_effortWeight{effortWeight}_fullcycle.sto')
 
-    def generate_results(self, root_dir, args):
-        self.parse_args(args)
+    def get_solution_path_grfs(self, root_dir, tracking_weight,
+            effort_weight):
+        trackingWeight = str(tracking_weight).replace('.', '_')
+        effortWeight = str(effort_weight).replace('.', '_')
+        return os.path.join(root_dir, 
+                    f'{self.tracking_solution_relpath_prefix}'
+                    f'_trackingWeight{trackingWeight}'
+                    f'_effortWeight{effortWeight}_fullcycle_grfs.sto')
 
-        from transform_and_filter_ground_reaction import \
-            transform_and_filter_ground_reaction
-        # TODO: We aren't actually using this filtered file yet.
-        transform_and_filter_ground_reaction(
-            os.path.join(root_dir, 'resources/Rajagopal2016/emg_walk_raw.anc'),
-            os.path.join(root_dir, 'resources/Rajagopal2016/grf_walk.mot'),
-            'ground_reaction_forces',
-            'rlr',
-            mode='multicutoff')
-
-
-        modelProcessor = self.create_model_processor(root_dir)
-
-        coordinates = osim.TableProcessor(
-            os.path.join(root_dir, "resources/Rajagopal2016/coordinates.mot"))
-        coordinates.append(osim.TabOpLowPassFilter(6))
-        coordinates.append(osim.TabOpUseAbsoluteStateNames())
-
-        # cmc = osim.CMCTool()
-        # cmc.setName('motion_tracking_walking_cmc')
-        # cmc.setExternalLoadsFileName('grf_walk.xml')
-        # cmc.setDesiredKinematicsFileName('coordinates.mot')
-        # # cmc.setLowpassCutoffFrequency(6)
-        # cmc.printToXML('motion_tracking_walking_cmc_setup.xml')
-        cmc = osim.CMCTool(os.path.join(root_dir,
-                                        'code/motion_tracking_walking_cmc_setup.xml'))
-        # 2.5 minute
-        if self.cmc:
-            cmc.run()
-
-        # MocoInverse
-        # -----------
-        inverse = osim.MocoInverse()
-        inverse.setModel(modelProcessor)
-        inverse.setKinematics(coordinates)
-        inverse.set_initial_time(self.initial_time)
-        inverse.set_final_time(self.final_time)
-        inverse.set_mesh_interval(0.05)
-        inverse.set_kinematics_allow_extra_columns(True)
-        inverse.set_convergence_tolerance(1e-2)
-        inverse.set_reserves_weight(10.0)
-        # 8 minutes
-        if self.inverse:
-            solution = inverse.solve()
-            solution.getMocoSolution().write(self.mocoinverse_solution_file % root_dir)
-
-        # MocoInverse, minimize joint reactions
-        # -------------------------------------
-        study = inverse.initialize()
-        reaction_r = osim.MocoJointReactionGoal('reaction_r', 0.1)
-        reaction_r.setJointPath('/jointset/walker_knee_r')
-        reaction_r.setReactionMeasures(['force-x', 'force-y'])
-        reaction_l = osim.MocoJointReactionGoal('reaction_l', 0.1)
-        reaction_l.setJointPath('/jointset/walker_knee_l')
-        reaction_l.setReactionMeasures(['force-x', 'force-y'])
-        problem = study.updProblem()
-        problem.addGoal(reaction_r)
-        problem.addGoal(reaction_l)
-
-
-        solver = osim.MocoCasADiSolver.safeDownCast(study.updSolver())
-
-        # 50 minutes.
-        if self.knee:
-            solution_reaction = study.solve()
-            solution_reaction.write(self.mocoinverse_jointreaction_solution_file % root_dir)
-
-
-        # Create and name an instance of the MocoTrack tool.
-        track = osim.MocoTrack()
-        track.setName("motion_tracking_walking")
-        track.setModel(modelProcessor)
-        track.setStatesReference(coordinates)
-        track.set_states_global_tracking_weight(1.0)
-        track.set_control_effort_weight(0.01)
-
-        # This setting allows extra data columns contained in the states
-        # reference that don't correspond to model coordinates.
-        track.set_allow_unused_references(True)
-
-        track.set_track_reference_position_derivatives(True)
-
-        # TODO: Use MocoInverse solution as initial guess for MocoTrack.
-        track.set_apply_tracked_states_to_guess(True)
-
-        # TODO: set initial activation/excitation much lower!
-        # track.set_bound_kinematic_states(True)
-        # track.set_state_bound_range_rotational(np.deg2rad(10))
-        # track.set_state_bound_range_translational(0.10)
-        # TODO implicit?
-        # TODO penalize accelerations?
-
-        # Initial time, final time, and mesh interval.
-        track.set_initial_time(self.initial_time)
-        track.set_final_time(self.final_time)
-        track.set_mesh_interval(0.05)
-
-        moco = track.initialize()
-        moco.set_write_solution("results/")
-
-        problem = moco.updProblem()
-
-        problem.updPhase().setDefaultSpeedBounds(osim.MocoBounds(-10, 10))
-        effort = osim.MocoControlGoal.safeDownCast(
-            problem.updGoal("control_effort"))
-        # effort.setWeightForControlPattern('.*reserve_.*', 10)
-        # effort.setWeightForControlPattern('.*reserve_pelvis_.*', 10)
-
-        problem.addGoal(osim.MocoInitialActivationGoal('init_activation'))
-
-        solver = osim.MocoCasADiSolver.safeDownCast(moco.updSolver())
-        solver.set_optim_convergence_tolerance(1e-3)
-        solver.set_implicit_multibody_acceleration_bounds(
-            osim.MocoBounds(-50, 50))
-        solver.set_implicit_auxiliary_derivative_bounds(
-            osim.MocoBounds(-100, 100))
-
-        # Solve and visualize.
-        moco.printToXML(os.path.join(root_dir, 'code/motion_tracking_walking.omoco'))
-        # 45 minutes
-        if self.track:
-            solution = moco.solve()
-            solution.write(self.mocotrack_solution_file % root_dir)
-            # moco.visualize(solution)
-
-    def plot(self, ax, time, y, shift=True, fill=False, *args, **kwargs):
-        if shift:
-            shifted_time, shifted_y = self.shift(time, y)
-        else:
-            duration = self.final_time - self.initial_time
-            shifted_time, shifted_y = self.shift(time, y,
-                                                 starting_time=self.initial_time + 0.5 * duration)
-
-        duration = self.final_time - self.initial_time
-        if fill:
-            return plt.fill_between(
-                100.0 * shifted_time / duration,
-                shifted_y,
-                np.zeros_like(shifted_y),
-                *args,
-                clip_on=False, **kwargs)
-        else:
-            return ax.plot(100.0 * shifted_time / duration, shifted_y, *args,
-                           clip_on=False, **kwargs)
-
-    def load_electromyography(self, root_dir):
-        anc = utilities.ANCFile(
-            os.path.join(root_dir, 'resources/Rajagopal2016/emg_walk_raw.anc'))
-        raw = anc.data
-        fields_to_remove = []
-        for name in anc.names:
-            if name != 'time' and name not in self.emg_sensor_names:
-                fields_to_remove.append(name)
-        del name
-
-        # We don't actually use the data that is initially in this object. We
-        # will overwrite all the data with the filtered data.
-        filtered_emg = utilities.remove_fields_from_structured_ndarray(raw,
-                                                                       fields_to_remove).copy()
-
-        # Debugging.
-        emg_fields = list(filtered_emg.dtype.names)
-        emg_fields.remove('time')
-        for expected_field in self.emg_sensor_names:
-            if expected_field not in emg_fields:
-                raise Exception("EMG field {} not found.".format(
-                    expected_field))
-
-        # Filter all columns.
-        for name in filtered_emg.dtype.names:
-            if name != 'time':
-                scaled_raw = anc.ranges[name] * 2 / 65536.0 * 0.001 * anc[name]
-                filtered_emg[name] = utilities.filter_emg(
-                    scaled_raw.copy(), anc.rates[name])
-                filtered_emg[name] /= np.max(filtered_emg[name])
-        return filtered_emg
+    def load_table(self, table_path):
+        num_header_rows = 1
+        with open(table_path) as f:
+            for line in f:
+                if not line.startswith('endheader'):
+                    num_header_rows += 1
+                else:
+                    break
+        return np.genfromtxt(table_path, names=True, delimiter='\t',
+                             skip_header=num_header_rows)
 
     def calc_reserves(self, root_dir, solution):
         modelProcessor = self.create_model_processor(root_dir)
@@ -326,384 +173,650 @@ class MotionTrackingWalking(MocoPaperResult):
         output = osim.analyze(model, solution, ['.*reserve.*actuation'])
         return output
 
-    def calc_max_knee_reaction_force(self, root_dir, solution):
+    def calc_muscle_mechanics(self, root_dir, solution):
         modelProcessor = self.create_model_processor(root_dir)
         model = modelProcessor.process()
-        jr = osim.analyzeSpatialVec(model, solution,
-                                    ['.*walker_knee.*reaction_on_parent.*'])
-        jr = jr.flatten(['_mx', '_my', '_mz', '_fx', '_fy', '_fz'])
-        max = -np.inf
-        for itime in range(jr.getNumRows()):
-            for irxn in range(int(jr.getNumColumns() / 6)):
-                fx = jr.getDependentColumnAtIndex(6 * irxn + 3)[itime]
-                fy = jr.getDependentColumnAtIndex(6 * irxn + 4)[itime]
-                fz = jr.getDependentColumnAtIndex(6 * irxn + 5)[itime]
-                norm = np.sqrt(fx**2 + fy**2 + fz**2)
-                max = np.max([norm, max])
-        g = np.abs(model.get_gravity()[1])
-        state = model.initSystem()
-        mass = model.getTotalMass(state)
-        weight = mass * g
-        return max / weight
+        output = osim.analyze(model, solution,
+                              ['.*gasmed.*\|tendon_force',
+                               '.*gasmed.*\|normalized_fiber_length',
+                               '.*semimem.*\|tendon_force',
+                               '.*semimem.*\|normalized_fiber_length'])
+        return output
 
-    def report_results(self, root_dir, args):
-        self.parse_args(args)
+    def run_inverse_problem(self, root_dir):
 
-        if self.track:
-            sol_track_table = osim.TimeSeriesTable(self.mocotrack_solution_file % root_dir)
-            track_duration = sol_track_table.getTableMetaDataString('solver_duration')
-            track_duration = float(track_duration) / 60.0 / 60.0
-            print('track duration ', track_duration)
-            with open(os.path.join(root_dir, 'results/'
-                      'motion_tracking_walking_track_duration.txt'), 'w') as f:
-                f.write(f'{track_duration:.1f}')
+        modelProcessor = self.create_model_processor(root_dir,
+                                                     for_inverse=True)
 
-        if self.inverse:
-            sol_inverse_table = osim.TimeSeriesTable(self.mocoinverse_solution_file % root_dir)
-            inverse_duration = sol_inverse_table.getTableMetaDataString('solver_duration')
-            inverse_duration = float(inverse_duration) / 60.0
-            print('inverse duration ', inverse_duration)
-            with open(os.path.join(root_dir, 'results/'
-                      'motion_tracking_walking_inverse_duration.txt'), 'w') as f:
-                f.write(f'{inverse_duration:.1f}')
+        inverse = osim.MocoInverse()
+        inverse.setModel(modelProcessor)
+        tableProcessor = osim.TableProcessor(os.path.join(root_dir,
+                'resources/Rajagopal2016/coordinates.mot'))
+        tableProcessor.append(osim.TabOpLowPassFilter(6))
+        tableProcessor.append(osim.TabOpUseAbsoluteStateNames())
+        inverse.setKinematics(tableProcessor)
+        inverse.set_kinematics_allow_extra_columns(True)
+        inverse.set_initial_time(self.initial_time)
+        inverse.set_final_time(self.half_time)
+        inverse.set_mesh_interval(self.mesh_interval)
 
-        if self.knee:
-            sol_inverse_jr_table = osim.TimeSeriesTable(self.mocoinverse_jointreaction_solution_file % root_dir)
-            inverse_jr_duration = sol_inverse_jr_table.getTableMetaDataString('solver_duration')
-            inverse_jr_duration = float(inverse_jr_duration) / 60.0
-            print('inverse joint reaction duration ', inverse_jr_duration)
-            with open(os.path.join(root_dir, 'results/'
-                      'motion_tracking_walking_inverse_jr_duration.txt'), 'w') as f:
-                f.write(f'{inverse_jr_duration:.1f}')
+        solution = inverse.solve()
+        solution.getMocoSolution().write(
+            os.path.join(root_dir, self.inverse_solution_relpath))
 
-        emg = self.load_electromyography(root_dir)
-
-
-        if self.track:
-            sol_track = osim.MocoTrajectory(self.mocotrack_solution_file % root_dir)
-            time_track = sol_track.getTimeMat()
-
-        if self.inverse:
-            sol_inverse = osim.MocoTrajectory(self.mocoinverse_solution_file % root_dir)
-            time_inverse = sol_inverse.getTimeMat()
-
-        if self.knee and self.inverse:
-            sol_inverse_jointreaction = \
-                osim.MocoTrajectory(self.mocoinverse_jointreaction_solution_file % root_dir)
-            sol_inverse_jointreaction.insertStatesTrajectory(
-                sol_inverse.exportToStatesTable(), False)
-            mocoinverse_jr_solution_file = \
-                self.mocoinverse_jointreaction_solution_file.replace('.sto',
-                                                                     '_with_q_u.sto')
-
-            sol_inverse_jointreaction.write(mocoinverse_jr_solution_file % root_dir)
-            time_inverse_jointreaction = sol_inverse_jointreaction.getTimeMat()
+    def run_tracking_problem(self, root_dir, previous_solution,
+                             tracking_weight=1, effort_weight=1):
 
         modelProcessor = self.create_model_processor(root_dir)
         model = modelProcessor.process()
         model.initSystem()
-        print(f'Degrees of freedom: {model.getCoordinateSet().getSize()}')
 
-        # TODO: slight shift in CMC solution might be due to how we treat
-        # percent gait cycle and the fact that CMC is missing 0.02 seconds.
-        if self.cmc:
-            sol_cmc = osim.TimeSeriesTable(os.path.join(root_dir, 'results/motion_tracking_walking_cmc_results/'
-                                           'motion_tracking_walking_cmc_states.sto'))
-            time_cmc = np.array(sol_cmc.getIndependentColumn())
+        # Count the number of Force objects in the model. We'll use this to 
+        # normalize the control effort cost.
+        numForces = 0
+        for actu in model.getComponentsList():
+            if (actu.getConcreteClassName().endswith('Muscle') or
+                    actu.getConcreteClassName().endswith('Actuator')):
+                numForces += 1
 
-        plot_breakdown = False
+        # Construct the base tracking problem
+        # -----------------------------------
+        track = osim.MocoTrack()
+        track.setName('tracking_walking')
+        track.setModel(modelProcessor)
+        
+        if self.coordinate_tracking:
+            tableProcessor = osim.TableProcessor(os.path.join(root_dir,
+                    'resources/Rajagopal2016/coordinates.mot'))
+            tableProcessor.append(osim.TabOpLowPassFilter(6))
+            tableProcessor.append(osim.TabOpUseAbsoluteStateNames())
+            track.setStatesReference(tableProcessor)
+            track.set_states_global_tracking_weight(
+                tracking_weight / (2 * model.getNumCoordinates()))
+            # Don't track some pelvis coordinates to avoid poor walking motion
+            # solutions.
+            stateWeights = osim.MocoWeightSet()
+            weightList = list()
+            weightList.append(('/jointset/ground_pelvis/pelvis_tz/value', 0))
+            weightList.append(('/jointset/ground_pelvis/pelvis_list/value', 0))
+            weightList.append(('/jointset/ground_pelvis/pelvis_tilt/value', 0))
+            weightList.append(('/jointset/ground_pelvis/pelvis_rotation/value', 0))
+            for weight in weightList:
+                stateWeights.cloneAndAppend(osim.MocoWeight(weight[0], weight[1]))
+            track.set_states_weight_set(stateWeights)
+            if previous_solution.empty():
+                track.set_apply_tracked_states_to_guess(True)
+                # track.set_scale_state_weights_with_range(True);
+        else:
+            track.setMarkersReferenceFromTRC(os.path.join(root_dir,
+                    'resources/Rajagopal2016/markers.trc'))
+            track.set_markers_global_tracking_weight(
+                tracking_weight / (2 * model.getNumMarkers()))
+            iktool = osim.InverseKinematicsTool(os.path.join(root_dir,
+                    'resources/Rajagopal2016/ik_setup_walk.xml'))
+            iktasks = iktool.getIKTaskSet()
+            markerWeights = osim.MocoWeightSet()
+            for marker in model.getComponentsList():
+                if not type(marker) is osim.Marker: continue
+                for i in np.arange(iktasks.getSize()):
+                    iktask = iktasks.get(int(i))
+                    if iktask.getName() == marker.getName():
+                        weight = osim.MocoWeight(iktask.getName(), 
+                            iktask.getWeight())
+                        markerWeights.cloneAndAppend(weight)
+            track.set_markers_weight_set(markerWeights)
 
-        if plot_breakdown:
-            fig = utilities.plot_joint_moment_breakdown(model, sol_inverse,
-                                                        ['/jointset/hip_l/hip_flexion_l',
-                                                         '/jointset/hip_l/hip_adduction_l',
-                                                         '/jointset/hip_l/hip_rotation_l',
-                                                         '/jointset/walker_knee_l/knee_angle_l',
-                                                         '/jointset/ankle_l/ankle_angle_l'],
-                                                        )
-            fig.savefig(os.path.join(root_dir, 'results/motion_tracking_walking_inverse_'
-                        'joint_moment_breakdown.png'),
-                        dpi=600)
+        track.set_allow_unused_references(True)
+        track.set_track_reference_position_derivatives(True)
+        track.set_control_effort_weight(effort_weight / numForces)
+        track.set_initial_time(self.initial_time)
+        track.set_final_time(self.half_time)
+        track.set_mesh_interval(self.mesh_interval)
 
-        # report = osim.report.Report(model, mocoinverse_jr_solution_file % root_dir)
-        # report.generate()
+        # Customize the base tracking problem
+        # -----------------------------------
+        study = track.initialize()
+        problem = study.updProblem()
+        problem.setTimeBounds(self.initial_time, 
+                [self.half_time-0.2, self.half_time+0.2])
+        
+        # Set the initial values for the lumbar and pelvis coordinates that 
+        # produce "normal" walking motions.
+        problem.setStateInfo('/jointset/back/lumbar_extension/value', [], -0.12)
+        problem.setStateInfo('/jointset/back/lumbar_bending/value', [], 0)
+        problem.setStateInfo('/jointset/back/lumbar_rotation/value', [], 0.04)
+        problem.setStateInfo('/jointset/ground_pelvis/pelvis_tx/value', [], 0.446)
+        problem.setStateInfo('/jointset/ground_pelvis/pelvis_tilt/value', [], 0) 
+        problem.setStateInfo('/jointset/ground_pelvis/pelvis_list/value', [], 0)
+        problem.setStateInfo('/jointset/ground_pelvis/pelvis_rotation/value', [], 0)
 
-        if plot_breakdown:
-            fig = utilities.plot_joint_moment_breakdown(model,
-                                                        sol_inverse_jointreaction,
-                                                        ['/jointset/hip_l/hip_flexion_l',
-                                                         '/jointset/hip_l/hip_adduction_l',
-                                                         '/jointset/hip_l/hip_rotation_l',
-                                                         '/jointset/walker_knee_l/knee_angle_l',
-                                                         '/jointset/ankle_l/ankle_angle_l'],
-                                                        )
-            fig.savefig(os.path.join(root_dir,
-                                     'results/motion_tracking_walking_inverse_'
-                                     'jointreaction_joint_moment_breakdown.png'),
-                        dpi=600)
+        # Update the control effort goal to a cost of transport type cost.
+        effort = osim.MocoControlGoal().safeDownCast(
+                problem.updGoal('control_effort'))
+        effort.setDivideByDisplacement(True)
+        # Weight residual and reserve actuators low in the effort cost since they
+        # are already weak.    
+        if effort_weight:
+            for actu in model.getComponentsList():
+                if actu.getConcreteClassName().endswith('Actuator'):
+                    effort.setWeightForControl(actu.getAbsolutePathString(), 
+                        0.001)
 
-        coords = [
-            (f'/jointset/ground_pelvis/pelvis_tx', 'pelvis tx', 1.0),
-            (f'/jointset/ground_pelvis/pelvis_ty', 'pelvis ty', 1.0),
-            (f'/jointset/ground_pelvis/pelvis_tz', 'pelvis tz', 1.0),
-            (f'/jointset/ground_pelvis/pelvis_rotation', 'pelvis rotation', 1.0),
-            (f'/jointset/ground_pelvis/pelvis_list', 'pelvis list', 1.0),
-            (f'/jointset/ground_pelvis/pelvis_tilt', 'pelvis tilt', 1.0),
-            (f'/jointset/back/lumbar_rotation', 'lumbar rotation', 1.0),
-            (f'/jointset/back/lumbar_extension', 'lumbar extension', 1.0),
-            (f'/jointset/back/lumbar_bending', 'lumbar bending', 1.0),
-            (f'/jointset/hip_{self.side}/hip_adduction_{self.side}',
-                'hip adduction', 1.0),
-            (f'/jointset/hip_{self.side}/hip_rotation_{self.side}',
-             'hip rotation', 1.0),
-            (
-            f'/jointset/hip_{self.side}/hip_flexion_{self.side}', 'hip flexion',
-            1.0),
-            (f'/jointset/walker_knee_{self.side}/knee_angle_{self.side}',
-             'knee flexion', 1.0),
-            (f'/jointset/ankle_{self.side}/ankle_angle_{self.side}',
-             'ankle plantarflexion', 1.0),
-        ]
-        from utilities import toarray
-        fig = plt.figure(figsize=(4, 8))
+        speedGoal = osim.MocoAverageSpeedGoal('speed')
+        speedGoal.set_desired_average_speed(1.235)
+        problem.addGoal(speedGoal)
 
-        for ic, coord in enumerate(coords):
-            ax = plt.subplot(7, 2, ic + 1)
-            if self.cmc:
-                y_cmc = coord[2] * np.rad2deg(
-                    toarray(sol_cmc.getDependentColumn(f'{coord[0]}/value')),)
-                self.plot(ax, time_cmc, y_cmc, label='CMC', color='k',
-                          linewidth=2)
+        # MocoFrameDistanceConstraint
+        # ---------------------------
+        if self.coordinate_tracking:
+            distanceConstraint = osim.MocoFrameDistanceConstraint()
+            distanceConstraint.setName('distance_constraint')
+            distance = 0.15
+            distanceConstraint.addFramePair(
+                    osim.MocoFrameDistanceConstraintPair(
+                    '/bodyset/calcn_l', '/bodyset/calcn_r', distance, np.inf))
+            distanceConstraint.addFramePair(
+                    osim.MocoFrameDistanceConstraintPair(
+                    '/bodyset/toes_l', '/bodyset/toes_r', distance, np.inf))
+            distanceConstraint.addFramePair(
+                    osim.MocoFrameDistanceConstraintPair(
+                    '/bodyset/calcn_l', '/bodyset/toes_r', distance, np.inf))
+            distanceConstraint.addFramePair(
+                    osim.MocoFrameDistanceConstraintPair(
+                    '/bodyset/toes_l', '/bodyset/calcn_r', distance, np.inf))
+            problem.addPathConstraint(distanceConstraint)
 
-            if self.inverse:
-                y_inverse = coord[2] * np.rad2deg(
-                    sol_inverse.getStateMat(f'{coord[0]}/value'))
-                self.plot(ax, time_inverse, y_inverse, label='MocoInverse',
-                          linewidth=2)
+        # Symmetry constraints
+        # --------------------
+        statesRef = osim.TimeSeriesTable('tracking_walking_tracked_states.sto')
+        initIndex = statesRef.getNearestRowIndexForTime(self.initial_time)
+        symmetry = osim.MocoPeriodicityGoal('symmetry')
+        # Symmetric coordinate values (except for pelvis_tx) and speeds.
+        for coord in model.getComponentsList():
+            if not type(coord) is osim.Coordinate: continue
 
-            ax.plot([0], [0], label='MocoInverse-knee', linewidth=2)
+            coordName = coord.getName()
+            coordValue = coord.getStateVariableNames().get(0)
+            coordSpeed = coord.getStateVariableNames().get(1)
 
-            if self.track:
-                y_track = coord[2] * np.rad2deg(
-                    sol_track.getStateMat(f'{coord[0]}/value'))
-                self.plot(ax, time_track, y_track, label='MocoTrack',
-                          linewidth=1)
-
-            ax.set_xlim(0, 100)
-            if ic == 1:
-                ax.legend(frameon=False, handlelength=1.9)
-            if ic < len(coords) - 1:
-                ax.set_xticklabels([])
+            if coordName.endswith('_r'):
+                symmetry.addStatePair(osim.MocoPeriodicityGoalPair(
+                    coordValue, coordValue.replace('_r/', '_l/')))
+                symmetry.addStatePair(osim.MocoPeriodicityGoalPair(
+                    coordSpeed, coordSpeed.replace('_r/', '_l/')))
+            elif coordName.endswith('_l'):
+                symmetry.addStatePair(osim.MocoPeriodicityGoalPair(
+                    coordValue, coordValue.replace('_l/', '_r/')))
+                symmetry.addStatePair(osim.MocoPeriodicityGoalPair(
+                    coordSpeed, coordSpeed.replace('_l/', '_r/')))
+            elif (coordName.endswith('_bending') or
+                  coordName.endswith('_rotation') or
+                  coordName.endswith('_tz') or
+                  coordName.endswith('_list')):
+                # This does not include hip rotation,
+                # because that ends with _l or _r.
+                symmetry.addStatePair(osim.MocoPeriodicityGoalPair(
+                    coordValue))
+                symmetry.addNegatedStatePair(osim.MocoPeriodicityGoalPair(
+                    coordSpeed))
+            elif not coordName.endswith('_tx'):
+                symmetry.addStatePair(osim.MocoPeriodicityGoalPair(
+                    coordValue))
+                symmetry.addStatePair(osim.MocoPeriodicityGoalPair(
+                    coordSpeed))
+        symmetry.addStatePair(osim.MocoPeriodicityGoalPair(
+            '/jointset/ground_pelvis/pelvis_tx/speed'))
+        # Symmetric activations.
+        for actu in model.getComponentsList():
+            if (not actu.getConcreteClassName().endswith('Muscle') and 
+                not actu.getConcreteClassName().endswith('Actuator')): continue
+            if actu.getName().endswith('_r'):
+                symmetry.addStatePair(osim.MocoPeriodicityGoalPair(
+                    actu.getStateVariableNames().get(0),
+                    actu.getStateVariableNames().get(0).replace('_r/', '_l/')))
+            elif actu.getName().endswith('_l'):
+                symmetry.addStatePair(osim.MocoPeriodicityGoalPair(
+                    actu.getStateVariableNames().get(0),
+                    actu.getStateVariableNames().get(0).replace('_l/', '_r/')))
+            elif (actu.getName().endswith('_bending') or 
+                  actu.getName().endswith('_rotation') or
+                  actu.getName().endswith('_tz') or
+                  actu.getName().endswith('_list')):
+                symmetry.addNegatedStatePair(osim.MocoPeriodicityGoalPair(
+                    actu.getStateVariableNames().get(0),
+                    actu.getStateVariableNames().get(0)))
             else:
-                ax.set_xlabel('time (% gait cycle)')
-                ax.get_xaxis().set_label_coords(0.5, 0)
-                # The '0' would intersect with the y-axis, so remove it.
-                ax.set_xticklabels(['', '20', '40', '60', '80', '100'])
-            ax.set_ylabel(f'{coord[1]} (degrees)')
-            ax.get_yaxis().set_label_coords(-0.15, 0.5)
+                symmetry.addStatePair(osim.MocoPeriodicityGoalPair(
+                    actu.getStateVariableNames().get(0),
+                    actu.getStateVariableNames().get(0)))
+        problem.addGoal(symmetry)
 
-            ax.spines['bottom'].set_position('zero')
-            utilities.publication_spines(ax)
+        # Contact tracking
+        # ----------------
+        forceNamesRightFoot = ['forceset/contactSphereHeel_r',
+                               'forceset/contactLateralRearfoot_r',
+                               'forceset/contactLateralMidfoot_r',
+                               'forceset/contactLateralToe_r',
+                               'forceset/contactMedialToe_r',
+                               'forceset/contactMedialMidfoot_r']
+        forceNamesLeftFoot = ['forceset/contactSphereHeel_l',
+                              'forceset/contactLateralRearfoot_l',
+                              'forceset/contactLateralMidfoot_l',
+                              'forceset/contactLateralToe_l',
+                              'forceset/contactMedialToe_l',
+                              'forceset/contactMedialMidfoot_l']
+        if self.contact_tracking:
+            contactTracking = osim.MocoContactTrackingGoal('contact', 0.001)
+            contactTracking.setExternalLoadsFile(
+                'resources/Rajagopal2016/grf_walk.xml')
+            contactTracking.addContactGroup(forceNamesRightFoot, 'Right_GRF')
+            contactTracking.addContactGroup(forceNamesLeftFoot, 'Left_GRF')
+            contactTracking.setProjection("plane")
+            contactTracking.setProjectionVector(osim.Vec3(0, 0, 1))
+            problem.addGoal(contactTracking)
 
-        fig.savefig(os.path.join(root_dir,
-                                 'figures/motion_tracking_walking_kinematics.png'),
-                    dpi=600)
+        # Configure the solver
+        # --------------------
+        solver = osim.MocoCasADiSolver.safeDownCast(study.updSolver())
+        solver.resetProblem(problem)
+        solver.set_optim_constraint_tolerance(1e-3)
+        solver.set_optim_convergence_tolerance(1e-3)
+        solver.set_multibody_dynamics_mode('implicit')
+        solver.set_minimize_implicit_multibody_accelerations(True)
+        solver.set_implicit_multibody_accelerations_weight(
+            1e-6 / model.getNumCoordinates())
+        solver.set_implicit_multibody_acceleration_bounds(
+                osim.MocoBounds(-200, 200))
 
+        # Set the guess
+        # -------------
+        # If the previous solution argument is empty, use the inverse solution
+        # to construct a guess.
+        guess = osim.MocoTrajectory()
+        if previous_solution.empty():
+            # Create a guess compatiable with this problem.
+            guess = solver.createGuess()
+            # Load the inverse problem solution and set its states and controls 
+            # trajectories to the guess.
+            inverseSolution = osim.MocoTrajectory(
+                os.path.join(root_dir, self.inverse_solution_relpath))
+            inverseStatesTable = inverseSolution.exportToStatesTable()
+            guess.insertStatesTrajectory(inverseStatesTable, True)
+            inverseControlsTable = inverseSolution.exportToControlsTable()
+            guess.insertControlsTrajectory(inverseControlsTable, True)
+        else:
+            guess = previous_solution
+        solver.setGuess(guess)
 
-        fig = plt.figure(figsize=(7.5, 3.3))
-        gs = gridspec.GridSpec(3, 4, width_ratios=[0.8, 1, 1, 1])
+        # Solve and print solution.
+        # -------------------------
+        solution = study.solve()
+        trackingWeight = str(tracking_weight).replace('.', '_')
+        effortWeight = str(effort_weight).replace('.', '_')
+        solution.write(os.path.join(root_dir, 
+            f'{self.tracking_solution_relpath_prefix}'
+            f'_trackingWeight{trackingWeight}_effortWeight{effortWeight}.sto'))
+    
+        # Create a full gait cycle trajectory from the periodic solution.
+        fullTraj = osim.createPeriodicTrajectory(solution)
+        fullTraj.write(os.path.join(root_dir, 
+            f'{self.tracking_solution_relpath_prefix}'
+            f'_trackingWeight{trackingWeight}'
+            f'_effortWeight{effortWeight}_fullcycle.sto'))
 
-        ax = fig.add_subplot(gs[0:3, 0])
-        import cv2
-        # Convert BGR color ordering to RGB.
-        image = cv2.imread(os.path.join(root_dir,
-                                        'figures/motion_tracking_walking_inverse_model.png'))[
-                ..., ::-1]
-        ax.imshow(image)
-        plt.axis('off')
+        # Compute ground reaction forces generated by contact sphere from the 
+        # full gait cycle trajectory.
+        externalLoads = osim.createExternalLoadsTableForGait(
+                model, fullTraj, forceNamesRightFoot, forceNamesLeftFoot)
+        osim.writeTableToFile(externalLoads, os.path.join(root_dir, 
+                f'{self.tracking_solution_relpath_prefix}'
+                f'_trackingWeight{trackingWeight}'
+                f'_effortWeight{effortWeight}_fullcycle_grfs.sto'))
 
+        # study.visualize(fullTraj)
 
+        return solution
+
+    def parse_args(self, args):
+        self.skip_inverse = False
+        self.coordinate_tracking = False
+        self.contact_tracking = False
+        self.visualize = False
+        if len(args) == 0: return
+        print('Received arguments {}'.format(args))
+        if 'skip-inverse' in args:
+            self.skip_inverse = True
+        if 'coordinate-tracking' in args:
+            self.coordinate_tracking = True
+        if 'contact-tracking' in args:
+            self.contact_tracking = True
+        if 'visualize' in args:
+            self.visualize = True
+
+    def generate_results(self, root_dir, args):
+        self.parse_args(args)
+
+        # Run inverse problem to generate first initial guess.
+        if not self.skip_inverse:
+            self.run_inverse_problem(root_dir)
+
+        # Run tracking problem, sweeping across different effort weights.
+        solution = osim.MocoTrajectory()
+        weights = zip(self.tracking_weights, self.effort_weights)
+        for tracking_weight, effort_weight in weights:
+            solution = self.run_tracking_problem(root_dir, solution, 
+                    tracking_weight=tracking_weight,
+                    effort_weight=effort_weight)
+
+    def report_results(self, root_dir, args):
+        self.parse_args(args)
+
+        modelProcessor = self.create_model_processor(root_dir)
+        model = modelProcessor.process()
+        state = model.initSystem()
+        mass = model.getTotalMass(state)
+        gravity = model.getGravity()
+        BW = mass*abs(gravity[1])
+
+        if self.visualize:
+            for tracking_weight, effort_weight, cmap_index in zip(
+                    self.tracking_weights, self.effort_weights,
+                    self.cmap_indices):
+                solution = osim.MocoTrajectory(
+                    self.get_solution_path_fullcycle(root_dir, tracking_weight,
+                          effort_weight))
+                osim.visualize(model, solution.exportToStatesTable())
+
+        emg = self.load_electromyography(root_dir)
+
+        fig = plt.figure(figsize=(7.5, 7))
+        gs = gridspec.GridSpec(36, 3)
+        ax_time = fig.add_subplot(gs[0:12, 0])
+        ax_grf_x = fig.add_subplot(gs[12:20, 0])
+        ax_grf_y = fig.add_subplot(gs[20:28, 0])
+        ax_grf_z = fig.add_subplot(gs[28:36, 0])
+        ax_add = fig.add_subplot(gs[0:9, 1])
+        ax_hip = fig.add_subplot(gs[9:18, 1])
+        ax_knee = fig.add_subplot(gs[18:27, 1])
+        ax_ankle = fig.add_subplot(gs[27:36, 1])
+        ax_list = list()
+        ax_list.append(ax_grf_x)
+        ax_list.append(ax_grf_y)
+        ax_list.append(ax_grf_z)
+        ax_list.append(ax_add)
+        ax_list.append(ax_hip)
+        ax_list.append(ax_knee)
+        ax_list.append(ax_ankle)
         muscles = [
-            ((0, 0), 'glmax2', 'gluteus maximus', 'GMAX'),
-            ((0, 1), 'psoas', 'psoas', ''),
-            # TODO: dashed semimem
-            ((1, 0), 'semiten', 'semitendinosus', 'MH'),
-            ((0, 2), 'recfem', 'rectus femoris', 'RF'),
-            ((1, 1), 'bfsh', 'biceps femoris short head', 'BF'),
-            ((1, 2), 'vaslat', 'vastus lateralis', 'VL'),
-            ((2, 0), 'gasmed', 'medial gastrocnemius', 'GAS'),
-            ((2, 1), 'soleus', 'soleus', 'SOL'),
-            ((2, 2), 'tibant', 'tibialis anterior', 'TA'),
+            (fig.add_subplot(gs[0:4, 2]), 'glmax2', 'gluteus maximus', 'GMAX'),
+            (fig.add_subplot(gs[4:8, 2]), 'psoas', 'psoas', 'PSOAS'),
+            (fig.add_subplot(gs[8:12, 2]), 'semiten', 'semitendinosus', 'MH'),
+            (fig.add_subplot(gs[12:16, 2]), 'recfem', 'rectus femoris', 'RF'),
+            (fig.add_subplot(gs[16:20, 2]), 'bfsh', 'biceps femoris short head', 'BF'),
+            (fig.add_subplot(gs[20:24, 2]), 'vaslat', 'vastus lateralis', 'VL'),
+            (fig.add_subplot(gs[24:28, 2]), 'gasmed', 'medial gastrocnemius', 'GAS'),
+            (fig.add_subplot(gs[28:32, 2]), 'soleus', 'soleus', 'SOL'),
+            (fig.add_subplot(gs[32:36, 2]), 'tibant', 'tibialis anterior', 'TA'),
         ]
-        legend_handles_and_labels = []
-        for im, muscle in enumerate(muscles):
-            ax = plt.subplot(gs[muscle[0][0], muscle[0][1] + 1])
-            activation_path = f'/forceset/{muscle[1]}_{self.side}/activation'
-            legend_musc = []
-            if self.inverse:
-                inverse_activ = sol_inverse.getStateMat(activation_path)
-            # if self.cmc:
-            #     cmc_activ = toarray(sol_cmc.getDependentColumn(activation_path))
-            #     handle, = self.plot(ax, time_cmc,
-            #               cmc_activ,
-            #               linewidth=1,
-            #               color='black',
-            #               label='Computed Muscle Control',
-            #               )
-            #     legend_musc.append((handle, 'Computed Muscle Control'))
-            if self.inverse:
-                handle, = self.plot(ax, time_inverse, inverse_activ,
-                          label='MocoInverse',
-                          color='black',
-                          linewidth=2, zorder=2)
-                legend_musc.append((handle, 'MocoInverse'))
-            if self.knee and self.inverse:
-                handle, = self.plot(ax, time_inverse_jointreaction,
-                          sol_inverse_jointreaction.getStateMat(activation_path),
-                          label='MocoInverse, knee',
-                          linewidth=1, zorder=3)
-                legend_musc.append((handle, 'MocoInverse, knee'))
-            if self.track:
-                handle, = self.plot(ax, time_track,
-                                    sol_track.getStateMat(activation_path),
-                                    label='MocoTrack',
-                                    linewidth=2, zorder=1)
-                legend_musc.append((handle, 'MocoTrack'))
-            if self.inverse and len(muscle[3]) > 0:
-                handle = self.plot(ax, emg['time'],
-                                   emg[muscle[3]] * np.max(inverse_activ),
-                                   shift=False,
-                                   fill=True,
-                                   color='darkgray',
-                                   label='electromyography')
-                legend_musc.append((handle,
-                                    'electromyography (normalized; peak '
-                                    'matches the peak from MocoInverse)'))
-            if im == 0:
-                legend_handles_and_labels = legend_musc
-            ax.set_ylim(-0.05, 1)
-            ax.set_xlim(0, 100)
-            if muscle[0][0] < 2:
-                ax.set_xticklabels([])
+        cmap = cm.get_cmap(self.cmap)
+        title_fs = 10
+        lw = 2.5
+
+        # experimental stride time
+        # ax_time.bar(0, self.final_time - self.initial_time, color='black')
+
+        # experimental ground reactions
+        grf_table = self.load_table(os.path.join(root_dir,
+                'resources', 'Rajagopal2016', 'grf_walk.mot'))
+        grf_start = np.argmin(abs(grf_table['time']-self.initial_time))
+        grf_end = np.argmin(abs(grf_table['time']-self.final_time))
+
+        time_grfs = grf_table['time'][grf_start:grf_end]
+        pgc_grfs = np.linspace(0, 100, len(time_grfs))
+        ax_grf_x.plot(pgc_grfs, 
+            grf_table['ground_force_l_vx'][grf_start:grf_end]/BW, 
+            color='black', lw=lw+1.0)
+        ax_grf_y.plot(pgc_grfs, 
+            grf_table['ground_force_l_vy'][grf_start:grf_end]/BW, 
+            color='black', lw=lw+1.0)
+        ax_grf_z.plot(pgc_grfs,
+                      grf_table['ground_force_l_vz'][grf_start:grf_end]/BW,
+                      color='black', lw=lw+1.0)
+
+        # experimental coordinates
+        coordinates = self.load_table(os.path.join(root_dir, 'resources', 
+                'Rajagopal2016', 'coordinates.mot'))
+        coords_start = np.argmin(abs(coordinates['time']-self.initial_time))
+        coords_end = np.argmin(abs(coordinates['time']-self.final_time))
+
+        time_coords = coordinates['time'][coords_start:coords_end]
+        pgc_coords = np.linspace(0, 100, len(time_coords))
+        ax_add.plot(pgc_coords,
+                    coordinates['hip_adduction_l'][coords_start:coords_end],
+                    color='black', lw=lw + 1.0)
+        ax_hip.plot(pgc_coords,
+                    coordinates['hip_flexion_l'][coords_start:coords_end],
+                    color='black', lw=lw + 1.0)
+        ax_knee.plot(pgc_coords,
+                     coordinates['knee_angle_l'][coords_start:coords_end],
+                     color='black', lw=lw + 1.0)
+        ax_ankle.plot(pgc_coords,
+                      coordinates['ankle_angle_l'][coords_start:coords_end],
+                      color='black', lw=lw + 1.0)
+
+        # simulation results
+        iterate = zip(
+            self.tracking_weights, self.effort_weights,
+            self.cmap_indices)
+
+        for i, (tracking_weight, effort_weight, cmap_index) in enumerate(
+                iterate):
+            color = cmap(cmap_index)
+            full_path = self.get_solution_path_fullcycle(root_dir, 
+                    tracking_weight, effort_weight)
+            full_traj = osim.MocoTrajectory(full_path)
+
+            sol_path = self.get_solution_path(root_dir, tracking_weight,
+                                              effort_weight)
+            trackingWeight = str(tracking_weight).replace('.', '_')
+            effortWeight = str(effort_weight).replace('.', '_')
+            sol_table = osim.TimeSeriesTable(sol_path)
+            if self.coordinate_tracking:
+                trackingCostStr = \
+                    sol_table.getTableMetaDataString('objective_state_tracking')
             else:
-                ax.set_xlabel('time (% gait cycle)')
-            if muscle[0][1] == 0:
-                ax.set_ylabel('activation')
+                trackingCostStr = \
+                    sol_table.getTableMetaDataString('objective_marker_tracking')
+            trackingCost = float(trackingCostStr) / tracking_weight
 
-            title = f'  {muscle[2]}'
-            plt.text(0.5, 1.20, title,
-                     horizontalalignment='center',
-                     verticalalignment='top',
-                     transform=ax.transAxes)
-            ax.set_yticks([0, 1])
+            effortCost = 0
+            if effort_weight:
+                effortCostStr = \
+                    sol_table.getTableMetaDataString('objective_control_effort')
+                effortCost = float(effortCostStr) / effort_weight
+            print(f'effort and tracking costs (track={trackingWeight}, '
+                  f'effort={effortWeight}): ', effortCost, trackingCost)
 
-            utilities.publication_spines(ax)
+            grf_path = self.get_solution_path_grfs(root_dir,
+                    tracking_weight, effort_weight)
+            grf_table = self.load_table(grf_path)
 
-        # if self.inverse and self.knee:
-        legend_handles, legend_labels = zip(*legend_handles_and_labels)
-        plt.figlegend(legend_handles, legend_labels,
-            frameon=False,
-            ncol=5,
-            loc='lower center',
-        )
-        fig.tight_layout(h_pad=1, rect=(0, 0.07, 1, 1), pad=0.4)
 
-        fig.savefig(
-            os.path.join(root_dir, 'figures/motion_tracking_walking.png'),
-            dpi=600)
+            time = full_traj.getTimeMat()
+            pgc = np.linspace(0, 100, len(time))
 
-        if self.cmc and self.inverse:
-            mocosol_cmc = sol_inverse.clone()
-            mocosol_cmc.insertStatesTrajectory(sol_cmc, True)
-            inv_sol_rms = \
-                sol_inverse.compareContinuousVariablesRMSPattern(mocosol_cmc,
-                                                                 'states',
-                                                                 '.*activation')
+            # pareto front
+            ax_time.plot(trackingCost, effortCost, color=color,
+                         marker='o')
+            ax_time.text(trackingCost, effortCost, self.legend_entries[i])
+            # ax_time.bar(i+1, time[-1]-time[0], color=color)
+            # ax_time.set_ylim(0, 1.2)
+            # ax_time.set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2])
+            ax_time.set_xlabel('tracking cost')
+            ax_time.set_ylabel('effort cost')
+            # ax_time.set_xticks([0, 1, 2, 3])
+            # ax_time.set_xticklabels(
+            #         ['data', 'track', 'track\n + \neffort', 'effort'])
+            ax_time.set_title('COST TRADE-OFF\n', weight='bold', size=title_fs)
+            ax_time.set_aspect(1.0/ax_time.get_data_ratio()*0.8, anchor='N')
+            utilities.publication_spines(ax_time)
 
-            peak_inverse_activation = -np.inf
-            for state_name in sol_inverse.getStateNames():
-                if state_name.endswith('activation'):
-                    column = sol_inverse.getStateMat(state_name)
-                    peak_inverse_activation = np.max([peak_inverse_activation,
-                                                      np.max(column)])
+            # ground reaction forces
+            ax_grf_x.plot(pgc, grf_table['ground_force_l_vx']/BW, color=color,
+                lw=lw)
+            ax_grf_x.set_ylabel('horizontal force (BW)')
+            ax_grf_x.set_ylim(-0.35, 0.35)
+            ax_grf_x.set_yticks([-0.2, 0, 0.2])
+            ax_grf_x.set_title('GROUND REACTIONS', weight='bold', 
+                    size=title_fs)
+            ax_grf_x.set_xticklabels([])
 
-            inv_sol_rms_pcent = 100.0 * inv_sol_rms / peak_inverse_activation
-            print(f'Peak MocoInverse activation: {peak_inverse_activation}')
-            print('CMC MocoInverse activation RMS: ', inv_sol_rms_pcent)
-            with open(os.path.join(root_dir, 'results/motion_tracking_walking_'
-                      'inverse_cmc_rms.txt'), 'w') as f:
-                f.write(f'{inv_sol_rms_pcent:.0f}')
+            ax_grf_y.plot(pgc, grf_table['ground_force_l_vy']/BW, color=color,
+                lw=lw)
+            ax_grf_y.set_ylabel('vertical force (BW)')
+            ax_grf_y.set_ylim(0, 1.5)
+            ax_grf_y.set_yticks([0, 0.5, 1, 1.5])
+            ax_grf_y.set_xticklabels([])
 
-        if self.track:
-            res_track = self.calc_reserves(sol_track)
-            column_labels = res_track.getColumnLabels()
-            max_res_track = -np.inf
-            for icol in range(res_track.getNumColumns()):
+            ax_grf_z.plot(pgc, grf_table['ground_force_l_vz']/BW, color=color,
+                          lw=lw)
+            ax_grf_z.set_ylabel('transverse force (BW)')
+            ax_grf_z.set_xlabel('time (% gait cycle)')
+
+            # kinematics
+            rad2deg = 180 / np.pi
+            ax_add.plot(pgc, rad2deg*full_traj.getStateMat(
+                '/jointset/hip_l/hip_adduction_l/value'), color=color, lw=lw)
+            ax_add.set_ylabel('hip adduction (degrees)')
+            # ax_add.set_yticks([-0.2, 0, 0.2, 0.4, 0.6, 0.8])
+            ax_add.set_xticklabels([])
+            ax_add.set_title('KINEMATICS\n', weight='bold', size=title_fs)
+            ax_hip.plot(pgc, rad2deg*full_traj.getStateMat(
+                    '/jointset/hip_l/hip_flexion_l/value'), color=color, lw=lw)
+            ax_hip.set_ylabel('hip flexion (degrees)')
+            # ax_hip.set_ylim(-20, 50)
+            # ax_hip.set_yticks([-0.2, 0, 0.2, 0.4, 0.6, 0.8])
+            ax_hip.set_xticklabels([])
+            ax_knee.plot(pgc, rad2deg*full_traj.getStateMat(
+                    '/jointset/walker_knee_l/knee_angle_l/value'), color=color,
+                    lw=lw)
+            ax_knee.set_ylabel('knee flexion (degrees)')
+            ax_knee.set_ylim(0, 90)
+            ax_knee.set_xticklabels([])
+            ax_ankle.plot(pgc, rad2deg*full_traj.getStateMat(
+                    '/jointset/ankle_l/ankle_angle_l/value'), color=color, 
+                    lw=lw)
+            ax_ankle.set_ylabel('ankle dorsiflexion (degrees)')
+            ax_ankle.set_xlabel('time (% gait cycle)')
+            # ax_ankle.set_ylim(-30, 20)
+            # ax_ankle.set_yticks([-0.5, -0.3, -0.1, 0, 0.1, 0.3])
+
+
+            for ax in ax_list:
+                utilities.publication_spines(ax)
+                ax.set_xlim(0, 100)
+                ax.set_xticks([0, 50, 100])
+
+            # muscle activations
+            for im, muscle in enumerate(muscles):
+                activation_path = f'/forceset/{muscle[1]}_l/activation'
+                ax = muscle[0]
+                activation = full_traj.getStateMat(activation_path)
+                ax.plot(pgc, activation, color=color, lw=lw)
+
+                # electromyography data
+                # TODO: do not assume we want to normalize EMG via simulation 0.
+                if i == 0 and 'PSOAS' not in muscle:
+                    self.plot(ax, emg['time'],
+                              emg[muscle[3]] * np.max(activation), shift=False,
+                              fill=True, color='lightgray',
+                              label='electromyography')
+                ax.set_ylim(0, 1)
+                ax.set_yticks([0, 1])
+                ax.set_xlim(0, 100)
+                ax.set_xticks([0, 50, 100])
+
+                if im < 8:
+                    ax.set_xticklabels([])
+                ax.text(0.5, 1.2, muscle[2],
+                       horizontalalignment='center',
+                       verticalalignment='top',
+                       transform=ax.transAxes)
+                utilities.publication_spines(ax)
+                if im == 0:
+                    ax.set_title('ACTIVATIONS\n', weight='bold', size=title_fs)
+                if im == 8: ax.set_xlabel('time (% gait cycle)')
+
+        fig.align_ylabels([ax_grf_x, ax_grf_y])
+        fig.align_ylabels([ax_time, ax_add, ax_hip, ax_knee, ax_ankle])
+
+        # fig.tight_layout()
+        fig.subplots_adjust(left=0.07, right=0.97, top=0.94, bottom=0.065,
+                            hspace=200,
+                            wspace=0.5)
+        fig.savefig(os.path.join(root_dir,
+                'figures/motion_tracking_walking.png'), dpi=600)
+
+        with open(os.path.join(root_dir, 'results/'
+                'motion_tracking_walking_durations.txt'), 'w') as f:
+            iterate = zip(self.tracking_weights, self.effort_weights,
+                          self.cmap_indices)
+            for tracking_weight, effort_weight, cmap_index in iterate:
+                print('cmap_index', cmap_index)
+                sol_path = self.get_solution_path(root_dir, tracking_weight,
+                        effort_weight)
+                trackingWeight = str(tracking_weight).replace('.', '_')
+                effortWeight = str(effort_weight).replace('.', '_')
+                sol_table = osim.TimeSeriesTable(sol_path)
+                duration = sol_table.getTableMetaDataString('solver_duration')
+                # Convert duration from seconds to hours.
+                duration = float(duration) / 60.0 / 60.0
+                print(f'duration (track={trackingWeight}, '
+                      f'effort={effortWeight}): ', duration)              
+                f.write(f'(track={trackingWeight}, effort={effortWeight}): '
+                        f'{duration:.2f}\n')
+
+        iterate = zip(self.tracking_weights, self.effort_weights,
+                      self.cmap_indices)
+        for tracking_weight, effort_weight, cmap_index in iterate:
+            print(f'reserves for track={trackingWeight}, '
+                  f'effort={effortWeight}):')
+            sol_path = self.get_solution_path(root_dir, tracking_weight,
+                                              effort_weight)
+            solution = osim.MocoTrajectory(sol_path)
+            reserves = self.calc_reserves(root_dir, solution)
+            column_labels = reserves.getColumnLabels()
+            max_res = -np.inf
+            for icol in range(reserves.getNumColumns()):
                 column = utilities.toarray(
-                    res_track.getDependentColumnAtIndex(icol))
+                    reserves.getDependentColumnAtIndex(icol))
                 max = np.max(np.abs(column))
-                max_res_track = np.max([max_res_track, max])
-                print(f'track max abs {column_labels[icol]}: {max}')
-            with open(os.path.join(root_dir, 'results/motion_tracking_walking_'
-                      'track_max_reserve.txt'), 'w') as f:
-                f.write(f'{max_res_track:.2f}')
+                max_res = np.max([max_res, max])
+                print(f' max abs {column_labels[icol]}: {max}')
+            muscle_mechanics = self.calc_muscle_mechanics(root_dir, solution)
+            trackingWeight = str(tracking_weight).replace('.', '_')
+            effortWeight = str(effort_weight).replace('.', '_')
+            osim.STOFileAdapter.write(muscle_mechanics,
+                                      'results/tracking_walking_muscle_mechanics'
+                                      f'_trackingWeight{trackingWeight}'
+                                      f'_effortWeight{effortWeight}.sto')
+        trajectory_filepath = self.get_solution_path_fullcycle(root_dir,
+                                                               self.tracking_weights[-1],
+                                                               self.effort_weights[-1])
 
-        if self.inverse:
-            res_inverse = self.calc_reserves(root_dir, sol_inverse)
-            column_labels = res_inverse.getColumnLabels()
-            max_res_inverse = -np.inf
-            for icol in range(res_inverse.getNumColumns()):
-                column = utilities.toarray(
-                    res_inverse.getDependentColumnAtIndex(icol))
-                max = np.max(np.abs(column))
-                max_res_inverse = np.max([max_res_inverse, max])
-                print(f'inverse max abs {column_labels[icol]}: {max}')
-            with open(os.path.join(root_dir, 'results/motion_tracking_walking_'
-                      'inverse_max_reserve.txt'), 'w') as f:
-                f.write(f'{max_res_inverse:.1f}')
+        ref_files = list()
+        ref_files.append('tracking_walking_tracked_states.sto')
+        iterate = zip(self.tracking_weights[:-1], self.effort_weights[:-1],
+                      self.cmap_indices[:-1])
+        for tracking_weight, effort_weight, cmap_index in iterate:
+            ref_files.append(self.get_solution_path_fullcycle(root_dir,
+                                                              tracking_weight,
+                                                              effort_weight))
 
-        if self.knee and self.inverse:
-            res_inverse_jr = self.calc_reserves(root_dir,
-                                                sol_inverse_jointreaction)
-            column_labels = res_inverse_jr.getColumnLabels()
-            max_res_inverse_jr = -np.inf
-            for icol in range(res_inverse_jr.getNumColumns()):
-                column = utilities.toarray(
-                    res_inverse_jr.getDependentColumnAtIndex(icol))
-                max = np.max(np.abs(column))
-                max_res_inverse_jr = np.max([max_res_inverse_jr, max])
-                print(f'inverse_jr max abs {column_labels[icol]}: {max}')
-            with open(os.path.join(root_dir, 'results/motion_tracking_walking_'
-                      'inverse_jr_max_reserve.txt'), 'w') as f:
-                f.write(f'{max_res_inverse_jr:.3f}')
+        report = osim.report.Report(model=model, 
+                trajectory_filepath=trajectory_filepath, 
+                ref_files=ref_files, bilateral=False)
+        report.generate()
 
-            maxjr_inverse = self.calc_max_knee_reaction_force(root_dir, sol_inverse)
-            maxjr_inverse_jr = self.calc_max_knee_reaction_force(root_dir, sol_inverse_jointreaction)
-            print(f'Max joint reaction {maxjr_inverse} -> {maxjr_inverse_jr}')
-            with open(os.path.join(root_dir, 'results/motion_tracking_walking_'
-                      'inverse_maxjr.txt'), 'w') as f:
-                f.write(f'{maxjr_inverse:.1f}')
-            with open(os.path.join(root_dir, 'results/motion_tracking_walking_'
-                      'inverse_jr_maxjr.txt'), 'w') as f:
-                f.write(f'{maxjr_inverse_jr:.1f}')
 
-        if self.inverse:
-            states = sol_inverse.exportToStatesTrajectory(model)
-            duration = sol_inverse.getFinalTime() - sol_inverse.getInitialTime()
-            avg_speed = (model.calcMassCenterPosition(states[states.getSize() - 1])[0] -
-                         model.calcMassCenterPosition(states[0])[0]) / duration
-            print(f'Average speed: {avg_speed}')
-
-        if self.inverse:
-            report = osim.report.Report(model, self.mocoinverse_solution_file % root_dir)
-            report.generate()
-
-        if self.knee and self.inverse:
-            report = osim.report.Report(model,
-                                        mocoinverse_jr_solution_file % root_dir)
-            report.generate()
-
-        if self.track:
-            report = osim.report.Report(model, self.mocotrack_solution_file % root_dir)
-            report.generate()
 

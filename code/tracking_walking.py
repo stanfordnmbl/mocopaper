@@ -481,6 +481,7 @@ class MotionTrackingWalking(MocoPaperResult):
         self.skip_inverse = False
         self.coordinate_tracking = False
         self.contact_tracking = False
+        self.visualize = False
         if len(args) == 0: return
         print('Received arguments {}'.format(args))
         if 'skip-inverse' in args:
@@ -489,6 +490,8 @@ class MotionTrackingWalking(MocoPaperResult):
             self.coordinate_tracking = True
         if 'contact-tracking' in args:
             self.contact_tracking = True
+        if 'visualize' in args:
+            self.visualize = True
 
     def generate_results(self, root_dir, args):
         self.parse_args(args)
@@ -515,13 +518,14 @@ class MotionTrackingWalking(MocoPaperResult):
         gravity = model.getGravity()
         BW = mass*abs(gravity[1])
 
-        for tracking_weight, effort_weight, cmap_index in zip(
-                self.tracking_weights, self.effort_weights,
-                self.cmap_indices):
-            solution = osim.MocoTrajectory(
-                self.get_solution_path_fullcycle(root_dir, tracking_weight,
-                      effort_weight))
-            osim.visualize(model, solution.exportToStatesTable())
+        if self.visualize:
+            for tracking_weight, effort_weight, cmap_index in zip(
+                    self.tracking_weights, self.effort_weights,
+                    self.cmap_indices):
+                solution = osim.MocoTrajectory(
+                    self.get_solution_path_fullcycle(root_dir, tracking_weight,
+                          effort_weight))
+                osim.visualize(model, solution.exportToStatesTable())
 
         emg = self.load_electromyography(root_dir)
 

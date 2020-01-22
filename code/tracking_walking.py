@@ -57,12 +57,13 @@ class MotionTrackingWalking(MocoPaperResult):
                 forceName = forceSet.get(int(i)).getName()
                 if 'contact' in forceName: numContacts += 1
 
+            print('Removing contact force elements from model...')
             contactsRemoved = 0
             while contactsRemoved < numContacts:
                 for i in np.arange(forceSet.getSize()):
                     forceName = forceSet.get(int(i)).getName()
                     if 'contact' in forceName: 
-                        print('Force removed: ', forceSet.get(int(i)).getName())
+                        print('  --> removed', forceSet.get(int(i)).getName())
                         forceSet.remove(int(i))
                         contactsRemoved += 1
                         break
@@ -122,7 +123,6 @@ class MotionTrackingWalking(MocoPaperResult):
             muscle = muscles.get(int(imusc))
             if 'gas' in muscle.getName() or 'soleus' in muscle.getName():
                 muscle.set_ignore_tendon_compliance(False)
-                muscle.set_max_isometric_force(0.25*muscle.get_max_isometric_force())
 
         modelProcessorTendonCompliance = osim.ModelProcessor(model)
         modelProcessorTendonCompliance.append(
@@ -499,8 +499,6 @@ class MotionTrackingWalking(MocoPaperResult):
 
         # Run tracking problem, sweeping across different effort weights.
         solution = osim.MocoTrajectory()
-        # solution = osim.MocoTrajectory(self.get_solution_path(root_dir,
-            # self.tracking_weights[0], self.effort_weights[0]))
         weights = zip(self.tracking_weights, self.effort_weights)
         for tracking_weight, effort_weight in weights:
             solution = self.run_tracking_problem(root_dir, solution, 
@@ -624,7 +622,7 @@ class MotionTrackingWalking(MocoPaperResult):
                     sol_table.getTableMetaDataString('objective_state_tracking')
             else:
                 trackingCostStr = \
-                    sol_table.getTableMetaDataString('objective_marking_tracking')
+                    sol_table.getTableMetaDataString('objective_marker_tracking')
             trackingCost = float(trackingCostStr) / tracking_weight
 
             effortCost = 0

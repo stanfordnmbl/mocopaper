@@ -25,9 +25,27 @@ class MotionPrescribedWalking(MocoPaperResult):
     def create_model_processor(self, root_dir):
 
         # Create base model without reserves.
-        model = osim.Model(
-            os.path.join(root_dir, "resources/Rajagopal2016/"
-                                   "subject_walk_armless_80musc.osim"))
+        model = osim.Model(os.path.join(root_dir,
+                'resources/Rajagopal2016/'
+                'subject_walk_armless_contact_bounded_80musc.osim'))
+
+        forceSet = model.getForceSet()
+        numContacts = 0
+        for i in np.arange(forceSet.getSize()):
+            forceName = forceSet.get(int(i)).getName()
+            if 'contact' in forceName: numContacts += 1
+
+        print('Removing contact force elements from model...')
+        contactsRemoved = 0
+        while contactsRemoved < numContacts:
+            for i in np.arange(forceSet.getSize()):
+                forceName = forceSet.get(int(i)).getName()
+                if 'contact' in forceName: 
+                    print('  --> removed', forceSet.get(int(i)).getName())
+                    forceSet.remove(int(i))
+                    contactsRemoved += 1
+                    break
+
         def add_reserve(model, coord, max_control):
             actu = osim.CoordinateActuator(coord)
             if coord.startswith('lumbar'):
@@ -37,9 +55,9 @@ class MotionPrescribedWalking(MocoPaperResult):
             else:
                 prefix = 'reserve_'
             actu.setName(prefix + coord)
-            actu.setMinControl(-max_control)
-            actu.setMaxControl(max_control)
-            actu.setOptimalForce(1)
+            actu.setMinControl(-1)
+            actu.setMaxControl(1)
+            actu.setOptimalForce(max_control)
             model.addForce(actu)
         add_reserve(model, 'lumbar_extension', 50)
         add_reserve(model, 'lumbar_bending', 50)
@@ -166,6 +184,7 @@ class MotionPrescribedWalking(MocoPaperResult):
         inverse.set_kinematics_allow_extra_columns(True)
         inverse.set_convergence_tolerance(1e-2)
         inverse.set_reserves_weight(10.0)
+  
         # 8 minutes
         if self.inverse:
             solution = inverse.solve()
@@ -174,18 +193,18 @@ class MotionPrescribedWalking(MocoPaperResult):
         # MocoInverse, minimize joint reactions
         # -------------------------------------
         study = inverse.initialize()
+        problem = study.updProblem()
         reaction_r = osim.MocoJointReactionGoal('reaction_r', 0.1)
         reaction_r.setJointPath('/jointset/walker_knee_r')
         reaction_r.setReactionMeasures(['force-x', 'force-y'])
         reaction_l = osim.MocoJointReactionGoal('reaction_l', 0.1)
         reaction_l.setJointPath('/jointset/walker_knee_l')
         reaction_l.setReactionMeasures(['force-x', 'force-y'])
-        problem = study.updProblem()
         problem.addGoal(reaction_r)
         problem.addGoal(reaction_l)
         solver = osim.MocoCasADiSolver.safeDownCast(study.updSolver())
 
-        # 50 minutes.
+        # 13 minutes.
         if self.knee:
             solution_reaction = study.solve()
             solution_reaction.write(self.mocoinverse_jointreaction_solution_file % root_dir)
@@ -396,8 +415,6 @@ class MotionPrescribedWalking(MocoPaperResult):
             ax = plt.subplot(gs[muscle[0][0], muscle[0][1] + 1])
             activation_path = f'/forceset/{muscle[1]}_{self.side}/activation'
             legend_musc = []
-            if self.inverse:
-                inverse_activ = sol_inverse.getStateMat(activation_path)
             # if self.cmc:
             #     cmc_activ = toarray(sol_cmc.getDependentColumn(activation_path))
             #     handle, = self.plot(ax, time_cmc,
@@ -408,6 +425,7 @@ class MotionPrescribedWalking(MocoPaperResult):
             #               )
             #     legend_musc.append((handle, 'Computed Muscle Control'))
             if self.inverse:
+                inverse_activ = sol_inverse.getStateMat(activation_path)
                 handle, = self.plot(ax, time_inverse, inverse_activ,
                           label='MocoInverse',
                           color='black',

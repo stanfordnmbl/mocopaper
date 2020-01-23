@@ -241,6 +241,11 @@ class MotionTrackingWalking(MocoPaperResult):
             weightList.append(('/jointset/ground_pelvis/pelvis_list/value', 0))
             weightList.append(('/jointset/ground_pelvis/pelvis_tilt/value', 0))
             weightList.append(('/jointset/ground_pelvis/pelvis_rotation/value', 0))
+            weightList.append(('/jointset/ground_pelvis/pelvis_ty/value', 0))
+            weightList.append(('/jointset/hip_r/hip_rotation_r/value', 0))
+            weightList.append(('/jointset/hip_r/hip_adduction_r/value', 0))
+            weightList.append(('/jointset/hip_l/hip_rotation_l/value', 0))
+            weightList.append(('/jointset/hip_l/hip_adduction_l/value', 0))
             for weight in weightList:
                 stateWeights.cloneAndAppend(osim.MocoWeight(weight[0], weight[1]))
             track.set_states_weight_set(stateWeights)
@@ -289,6 +294,10 @@ class MotionTrackingWalking(MocoPaperResult):
         problem.setStateInfo('/jointset/ground_pelvis/pelvis_tilt/value', [], 0) 
         problem.setStateInfo('/jointset/ground_pelvis/pelvis_list/value', [], 0)
         problem.setStateInfo('/jointset/ground_pelvis/pelvis_rotation/value', [], 0)
+        # problem.setStateInfo('/jointset/hip_r/hip_rotation_r/value', [], 0)
+        # problem.setStateInfo('/jointset/hip_r/hip_adduction_r/value', [], 0)
+        # problem.setStateInfo('/jointset/hip_l/hip_rotation_l/value', [], 0)
+        # problem.setStateInfo('/jointset/hip_l/hip_adduction_l/value', [], 0)
 
         # Update the control effort goal to a cost of transport type cost.
         effort = osim.MocoControlGoal().safeDownCast(
@@ -475,7 +484,7 @@ class MotionTrackingWalking(MocoPaperResult):
 
         # study.visualize(fullTraj)
 
-        return solution
+        # return solution
 
     def parse_args(self, args):
         self.skip_inverse = False
@@ -504,7 +513,7 @@ class MotionTrackingWalking(MocoPaperResult):
         solution = osim.MocoTrajectory()
         weights = zip(self.tracking_weights, self.effort_weights)
         for tracking_weight, effort_weight in weights:
-            solution = self.run_tracking_problem(root_dir, solution, 
+            self.run_tracking_problem(root_dir, solution, 
                     tracking_weight=tracking_weight,
                     effort_weight=effort_weight)
 

@@ -41,33 +41,11 @@ class MotionTrackingWalking(MocoPaperResult):
             'results/motion_tracking_walking_solution'
         self.cmap = 'nipy_spectral'
         self.configs = [
-            # MocoTrackConfig(name='track',
-            #                 legend_entry='track',
-            #                 tracking_weight=1,
-            #                 effort_weight=0.1,
-            #                 cmap_index=0.2),
-            MocoTrackConfig(name='trackeffort',
-                            legend_entry='track\n+\neffort',
+            MocoTrackConfig(name='noassist',
+                            legend_entry='no assist',
                             tracking_weight=1,
                             effort_weight=10,
                             cmap_index=0.5),
-            # MocoTrackConfig(name='effort',
-            #                 legend_entry='effort',
-            #                 tracking_weight=0.01,
-            #                 effort_weight=10,
-            #                 cmap_index=0.9),
-            # MocoTrackConfig(name='weakvasti',
-            #                 legend_entry='weak vasti',
-            #                 tracking_weight=1,
-            #                 effort_weight=10,
-            #                 cmap_index=0.4,
-            #                 flags=['weakvasti']),
-            # MocoTrackConfig(name='weaksoleus',
-            #                 legend_entry='weak soleus',
-            #                 tracking_weight=1,
-            #                 effort_weight=10,
-            #                 cmap_index=0.6,
-            #                 flags=['weaksoleus']),
             MocoTrackConfig(name='assistankle',
                             legend_entry='assisted ankle',
                             tracking_weight=1,
@@ -142,17 +120,17 @@ class MotionTrackingWalking(MocoPaperResult):
         add_reserve(model, 'knee_angle_l', optimal_force, reserves_max)
         add_reserve(model, 'ankle_angle_l', optimal_force, reserves_max)
 
-        def add_device(model, coord):
+        def add_device(model, coord, min_control, max_control):
             actu = osim.ActivationCoordinateActuator()
             actu.set_coordinate(coord)
             actu.setName(f'device_{coord}')
             actu.setOptimalForce(1000.0)
-            actu.setMinControl(-1.0)
-            actu.setMaxControl(1.0)
+            actu.setMinControl(min_control)
+            actu.setMaxControl(max_control)
             model.addForce(actu)
         if 'assistankle' in flags:
-            add_device(model, 'ankle_angle_r')
-            add_device(model, 'ankle_angle_l')
+            add_device(model, 'ankle_angle_r', -1, 0)
+            add_device(model, 'ankle_angle_l', -1, 0)
 
         if 'weaksoleus' in flags:
             soleus_r = model.updMuscles().get('soleus_r')
@@ -356,6 +334,9 @@ class MotionTrackingWalking(MocoPaperResult):
                 if actu.getConcreteClassName().endswith('Actuator'):
                     effort.setWeightForControl(actu.getAbsolutePathString(),
                         0.001)
+                if actu.getName().startswith('device_'):
+                    effort.setWeightForControl(actu.getAbsolutePathString(), 0)
+
 
         speedGoal = osim.MocoAverageSpeedGoal('speed')
         speedGoal.set_desired_average_speed(1.235)

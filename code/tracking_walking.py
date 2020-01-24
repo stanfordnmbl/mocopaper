@@ -10,6 +10,7 @@ import opensim as osim
 from moco_paper_result import MocoPaperResult
 
 import utilities
+from utilities import plot_joint_moment_breakdown
 
 # TODO: try different foot spacing
 # TODO: fix oscillations in GRFz.
@@ -783,7 +784,7 @@ class MotionTrackingWalking(MocoPaperResult):
 
         for config in self.configs:
             print(f'reserves for config {config.name}:')
-            sol_path = self.get_solution_path(root_dir, config)
+            sol_path = self.get_solution_path_fullcycle(root_dir, config)
             solution = osim.MocoTrajectory(sol_path)
             reserves = self.calc_reserves(root_dir, config, solution)
             column_labels = reserves.getColumnLabels()
@@ -799,10 +800,31 @@ class MotionTrackingWalking(MocoPaperResult):
             osim.STOFileAdapter.write(muscle_mechanics,
                                       'results/tracking_walking_muscle_mechanics'
                                       f'{config.name}.sto')
+
+            # Generate joint moment breakdown.
+            modelProcessor = self.create_model_processor(root_dir,
+                                                         config=config)
+            model = modelProcessor.process()
+            print(f'Generating joint moment breakdown for {config.name}.')
+            coords = [
+                '/jointset/hip_l/hip_flexion_l',
+                '/jointset/walker_knee_l/knee_angle_l',
+                '/jointset/ankle_l/ankle_angle_l'
+            ]
+            fig = plot_joint_moment_breakdown(model, solution,
+                                              coords)
+            fpath = os.path.join(root_dir,
+                                 'results/motion_tracking_walking_' +
+                                 f'breakdown_{config.name}.png')
+            fig.savefig(fpath, dpi=600)
+
+
+
+        # Generate PDF report.
+        # --------------------
         trajectory_filepath = self.get_solution_path_fullcycle(root_dir,
                                                                self.configs[-1]
                                                                )
-
         ref_files = list()
         ref_files.append('tracking_walking_tracked_states.sto')
         report_suffix = ''

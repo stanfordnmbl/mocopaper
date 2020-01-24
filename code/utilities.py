@@ -234,7 +234,8 @@ def plot_joint_moment_breakdown(model, moco_traj,
     import tempfile
     with tempfile.TemporaryDirectory() as tmpdirname:
         id_tool = osim.InverseDynamicsTool()
-        id_tool.setModel(model)
+        modelID = osim.Model(model)
+        id_tool.setModel(modelID)
         table = moco_traj.exportToStatesTable()
         labels = list(table.getColumnLabels())
         import re
@@ -251,13 +252,18 @@ def plot_joint_moment_breakdown(model, moco_traj,
             stolabels.append(label)
         storage.setColumnLabels(stolabels)
         id_tool.setCoordinateValues(storage)
+        # id_tool.setExternalLoadsFileName(extloads_fpath)
+        excludedForces = osim.ArrayStr()
+        excludedForces.append('ACTUATORS')
+        id_tool.setExcludedForces(excludedForces)
         id_result = 'joint_moment_breakdown_residuals.sto'
         id_tool.setResultsDir(tmpdirname)
         id_tool.setOutputGenForceFileName(id_result)
         # TODO: Remove muscles from the model?
         id_tool.run()
 
-        net_joint_moments = osim.TimeSeriesTable(os.path.join(tmpdirname, id_result))
+        net_joint_moments = osim.TimeSeriesTable(
+            os.path.join(tmpdirname, id_result))
 
     time = moco_traj.getTimeMat()
 

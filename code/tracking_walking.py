@@ -178,17 +178,17 @@ class MotionTrackingWalking(MocoPaperResult):
 
     def get_solution_path(self, root_dir, config):
         return os.path.join(root_dir,
-                            f'{self.tracking_solution_relpath_prefix}'
+                            f'{self.tracking_solution_relpath_prefix}_'
                             + config.name + '.sto')
 
     def get_solution_path_fullcycle(self, root_dir, config):
         return os.path.join(root_dir,
-                            f'{self.tracking_solution_relpath_prefix}'
+                            f'{self.tracking_solution_relpath_prefix}_'
                             + config.name + '_fullcycle.sto')
 
     def get_solution_path_grfs(self, root_dir, config):
         return os.path.join(root_dir,
-                            f'{self.tracking_solution_relpath_prefix}'
+                            f'{self.tracking_solution_relpath_prefix}_'
                             + config.name + '_fullcycle_grfs.sto')
 
     def load_table(self, table_path):

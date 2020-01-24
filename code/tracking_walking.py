@@ -769,7 +769,7 @@ class MotionTrackingWalking(MocoPaperResult):
                 f.write(f'(config {config.name}): {duration:.2f}\n')
 
         for config in self.configs:
-            print(f'reserves for config {config.name}:')
+            # print(f'reserves for config {config.name}:')
             sol_path = self.get_solution_path(root_dir, config)
             solution = osim.MocoTrajectory(sol_path)
             reserves = self.calc_reserves(root_dir, config, solution)
@@ -780,7 +780,8 @@ class MotionTrackingWalking(MocoPaperResult):
                     reserves.getDependentColumnAtIndex(icol))
                 max = np.max(np.abs(column))
                 max_res = np.max([max_res, max])
-                print(f' max abs {column_labels[icol]}: {max}')
+                # print(f' max abs {column_labels[icol]}: {max}')
+            print(f' max abs reserve for config {config.name}: {max_res}')
             muscle_mechanics = self.calc_muscle_mechanics(root_dir, config,
                                                           solution)
             osim.STOFileAdapter.write(muscle_mechanics,

@@ -20,13 +20,15 @@ from utilities import plot_joint_moment_breakdown
 
 class MocoTrackConfig:
     def __init__(self, name, legend_entry, tracking_weight, effort_weight,
-                 cmap_index, flags=[]):
+                 cmap_index, flags=[],
+                 breakdown_coordact_paths=[]):
         self.name = name
         self.legend_entry = legend_entry
         self.tracking_weight = tracking_weight
         self.effort_weight = effort_weight
         self.cmap_index = cmap_index
         self.flags = flags
+        self.breakdown_coordact_paths = breakdown_coordact_paths
 
 
 class MotionTrackingWalking(MocoPaperResult):
@@ -52,7 +54,10 @@ class MotionTrackingWalking(MocoPaperResult):
                             tracking_weight=1,
                             effort_weight=10,
                             cmap_index=0.9,
-                            flags=['assistankle']),
+                            flags=['assistankle'],
+                            breakdown_coordact_paths=[
+                                '/forceset/device_ankle_angle_l'
+                            ]),
         ]
 
     def create_model_processor(self, root_dir, for_inverse=False, config=None):
@@ -155,7 +160,7 @@ class MotionTrackingWalking(MocoPaperResult):
         modelProcessor.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())
         # Fiber damping causes negative muscle forces, but cuts the number of
         # iterations by more than half.
-        # modelProcessor.append(osim.ModOpFiberDampingDGF(0.0))
+        modelProcessor.append(osim.ModOpFiberDampingDGF(0.0))
         modelProcessor.append(osim.ModOpIgnoreTendonCompliance())
         modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
         if for_inverse:
@@ -805,7 +810,8 @@ class MotionTrackingWalking(MocoPaperResult):
                 '/jointset/ankle_l/ankle_angle_l'
             ]
             fig = plot_joint_moment_breakdown(model, solution,
-                                              coords)
+                                              coords,
+                                              coordact_paths=config.breakdown_coordact_paths)
             fpath = os.path.join(root_dir,
                                  'results/motion_tracking_walking_' +
                                  f'breakdown_{config.name}.png')

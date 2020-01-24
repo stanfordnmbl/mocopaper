@@ -282,8 +282,8 @@ def plot_joint_moment_breakdown(model, moco_traj,
 
 
     coordact_moments = np.empty((len(time), num_coordact))
-    for ica, coordact_paths in enumerate(coordact_paths):
-        coordact = model.getComponent(coordact_paths)
+    for ica, coordact_path in enumerate(coordact_paths):
+        coordact = model.getComponent(coordact_path)
         for itime in range(len(time)):
             state = states_traj.get(itime)
             model.realizeDynamics(state)
@@ -317,9 +317,10 @@ def plot_joint_moment_breakdown(model, moco_traj,
                     sum_actuators_shown += this_moment
 
         for ica, coordact_path in enumerate(coordact_paths):
-            this_moment = coordact_moments[:, ica]
-            ax.plot(time, this_moment, label=coordact_path)
-            sum_actuators_shown += this_moment
+            if os.path.basename(coord_path) in coordact_path:
+                this_moment = coordact_moments[:, ica]
+                ax.plot(time, this_moment, label=coordact_path)
+                sum_actuators_shown += this_moment
 
         ax.plot(time, sum_actuators_shown,
                 label='sum actuators shown', color='gray', linewidth=2)

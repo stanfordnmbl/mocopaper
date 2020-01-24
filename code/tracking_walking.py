@@ -799,6 +799,8 @@ class MotionTrackingWalking(MocoPaperResult):
             print(f'Generating joint moment breakdown for {config.name}.')
             coords = [
                 '/jointset/hip_l/hip_flexion_l',
+                '/jointset/hip_l/hip_adduction_l',
+                '/jointset/hip_l/hip_rotation_l',
                 '/jointset/walker_knee_l/knee_angle_l',
                 '/jointset/ankle_l/ankle_angle_l'
             ]

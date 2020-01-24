@@ -152,6 +152,9 @@ class MotionTrackingWalking(MocoPaperResult):
         modelProcessor.append(osim.ModOpReplaceJointsWithWelds(
             ['subtalar_r', 'mtp_r', 'subtalar_l', 'mtp_l']))
         modelProcessor.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())
+        # Fiber damping causes negative muscle forces, but cuts the number of
+        # iterations by more than half.
+        # modelProcessor.append(osim.ModOpFiberDampingDGF(0.0))
         modelProcessor.append(osim.ModOpIgnoreTendonCompliance())
         modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
         if for_inverse:

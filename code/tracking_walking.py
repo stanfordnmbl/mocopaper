@@ -511,10 +511,6 @@ class MotionTrackingWalking(MocoPaperResult):
         osim.writeTableToFile(externalLoads,
                               self.get_solution_path_grfs(root_dir, config))
 
-        # study.visualize(fullTraj)
-
-        # return solution
-
     def parse_args(self, args):
         self.skip_inverse = False
         self.coordinate_tracking = False

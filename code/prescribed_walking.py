@@ -104,8 +104,6 @@ class MotionPrescribedWalking(MocoPaperResult):
         # Create direct collocation model:
         #   - implicit tendon compliance mode
         #   - add external loads
-        ext_loads_xml = os.path.join(root_dir,
-                                     "resources/Rajagopal2016/grf_walk.xml")
         baseModel.initSystem()
         muscles = baseModel.updMuscles()
         for imusc in np.arange(muscles.getSize()):
@@ -282,14 +280,17 @@ class MotionPrescribedWalking(MocoPaperResult):
         # TODO: slight shift in CMC solution might be due to how we treat
         # percent gait cycle and the fact that CMC is missing 0.02 seconds.
         if self.cmc:
-            sol_cmc = osim.TimeSeriesTable(os.path.join(root_dir, 'results/motion_prescribed_walking_cmc_results/'
-                                           'motion_prescribed_walking_cmc_states.sto'))
+            cmc_states_fpath = os.path.join(root_dir,
+                                            'results/motion_prescribed_walking_cmc_results/'
+                                            'motion_prescribed_walking_cmc_states.sto')
+            sol_cmc = osim.TimeSeriesTable(cmc_states_fpath)
             time_cmc = np.array(sol_cmc.getIndependentColumn())
 
-        plot_breakdown = False
+        plot_breakdown = True
 
         if plot_breakdown:
-            fig = utilities.plot_joint_moment_breakdown(model, sol_inverse,
+            fig = utilities.plot_joint_moment_breakdown(model,
+                                                        sol_inverse,
                                                         ['/jointset/hip_l/hip_flexion_l',
                                                          '/jointset/hip_l/hip_adduction_l',
                                                          '/jointset/hip_l/hip_rotation_l',

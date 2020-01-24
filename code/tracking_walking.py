@@ -48,8 +48,8 @@ class MotionTrackingWalking(MocoPaperResult):
             #                 cmap_index=0.2),
             MocoTrackConfig(name='trackeffort',
                             legend_entry='track\n+\neffort',
-                            tracking_weight=1,
-                            effort_weight=10,
+                            tracking_weight=0.5,
+                            effort_weight=1,
                             cmap_index=0.5),
             # MocoTrackConfig(name='effort',
             #                 legend_entry='effort',
@@ -291,7 +291,6 @@ class MotionTrackingWalking(MocoPaperResult):
             weightList.append(('/jointset/ground_pelvis/pelvis_list/value', 0))
             weightList.append(('/jointset/ground_pelvis/pelvis_tilt/value', 0))
             weightList.append(('/jointset/ground_pelvis/pelvis_rotation/value', 0))
-            weightList.append(('/jointset/ground_pelvis/pelvis_ty/value', 0))
             weightList.append(('/jointset/hip_r/hip_rotation_r/value', 0))
             weightList.append(('/jointset/hip_r/hip_adduction_r/value', 0))
             weightList.append(('/jointset/hip_l/hip_rotation_l/value', 0))
@@ -342,11 +341,7 @@ class MotionTrackingWalking(MocoPaperResult):
         problem.setStateInfo('/jointset/ground_pelvis/pelvis_tx/value', [], 0.446)
         problem.setStateInfo('/jointset/ground_pelvis/pelvis_tilt/value', [], 0)
         problem.setStateInfo('/jointset/ground_pelvis/pelvis_list/value', [], 0)
-        problem.setStateInfo('/jointset/ground_pelvis/pelvis_rotation/value', [], 0)
-        # problem.setStateInfo('/jointset/hip_r/hip_rotation_r/value', [], 0)
-        # problem.setStateInfo('/jointset/hip_r/hip_adduction_r/value', [], 0)
-        # problem.setStateInfo('/jointset/hip_l/hip_rotation_l/value', [], 0)
-        # problem.setStateInfo('/jointset/hip_l/hip_adduction_l/value', [], 0)
+        problem.setStateInfo('/jointset/ground_pelvis/pelvis_rotation/value', [], 0)    
 
         # Update the control effort goal to a cost of transport type cost.
         effort = osim.MocoControlGoal().safeDownCast(

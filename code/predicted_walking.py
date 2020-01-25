@@ -76,7 +76,22 @@ class MotionPredictedWalking(MocoPaperResult):
         problem.setStateInfo("/jointset/lumbar/lumbar/value",
                              [0, 20 * pi / 180])
 
+    def parse_args(self, args):
+        self.skip_tracking = False
+        self.skip_predicted = False
+        self.visualize = False
+        if len(args) == 0: return
+        print('Received arguments {}'.format(args))
+        if 'skip-tracking' in args:
+            self.skip_tracking = True
+        if 'skip-predicted' in args:
+            self.skip_predicted = True
+        if 'visualize' in args:
+            self.visualize = True
+
     def generate_results(self, root_dir, args):
+        self.parse_args(args)
+
         track = osim.MocoTrack()
         track.setName("motion_predicted_tracking")
 
@@ -120,13 +135,15 @@ class MotionPredictedWalking(MocoPaperResult):
         # Solve problem.
         # ==============
         moco.printToXML("motion_predicted_tracking.omoco")
-        trackingSolution = moco.solve()
-        trackingSolutionFull = osim.createPeriodicTrajectory(trackingSolution)
-        trackingSolutionFull.write(os.path.join(
-            root_dir,
-            "results/motion_predicted_tracking_solution_fullcycle.sto"))
-
-        # moco.visualize(solution)
+        if not self.skip_tracking:
+            trackingSolution = moco.solve()
+            trackingSolution.write(os.path.join(
+                root_dir,
+                "results/motion_predicted_tracking_solution.sto"))
+            trackingSolutionFull = osim.createPeriodicTrajectory(trackingSolution)
+            trackingSolutionFull.write(os.path.join(
+                root_dir,
+                "results/motion_predicted_tracking_solution_fullcycle.sto"))
 
 
         # Prediction
@@ -163,16 +180,25 @@ class MotionPredictedWalking(MocoPaperResult):
         solver.set_optim_constraint_tolerance(1e-4)
         solver.set_optim_max_iterations(1000)
         # Use the solution from the tracking simulation as initial guess.
-        solver.setGuess(trackingSolution)
-        # solver.setGuessFile("motion_predicted_tracking_solution_fullcycle.sto")
+        # solver.setGuess(trackingSolution)
+        solver.setGuessFile(os.path.join(
+            root_dir,
+            "results/motion_predicted_tracking_solution.sto"))
 
         moco.printToXML("motion_predicted_predicted.omoco")
-        predictedSolution = moco.solve()
-        predictedSolutionFull = osim.createPeriodicTrajectory(predictedSolution)
-        predictedSolutionFull.write(
-            os.path.join(root_dir,
-                         "results",
-                         "motion_predicted_predicted_solution_fullcycle.sto"))
+        if not self.skip_predicted:
+            predictedSolution = moco.solve()
+            predictedSolution.write(
+                os.path.join(root_dir,
+                             "results",
+                             "motion_predicted_predicted_solution.sto"))
+            predictedSolutionFull = osim.createPeriodicTrajectory(
+                predictedSolution)
+            predictedSolutionFull.write(
+                os.path.join(root_dir,
+                             "results",
+                             "motion_predicted_predicted_solution_fullcycle"
+                             ".sto"))
 
 
         # Assisted
@@ -213,6 +239,8 @@ class MotionPredictedWalking(MocoPaperResult):
 
 
     def report_results(self, root_dir, args):
+        self.parse_args(args)
+
         fig = plt.figure(figsize=(5.5, 5.5))
         gs = gridspec.GridSpec(9, 2)
 

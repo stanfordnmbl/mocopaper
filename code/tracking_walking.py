@@ -224,6 +224,22 @@ class MotionTrackingWalking(MocoPaperResult):
                                '.*semimem.*\|normalized_fiber_length'])
         return output
 
+    def calc_average_muscle_activations(self, model, solution):
+        muscles = model.updMuscles()
+        time = solution.getTimeMat()
+        duration = time[-1] - time[0]
+        labels = list()
+        average_activations = list()
+        for imusc in range(muscles.getSize()):
+            if muscles.get(imusc).getName().endswith('_l'):
+                labels.append(muscles.get(imusc).getName().replace('_l', ''))
+                musclePath = muscles.get(imusc).getAbsolutePathString()
+                activationLabel = musclePath + '/activation'
+                activation = solution.getStateMat(activationLabel)
+                average_activations.append(
+                    np.trapz(activation, x=time) / duration)
+        return labels, average_activations
+
     def run_inverse_problem(self, root_dir):
 
         modelProcessor = self.create_model_processor(root_dir,
@@ -777,6 +793,44 @@ class MotionTrackingWalking(MocoPaperResult):
                 print(f'duration (config {config.name}): ', duration)
                 f.write(f'(config {config.name}): {duration:.2f}\n')
 
+        # Summarize muscle activity
+        # -------------------------
+        print(f'Plotting bar graph of muscle activity.')
+        fig = plt.figure(figsize=(8.5, 11))
+        ax = fig.add_subplot(1, 1, 1)
+        plt.barh
+        suffix = ''
+        total_bar_height = 0.8
+        bar_height = total_bar_height / len(self.configs)
+        for iconfig, config in enumerate(self.configs):
+            suffix += '_' + config.name
+            sol_path = self.get_solution_path_fullcycle(root_dir, config)
+            solution = osim.MocoTrajectory(sol_path)
+            modelProcessor = self.create_model_processor(root_dir,
+                                                         config=config)
+            model = modelProcessor.process()
+            model.initSystem()
+            labels, activity = self.calc_average_muscle_activations(model,
+                                                                    solution)
+            sumact = np.sum(activity)
+            print(f'sum(average(activation)) for {config.name}: {sumact}')
+            indices = np.arange(len(labels))
+            ax.barh(indices - bar_height * (iconfig + 0.5), activity,
+                    height=bar_height,
+                    label=config.legend_entry)
+            if iconfig == 0:
+                ax.set_yticks(indices - 0.5 * total_bar_height)
+                ax.set_yticklabels(labels)
+        ax.legend()
+        fig.tight_layout()
+        fig.savefig(os.path.join(
+            root_dir, 'results',
+            f'motion_tracking_walking_summary_activity{suffix}.png'),
+            dpi=600)
+
+
+        # Reserves and joint moment breakdown.
+        # ------------------------------------
         for config in self.configs:
             # print(f'reserves for config {config.name}:')
             sol_path = self.get_solution_path_fullcycle(root_dir, config)
@@ -809,13 +863,15 @@ class MotionTrackingWalking(MocoPaperResult):
                 '/jointset/walker_knee_l/knee_angle_l',
                 '/jointset/ankle_l/ankle_angle_l'
             ]
-            fig = plot_joint_moment_breakdown(model, solution,
-                                              coords,
-                                              coordact_paths=config.breakdown_coordact_paths)
             fpath = os.path.join(root_dir,
                                  'results/motion_tracking_walking_' +
                                  f'breakdown_{config.name}.png')
-            fig.savefig(fpath, dpi=600)
+            plot_breakdown = False
+            if plot_breakdown:
+                fig = plot_joint_moment_breakdown(
+                    model, solution, coords,
+                    coordact_paths=config.breakdown_coordact_paths)
+                fig.savefig(fpath, dpi=600)
 
 
 

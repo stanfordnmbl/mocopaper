@@ -1,5 +1,15 @@
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 
-class MotionPredictionAndAssistanceWalking(MocoPaperResult):
+import opensim as osim
+
+from moco_paper_result import MocoPaperResult
+
+import utilities
+
+class MotionPredictedWalking(MocoPaperResult):
     def __init__(self):
         self.side = 'r'
 
@@ -47,31 +57,36 @@ class MotionPredictionAndAssistanceWalking(MocoPaperResult):
         pi = np.pi
         problem.setStateInfo("/jointset/groundPelvis/pelvis_tilt/value",
                              [-20 * pi / 180, -10 * pi / 180])
-        problem.setStateInfo("/jointset/groundPelvis/pelvis_tx/value", [0, 1])
-        problem.setStateInfo(
-            "/jointset/groundPelvis/pelvis_ty/value", [0.75, 1.25])
+        problem.setStateInfo("/jointset/groundPelvis/pelvis_tx/value",
+                             [0, 1])
+        problem.setStateInfo("/jointset/groundPelvis/pelvis_ty/value",
+                             [0.75, 1.25])
         problem.setStateInfo("/jointset/hip_l/hip_flexion_l/value",
                              [-10 * pi / 180, 60 * pi / 180])
         problem.setStateInfo("/jointset/hip_r/hip_flexion_r/value",
                              [-10 * pi / 180, 60 * pi / 180])
-        problem.setStateInfo(
-            "/jointset/knee_l/knee_angle_l/value", [-50 * pi / 180, 0])
-        problem.setStateInfo(
-            "/jointset/knee_r/knee_angle_r/value", [-50 * pi / 180, 0])
+        problem.setStateInfo("/jointset/knee_l/knee_angle_l/value",
+                             [-50 * pi / 180, 0])
+        problem.setStateInfo("/jointset/knee_r/knee_angle_r/value",
+                             [-50 * pi / 180, 0])
         problem.setStateInfo("/jointset/ankle_l/ankle_angle_l/value",
                              [-15 * pi / 180, 25 * pi / 180])
         problem.setStateInfo("/jointset/ankle_r/ankle_angle_r/value",
                              [-15 * pi / 180, 25 * pi / 180])
-        problem.setStateInfo("/jointset/lumbar/lumbar/value", [0, 20 * pi / 180])
+        problem.setStateInfo("/jointset/lumbar/lumbar/value",
+                             [0, 20 * pi / 180])
 
-    def generate_results(self):
+    def generate_results(self, root_dir, args):
         track = osim.MocoTrack()
-        track.setName("motion_prediction_tracking");
+        track.setName("motion_predicted_tracking")
 
-        modelProcessor = osim.ModelProcessor("resources/Falisse2019/2D_gait.osim")
-        modelProcessor.append(osim.ModOpSetPathLengthApproximation(False))
+        modelProcessor = osim.ModelProcessor(
+            os.path.join(root_dir, "resources/Falisse2019/2D_gait.osim"))
         track.setModel(modelProcessor)
-        tableProcessor = osim.TableProcessor("resources/Falisse2019/referenceCoordinates.sto")
+        coords_fpath = os.path.join(root_dir,
+                                    "resources/Falisse2019/"
+                                    "referenceCoordinates.sto")
+        tableProcessor = osim.TableProcessor(coords_fpath)
         tableProcessor.append(osim.TabOpLowPassFilter(6))
         track.setStatesReference(tableProcessor)
         track.set_states_global_tracking_weight(10.0)
@@ -81,7 +96,7 @@ class MotionPredictionAndAssistanceWalking(MocoPaperResult):
         track.set_initial_time(0.0)
         track.set_final_time(0.47008941)
         moco = track.initialize()
-        moco.set_write_solution("results/")
+        moco.set_write_solution(os.path.join(root_dir, "results/"))
         problem = moco.updProblem()
 
         model = modelProcessor.process()
@@ -97,19 +112,19 @@ class MotionPredictionAndAssistanceWalking(MocoPaperResult):
         # Configure the solver.
         # =====================
         solver = osim.MocoCasADiSolver.safeDownCast(moco.updSolver())
-        solver.set_num_mesh_points(50)
-        solver.set_verbosity(2)
-        solver.set_optim_solver("ipopt")
+        solver.set_num_mesh_intervals(50)
         solver.set_optim_convergence_tolerance(1e-4)
         solver.set_optim_constraint_tolerance(1e-4)
         solver.set_optim_max_iterations(1000)
 
         # Solve problem.
         # ==============
-        moco.printToXML("motion_prediction_tracking.omoco")
+        moco.printToXML("motion_predicted_tracking.omoco")
         trackingSolution = moco.solve()
         trackingSolutionFull = osim.createPeriodicTrajectory(trackingSolution)
-        trackingSolutionFull.write("results/motion_prediction_tracking_solution_fullcycle.sto")
+        trackingSolutionFull.write(os.path.join(
+            root_dir,
+            "results/motion_predicted_tracking_solution_fullcycle.sto"))
 
         # moco.visualize(solution)
 
@@ -117,12 +132,12 @@ class MotionPredictionAndAssistanceWalking(MocoPaperResult):
         # Prediction
         # ==========
         moco = osim.MocoStudy()
-        moco.setName("motion_prediction_prediction")
-        moco.set_write_solution("results/")
+        moco.setName("motion_predicted_predicted")
+        moco.set_write_solution(os.path.join(root_dir, "results/"))
 
         problem = moco.updProblem()
-        modelProcessor = osim.ModelProcessor("resources/Falisse2019/2D_gait.osim")
-        modelProcessor.append(osim.ModOpSetPathLengthApproximation(False))
+        modelProcessor = osim.ModelProcessor(os.path.join(
+            root_dir, "resources/Falisse2019/2D_gait.osim"))
         problem.setModelProcessor(modelProcessor)
 
         model = modelProcessor.process()
@@ -143,43 +158,46 @@ class MotionPredictionAndAssistanceWalking(MocoPaperResult):
         problem.setTimeBounds(0, [0.4, 0.6])
 
         solver = moco.initCasADiSolver()
-        solver.set_num_mesh_points(50)
-        solver.set_verbosity(2)
-        solver.set_optim_solver("ipopt")
+        solver.set_num_mesh_intervals(50)
         solver.set_optim_convergence_tolerance(1e-4)
         solver.set_optim_constraint_tolerance(1e-4)
         solver.set_optim_max_iterations(1000)
         # Use the solution from the tracking simulation as initial guess.
         solver.setGuess(trackingSolution)
-        # solver.setGuessFile("motion_prediction_tracking_solution_fullcycle.sto")
+        # solver.setGuessFile("motion_predicted_tracking_solution_fullcycle.sto")
 
-        moco.printToXML("motion_prediction_prediction.omoco")
-        predictionSolution = moco.solve()
-        predictionSolutionFull = osim.createPeriodicTrajectory(predictionSolution)
-        predictionSolutionFull.write("results/motion_prediction_prediction_solution_fullcycle.sto");
+        moco.printToXML("motion_predicted_predicted.omoco")
+        predictedSolution = moco.solve()
+        predictedSolutionFull = osim.createPeriodicTrajectory(predictedSolution)
+        predictedSolutionFull.write(
+            os.path.join(root_dir,
+                         "results",
+                         "motion_predicted_predicted_solution_fullcycle.sto"))
 
 
         # Assisted
         # ========
-        moco.setName("motion_prediction_assisted")
+        moco.setName("motion_predicted_assisted")
         device_r = osim.CoordinateActuator('ankle_angle_r')
         device_r.setName('device_r')
         device_r.setMinControl(-1)
-        device_r.setMaxControl(1)
+        device_r.setMaxControl(0)
         device_r.set_optimal_force(1000)
         model.addComponent(device_r)
 
         device_l = osim.CoordinateActuator('ankle_angle_l')
         device_l.setName('device_l')
         device_l.setMinControl(-1)
-        device_l.setMaxControl(1)
+        device_l.setMaxControl(0)
         device_l.set_optimal_force(1000)
         model.addComponent(device_l)
 
         problem.setModelProcessor(osim.ModelProcessor(model))
 
-        symmetry = osim.MocoPeriodicityGoal.safeDownCast(problem.updGoal("symmetry"))
-        symmetry.addControlPair(osim.MocoPeriodicityGoalPair("/device_l", "/device_r"))
+        symmetry = osim.MocoPeriodicityGoal.safeDownCast(
+            problem.updGoal("symmetry"))
+        symmetry.addControlPair(
+            osim.MocoPeriodicityGoalPair("/device_l", "/device_r"))
 
         # TODO must set guess properly?
         # guess = solver.createGuess()
@@ -187,28 +205,36 @@ class MotionPredictionAndAssistanceWalking(MocoPaperResult):
         # guess.insertControlsTrajectory(...)
         solver.clearGuess()
 
-        # moco.printToXML("motion_prediction_assisted.omoco")
+        # moco.printToXML("motion_predicted_assisted.omoco")
         # assistedSolution = moco.solve()
         # assistedSolutionFull = osim.createPeriodicTrajectory(assistedSolution)
-        # assistedSolutionFull.write("results/motion_prediction_assisted_solution_fullcycle.sto");
-        # moco.visualize(full);
+        # assistedSolutionFull.write("results/motion_predicted_assisted_solution_fullcycle.sto")
+        # moco.visualize(full)
 
 
-    def report_results(self):
+    def report_results(self, root_dir, args):
         fig = plt.figure(figsize=(5.5, 5.5))
         gs = gridspec.GridSpec(9, 2)
 
-        exp_half = osim.MocoTrajectory("resources/Falisse2019/referenceCoordinates.sto")
+        exp_half = osim.MocoTrajectory(
+            os.path.join(root_dir, "resources", "Falisse2019",
+                         "referenceCoordinates.sto"))
         exp = osim.createPeriodicTrajectory(exp_half)
         time_exp = exp.getTimeMat()
         pgc_exp = 100.0 * (time_exp - time_exp[0]) / (time_exp[-1] - time_exp[0])
 
-        sol_track = osim.MocoTrajectory("results/motion_prediction_tracking_solution_fullcycle.sto")
+        sol_track = osim.MocoTrajectory(
+            os.path.join(root_dir,
+                         "results",
+                         "motion_predicted_tracking_solution_fullcycle.sto"))
         time_track = sol_track.getTimeMat()
         pgc_track = 100.0 * (time_track - time_track[0]) / (
                 time_track[-1] - time_track[0])
 
-        sol_predict = osim.MocoTrajectory("results/motion_prediction_prediction_solution_fullcycle.sto")
+        sol_predict = osim.MocoTrajectory(
+            os.path.join(root_dir,
+                         "results",
+                         "motion_predicted_predicted_solution_fullcycle.sto"))
         time_predict = sol_predict.getTimeMat()
         pgc_predict = 100.0 * (time_predict - time_predict[0]) / (
                 time_predict[-1] - time_predict[0])
@@ -236,11 +262,13 @@ class MotionPredictionAndAssistanceWalking(MocoPaperResult):
 
             y_track = coord[2] * np.rad2deg(
                 sol_track.getStateMat(f'{coord[0]}/value'))
-            ax.plot(pgc_track, y_track, label='track', color='k', linestyle='--')
+            ax.plot(pgc_track, y_track, label='track', color='k',
+                    linestyle='--')
 
             y_predict = coord[2] * np.rad2deg(
                 sol_predict.getStateMat(f'{coord[0]}/value'))
-            ax.plot(pgc_predict, y_predict, label='predict', color='blue', linestyle='--')
+            ax.plot(pgc_predict, y_predict, label='predict', color='blue',
+                    linestyle='--')
 
             ax.set_xlim(0, 100)
             if ic == 1:
@@ -252,7 +280,7 @@ class MotionPredictionAndAssistanceWalking(MocoPaperResult):
             ax.set_ylabel(f'{coord[1]} (degrees)')
 
             ax.spines['bottom'].set_position('zero')
-            publication_spines(ax)
+            utilities.publication_spines(ax)
 
         # TODO: Compare to EMG.
         muscles = [
@@ -281,12 +309,12 @@ class MotionPredictionAndAssistanceWalking(MocoPaperResult):
                 ax.set_xlabel('time (% gait cycle)')
             ax.set_title(muscle[1], fontsize=8)
 
-            publication_spines(ax)
+            utilities.publication_spines(ax)
 
         fig.tight_layout(h_pad=0.05)
 
-        fig.savefig('figures/motion_prediction_walking.eps')
-        fig.savefig('figures/motion_prediction_walking.pdf')
-        fig.savefig('figures/motion_prediction_walking.png', dpi=600)
+        fig.savefig(
+            os.path.join(root_dir, 'figures', 'motion_predicted_walking.png'),
+            dpi=600)
 
         # TODO: Plot model-generated GRFs.

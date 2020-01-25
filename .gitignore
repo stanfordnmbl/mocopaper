@@ -205,7 +205,7 @@ out.log
 /subject02_armless_for_cmc.osim
 /subject_scaled_walk_18musc_armless_for_cmc.osim
 /motion_prediction_tracking_solution_fullcycle.sto
-/results/motion_prediction_prediction_solution_fullcycle.sto
+/archive/motion_prediction_prediction_solution_fullcycle.sto
 /MocoPaper.synctex*
 /MocoPaper.log
 /MocoPaper.out

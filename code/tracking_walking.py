@@ -130,7 +130,7 @@ class MotionTrackingWalking(MocoPaperResult):
             actu = osim.ActivationCoordinateActuator()
             actu.set_coordinate(coord)
             actu.setName(f'device_{coord}')
-            actu.setOptimalForce(1000.0)
+            actu.setOptimalForce(100.0)
             actu.setMinControl(min_control)
             actu.setMaxControl(max_control)
             model.addForce(actu)

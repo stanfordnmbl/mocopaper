@@ -689,6 +689,8 @@ class MotionTrackingWalking(MocoPaperResult):
             #         ['data', 'track', 'track\n + \neffort', 'effort'])
             ax_time.set_title('COST TRADE-OFF\n', weight='bold', size=title_fs)
             ax_time.set_aspect(1.0/ax_time.get_data_ratio()*0.8, anchor='N')
+            # Make sure to include the origin.
+            ax_time.plot([0], [0])
             utilities.publication_spines(ax_time)
 
             # ground reaction forces

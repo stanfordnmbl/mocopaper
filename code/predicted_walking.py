@@ -9,6 +9,8 @@ from moco_paper_result import MocoPaperResult
 
 import utilities
 
+# TODO: lumbarAct optimal force 150
+
 class MotionPredictedWalking(MocoPaperResult):
     def __init__(self):
         self.side = 'r'
@@ -130,7 +132,7 @@ class MotionPredictedWalking(MocoPaperResult):
         solver.set_num_mesh_intervals(50)
         solver.set_optim_convergence_tolerance(1e-4)
         solver.set_optim_constraint_tolerance(1e-4)
-        solver.set_optim_max_iterations(1000)
+        # solver.set_optim_max_iterations(1000)
 
         # Solve problem.
         # ==============
@@ -140,7 +142,8 @@ class MotionPredictedWalking(MocoPaperResult):
             trackingSolution.write(os.path.join(
                 root_dir,
                 "results/motion_predicted_tracking_solution.sto"))
-            trackingSolutionFull = osim.createPeriodicTrajectory(trackingSolution)
+            trackingSolutionFull = osim.createPeriodicTrajectory(
+                trackingSolution)
             trackingSolutionFull.write(os.path.join(
                 root_dir,
                 "results/motion_predicted_tracking_solution_fullcycle.sto"))
@@ -204,37 +207,62 @@ class MotionPredictedWalking(MocoPaperResult):
         # Assisted
         # ========
         moco.setName("motion_predicted_assisted")
-        device_r = osim.CoordinateActuator('ankle_angle_r')
+        device_r = osim.ActivationCoordinateActuator()
+        device_r.set_coordinate('ankle_angle_r')
         device_r.setName('device_r')
         device_r.setMinControl(-1)
         device_r.setMaxControl(0)
-        device_r.set_optimal_force(1000)
+        device_r.set_optimal_force(50)
         model.addComponent(device_r)
 
-        device_l = osim.CoordinateActuator('ankle_angle_l')
+        device_l = osim.ActivationCoordinateActuator()
+        device_l.set_coordinate('ankle_angle_l')
         device_l.setName('device_l')
         device_l.setMinControl(-1)
         device_l.setMaxControl(0)
-        device_l.set_optimal_force(1000)
+        device_l.set_optimal_force(50)
         model.addComponent(device_l)
 
         problem.setModelProcessor(osim.ModelProcessor(model))
+        effortGoal.setWeightForControl("/device_r", 0)
+        effortGoal.setWeightForControl("/device_l", 0)
 
         symmetry = osim.MocoPeriodicityGoal.safeDownCast(
             problem.updGoal("symmetry"))
-        symmetry.addControlPair(
-            osim.MocoPeriodicityGoalPair("/device_l", "/device_r"))
+        # symmetry.addControlPair(
+        #     osim.MocoPeriodicityGoalPair("/device_l", "/device_r"))
+        # symmetry.addControlPair(
+        #     osim.MocoPeriodicityGoalPair("/device_r", "/device_l"))
+        symmetry.addStatePair(
+            osim.MocoPeriodicityGoalPair("/device_l/activation",
+                                         "/device_r/activation"))
+        symmetry.addStatePair(
+            osim.MocoPeriodicityGoalPair("/device_r/activation",
+                                         "/device_l/activation"))
 
-        # TODO must set guess properly?
-        # guess = solver.createGuess()
-        # guess.insertStatesTrajectory(...)
-        # guess.insertControlsTrajectory(...)
-        solver.clearGuess()
+        solver.resetProblem(problem)
 
-        # moco.printToXML("motion_predicted_assisted.omoco")
-        # assistedSolution = moco.solve()
-        # assistedSolutionFull = osim.createPeriodicTrajectory(assistedSolution)
-        # assistedSolutionFull.write("results/motion_predicted_assisted_solution_fullcycle.sto")
+        # solver.clearGuess()
+        guess = solver.createGuess()
+        predictedSolution = osim.MocoTrajectory(
+            os.path.join(root_dir, "results",
+                         "motion_predicted_predicted_solution.sto"))
+        predictedStatesTable = predictedSolution.exportToStatesTable()
+        guess.insertStatesTrajectory(predictedStatesTable)
+        predictedControlsTable = predictedSolution.exportToControlsTable()
+        guess.insertControlsTrajectory(predictedControlsTable)
+        solver.setGuess(guess)
+
+        moco.printToXML("motion_predicted_assisted.omoco")
+        assistedSolution = moco.solve()
+        assistedSolution.unseal()
+        assistedSolution.write(
+            os.path.join(root_dir, "results",
+                         "motion_predicted_assisted_solution.sto"))
+        assistedSolutionFull = osim.createPeriodicTrajectory(assistedSolution)
+        assistedSolutionFull.write(
+            os.path.join(root_dir, "results",
+                         "motion_predicted_assisted_solution_fullcycle.sto"))
         # moco.visualize(full)
 
 
@@ -249,7 +277,8 @@ class MotionPredictedWalking(MocoPaperResult):
                          "referenceCoordinates.sto"))
         exp = osim.createPeriodicTrajectory(exp_half)
         time_exp = exp.getTimeMat()
-        pgc_exp = 100.0 * (time_exp - time_exp[0]) / (time_exp[-1] - time_exp[0])
+        pgc_exp = 100.0 * (time_exp - time_exp[0]) / (
+                    time_exp[-1] - time_exp[0])
 
         sol_track = osim.MocoTrajectory(
             os.path.join(root_dir,
@@ -266,6 +295,14 @@ class MotionPredictedWalking(MocoPaperResult):
         time_predict = sol_predict.getTimeMat()
         pgc_predict = 100.0 * (time_predict - time_predict[0]) / (
                 time_predict[-1] - time_predict[0])
+
+        sol_assist = osim.MocoTrajectory(
+            os.path.join(root_dir,
+                         "results",
+                         "motion_predicted_assisted_solution_fullcycle.sto"))
+        time_assist = sol_assist.getTimeMat()
+        pgc_assist = 100.0 * (time_assist - time_assist[0]) / (
+                time_assist[-1] - time_assist[0])
 
         def toarray(simtk_vector):
             array = np.empty(simtk_vector.size())
@@ -296,6 +333,11 @@ class MotionPredictedWalking(MocoPaperResult):
             y_predict = coord[2] * np.rad2deg(
                 sol_predict.getStateMat(f'{coord[0]}/value'))
             ax.plot(pgc_predict, y_predict, label='predict', color='blue',
+                    linestyle='--')
+
+            y_assist = coord[2] * np.rad2deg(
+                sol_assist.getStateMat(f'{coord[0]}/value'))
+            ax.plot(pgc_assist, y_assist, label='assist', color='green',
                     linestyle='--')
 
             ax.set_xlim(0, 100)
@@ -329,6 +371,8 @@ class MotionPredictedWalking(MocoPaperResult):
                     label='track', color='k', linestyle='--')
             ax.plot(pgc_predict, sol_predict.getStateMat(activation_path),
                     label='predict', color='blue', linestyle='--')
+            ax.plot(pgc_assist, sol_assist.getStateMat(activation_path),
+                    label='assist', color='green', linestyle='--')
             ax.set_ylim(0, 1)
             ax.set_xlim(0, 100)
             if im < len(muscles) - 1:

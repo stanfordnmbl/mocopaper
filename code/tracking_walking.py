@@ -297,9 +297,11 @@ class MotionTrackingWalking(MocoPaperResult):
             weightList.append(('/jointset/ground_pelvis/pelvis_tilt/value', 0))
             weightList.append(('/jointset/ground_pelvis/pelvis_rotation/value', 0))
             weightList.append(('/jointset/hip_r/hip_rotation_r/value', 0))
-            weightList.append(('/jointset/hip_r/hip_adduction_r/value', 0))
+            # weightList.append(('/jointset/hip_r/hip_adduction_r/value', 0))
             weightList.append(('/jointset/hip_l/hip_rotation_l/value', 0))
-            weightList.append(('/jointset/hip_l/hip_adduction_l/value', 0))
+            # weightList.append(('/jointset/hip_l/hip_adduction_l/value', 0))
+            # weightList.append(('/jointset/ankle_r/ankle_angle_r/value', 10))
+            # weightList.append(('/jointset/ankle_l/ankle_angle_l/value', 10))
             for weight in weightList:
                 stateWeights.cloneAndAppend(osim.MocoWeight(weight[0], weight[1]))
             track.set_states_weight_set(stateWeights)
@@ -369,19 +371,27 @@ class MotionTrackingWalking(MocoPaperResult):
         if self.coordinate_tracking:
             distanceConstraint = osim.MocoFrameDistanceConstraint()
             distanceConstraint.setName('distance_constraint')
-            distance = 0.15
+            # Step width is 0.13 * leg_length
+            # distance = 0.10 # TODO Should be closer to 0.11.
+            # Donelan JM, Kram R, Kuo AD. Mechanical and metabolic determinants
+            # of the preferred step width in human walking.
+            # Proc Biol Sci. 2001;268(1480):1985–1992.
+            # doi:10.1098/rspb.2001.1761
+            # https://www.ncbi.nlm.nih.gov/pmc/articles/PMC1088839/
             distanceConstraint.addFramePair(
                     osim.MocoFrameDistanceConstraintPair(
-                    '/bodyset/calcn_l', '/bodyset/calcn_r', distance, np.inf))
+                    '/bodyset/calcn_l', '/bodyset/calcn_r', 0.09, np.inf))
             distanceConstraint.addFramePair(
                     osim.MocoFrameDistanceConstraintPair(
-                    '/bodyset/toes_l', '/bodyset/toes_r', distance, np.inf))
-            distanceConstraint.addFramePair(
-                    osim.MocoFrameDistanceConstraintPair(
-                    '/bodyset/calcn_l', '/bodyset/toes_r', distance, np.inf))
-            distanceConstraint.addFramePair(
-                    osim.MocoFrameDistanceConstraintPair(
-                    '/bodyset/toes_l', '/bodyset/calcn_r', distance, np.inf))
+                    '/bodyset/toes_l', '/bodyset/toes_r', 0.06, np.inf))
+            # distanceConstraint.addFramePair(
+            #         osim.MocoFrameDistanceConstraintPair(
+            #         '/bodyset/calcn_l', '/bodyset/toes_r', distance, np.inf))
+            # distanceConstraint.addFramePair(
+            #         osim.MocoFrameDistanceConstraintPair(
+            #         '/bodyset/toes_l', '/bodyset/calcn_r', distance, np.inf))
+            distanceConstraint.setProjection("vector")
+            distanceConstraint.setProjectionVector(osim.Vec3(0, 0, 1))
             problem.addPathConstraint(distanceConstraint)
 
         # Symmetry constraints
@@ -496,6 +506,10 @@ class MotionTrackingWalking(MocoPaperResult):
             os.path.join(root_dir, self.inverse_solution_relpath))
         inverseStatesTable = inverseSolution.exportToStatesTable()
         guess.insertStatesTrajectory(inverseStatesTable, True)
+        # Changing this initial guess has a large negative effect on the
+        # solution! Lots of knee flexion.
+        # guess.setState('/jointset/ground_pelvis/pelvis_ty/value',
+        #                osim.Vector(guess.getNumTimes(), 1.01))
         inverseControlsTable = inverseSolution.exportToControlsTable()
         guess.insertControlsTrajectory(inverseControlsTable, True)
         solver.setGuess(guess)

@@ -18,6 +18,10 @@ from utilities import plot_joint_moment_breakdown
 # TODO: feet are crossing over too much (b/c adductor passive force?)
 # TODO: remove reserves from tracking problem?
 
+# TODO: add MocoFrameDistanceConstraint direction.
+# TODO: increase value of pelvis_ty in initial guess.
+# TODO: after a few days, add net joint moment tracking.
+
 class MocoTrackConfig:
     def __init__(self, name, legend_entry, tracking_weight, effort_weight,
                  cmap_index, flags=[]):
@@ -342,7 +346,7 @@ class MotionTrackingWalking(MocoPaperResult):
         problem.setStateInfo('/jointset/ground_pelvis/pelvis_tx/value', [], 0.446)
         problem.setStateInfo('/jointset/ground_pelvis/pelvis_tilt/value', [], 0)
         problem.setStateInfo('/jointset/ground_pelvis/pelvis_list/value', [], 0)
-        problem.setStateInfo('/jointset/ground_pelvis/pelvis_rotation/value', [], 0)    
+        problem.setStateInfo('/jointset/ground_pelvis/pelvis_rotation/value', [], 0)
 
         # Update the control effort goal to a cost of transport type cost.
         effort = osim.MocoControlGoal().safeDownCast(
@@ -701,6 +705,8 @@ class MotionTrackingWalking(MocoPaperResult):
                           lw=lw)
             ax_grf_z.set_ylabel('transverse force (BW)')
             ax_grf_z.set_xlabel('time (% gait cycle)')
+            ax_grf_z.set_ylim(-0.35, 0.35)
+            ax_grf_z.set_yticks([-0.2, 0, 0.2])
 
             # kinematics
             rad2deg = 180 / np.pi

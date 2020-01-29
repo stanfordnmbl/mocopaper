@@ -175,6 +175,7 @@ class MotionTrackingWalking(MocoPaperResult):
         modelProcessor.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())
         modelProcessor.append(osim.ModOpIgnoreTendonCompliance())
         modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
+        # modelProcessor.append(osim.ModOpFiberDampingDGF(0.001))
         if for_inverse:
             ext_loads_xml = os.path.join(root_dir,
                     'resources/Rajagopal2016/grf_walk.xml')
@@ -361,6 +362,10 @@ class MotionTrackingWalking(MocoPaperResult):
                 if actu.getConcreteClassName().endswith('Actuator'):
                     effort.setWeightForControl(actu.getAbsolutePathString(),
                         0.001)
+            # effort.setWeightForControl('/forceset/psoas_r', 0.25)
+            # effort.setWeightForControl('/forceset/iliacus_r', 0.25)
+            # effort.setWeightForControl('/forceset/psoas_l', 0.25)
+            # effort.setWeightForControl('/forceset/iliacus_l', 0.25)
 
         speedGoal = osim.MocoAverageSpeedGoal('speed')
         speedGoal.set_desired_average_speed(1.235)

@@ -47,17 +47,23 @@ class MotionTrackingWalking(MocoPaperResult):
             #                 tracking_weight=1,
             #                 effort_weight=0.1,
             #                 cmap_index=0.2),
-            MocoTrackConfig(name='trackeffort',
-                            legend_entry='track\n+\neffort',
-                            tracking_weight=0.5,
-                            effort_weight=1,
-                            cmap_index=0.5),
-            MocoTrackConfig(name='lowgravity',
-                            legend_entry='low gravity',
-                            tracking_weight=0.5,
+            # MocoTrackConfig(name='trackeffort',
+            #                 legend_entry='track\n+\neffort',
+            #                 tracking_weight=0.5,
+            #                 effort_weight=1,
+            #                 cmap_index=0.5),
+            # MocoTrackConfig(name='lowgravity',
+            #                 legend_entry='low gravity',
+            #                 tracking_weight=0,
+            #                 effort_weight=1,
+            #                 cmap_index=0.5,
+            #                 flags=['lowgravity']),
+            MocoTrackConfig(name='moongravity',
+                            legend_entry='moon gravity',
+                            tracking_weight=0,
                             effort_weight=1,
                             cmap_index=0.5,
-                            flags=['lowgravity']),
+                            flags=['moongravity']),
             # MocoTrackConfig(name='effort',
             #                 legend_entry='effort',
             #                 tracking_weight=0.01,
@@ -89,6 +95,8 @@ class MotionTrackingWalking(MocoPaperResult):
 
         if 'lowgravity' in flags:
             model.set_gravity(osim.Vec3(0, -3.72, 0))
+        if 'moongravity' in flags:
+            model.set_gravity(osim.Vec3(0, -1.63, 0))
 
         if for_inverse:
             forceSet = model.getForceSet()
@@ -656,7 +664,9 @@ class MotionTrackingWalking(MocoPaperResult):
                 trackingCostStr = \
                     sol_table.getTableMetaDataString(
                         'objective_marker_tracking')
-            trackingCost = float(trackingCostStr) / config.tracking_weight
+            trackingCost = 0
+            if config.tracking_weight:
+                trackingCost = float(trackingCostStr) / config.tracking_weight
 
             effortCost = 0
             if config.effort_weight:

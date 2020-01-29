@@ -52,6 +52,12 @@ class MotionTrackingWalking(MocoPaperResult):
                             tracking_weight=0.5,
                             effort_weight=1,
                             cmap_index=0.5),
+            MocoTrackConfig(name='lowgravity',
+                            legend_entry='low gravity',
+                            tracking_weight=0.5,
+                            effort_weight=1,
+                            cmap_index=0.5,
+                            flags=['lowgravity']),
             # MocoTrackConfig(name='effort',
             #                 legend_entry='effort',
             #                 tracking_weight=0.01,
@@ -80,6 +86,9 @@ class MotionTrackingWalking(MocoPaperResult):
         model = osim.Model(os.path.join(root_dir,
                 'resources/Rajagopal2016/'
                 'subject_walk_armless_contact_bounded_80musc.osim'))
+
+        if 'lowgravity' in flags:
+            model.set_gravity(osim.Vec3(0, -3.72, 0))
 
         if for_inverse:
             forceSet = model.getForceSet()

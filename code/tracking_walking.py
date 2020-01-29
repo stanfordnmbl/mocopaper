@@ -309,7 +309,7 @@ class MotionTrackingWalking(MocoPaperResult):
             track.setMarkersReferenceFromTRC(os.path.join(root_dir,
                     'resources/Rajagopal2016/markers.trc'))
             track.set_markers_global_tracking_weight(
-                self.tracking_weight / (2 * model.getNumMarkers()))
+                config.tracking_weight / (2 * model.getNumMarkers()))
             iktool = osim.InverseKinematicsTool(os.path.join(root_dir,
                     'resources/Rajagopal2016/ik_setup_walk.xml'))
             iktasks = iktool.getIKTaskSet()

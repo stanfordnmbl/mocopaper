@@ -57,12 +57,30 @@ class MotionTrackingWalking(MocoPaperResult):
             #                 tracking_weight=0.01,
             #                 effort_weight=10,
             #                 cmap_index=0.9),
+            # MocoTrackConfig(name='trendelenburg',
+            #                 legend_entry='trendelenburg',
+            #                 tracking_weight=0.5,
+            #                 effort_weight=1,
+            #                 cmap_index=0.9,
+            #                 flags=['trendelenburg']),
+            # MocoTrackConfig(name='trendelenburg-lite',
+            #                 legend_entry='trendelenburg-lite',
+            #                 tracking_weight=0.5,
+            #                 effort_weight=1,
+            #                 cmap_index=0.5,
+            #                 flags=['trendelenburg-lite']),
             # MocoTrackConfig(name='weakvasti',
             #                 legend_entry='weak vasti',
-            #                 tracking_weight=1,
-            #                 effort_weight=10,
-            #                 cmap_index=0.4,
+            #                 tracking_weight=0.5,
+            #                 effort_weight=1,
+            #                 cmap_index=0.2,
             #                 flags=['weakvasti']),
+            # MocoTrackConfig(name='weakpfs',
+            #                 legend_entry='weak pfs',
+            #                 tracking_weight=0.5,
+            #                 effort_weight=1,
+            #                 cmap_index=0.9,
+            #                 flags=['weakpfs']),
             # MocoTrackConfig(name='weaksoleus',
             #                 legend_entry='weak soleus',
             #                 tracking_weight=1,
@@ -98,6 +116,15 @@ class MotionTrackingWalking(MocoPaperResult):
                         forceSet.remove(int(i))
                         contactsRemoved += 1
                         break
+
+
+        stiffnessModifier = 0.8
+        print(f'Modifying contact element stiffnesses by factor {stiffnessModifier}...')
+        for actu in model.getComponentsList():
+            if actu.getConcreteClassName() == 'SmoothSphereHalfSpaceForce':
+                force = osim.SmoothSphereHalfSpaceForce.safeDownCast(actu)
+                force.set_stiffness(stiffnessModifier * force.get_stiffness())
+                print(f'  --> modified contact element {force.getName()}')
 
         def add_reserve(model, coord, optimal_force, max_control):
             actu = osim.ActivationCoordinateActuator()
@@ -162,7 +189,31 @@ class MotionTrackingWalking(MocoPaperResult):
                     musc = model.updMuscles().get('%s%s' % (muscle, side))
                     musc.set_max_isometric_force(
                         0.10 * musc.get_max_isometric_force())
-
+        if 'trendelenburg-lite' in flags:
+            for muscle in ['glmin1','glmin2','glmin3','glmed1','glmed2','glmed3',
+                    'glmax1','glmax2','glmax3','addbrev', 'addlong', 'addmagDist', 
+                    'addmagIsch', 'addmagMid', 'addmagProx', 'piri', 'bflh', 
+                    'sart', 'grac']:
+                for side in ['_l', '_r']:
+                    musc = model.updMuscles().get('%s%s' % (muscle, side))
+                    musc.set_max_isometric_force(
+                        0.10 * musc.get_max_isometric_force())
+        if 'trendelenburg' in flags:
+            for muscle in ['glmin1','glmin2','glmin3','glmed1','glmed2','glmed3',
+                    'glmax1','glmax2','glmax3','addbrev', 'addlong', 'addmagDist', 
+                    'addmagIsch', 'addmagMid', 'addmagProx', 'iliacus', 'psoas',
+                    'piri', 'grac', 'bflh', 'recfem', 'sart', 'semimem', 
+                    'semiten', 'tfl']:
+                for side in ['_l', '_r']:
+                    musc = model.updMuscles().get('%s%s' % (muscle, side))
+                    musc.set_max_isometric_force(
+                        0.10 * musc.get_max_isometric_force())
+        if 'weakpfs' in flags:
+            for muscle in ['soleus', 'gasmed', 'gaslat']:
+                for side in ['_l', '_r']:
+                    musc = model.updMuscles().get('%s%s' % (muscle, side))
+                    musc.set_max_isometric_force(
+                        0.10 * musc.get_max_isometric_force())
 
         modelProcessor = osim.ModelProcessor(model)
 
@@ -352,9 +403,15 @@ class MotionTrackingWalking(MocoPaperResult):
         # they are already weak.
         if config.effort_weight:
             for actu in model.getComponentsList():
+                actuName = actu.getName()
                 if actu.getConcreteClassName().endswith('Actuator'):
                     effort.setWeightForControl(actu.getAbsolutePathString(),
                         0.001)
+                elif actu.getConcreteClassName().endswith('Muscle'):
+                    if (('psoas' in actuName) or 
+                        ('iliacus' in actuName)):
+                        effort.setWeightForControl(
+                                actu.getAbsolutePathString(), 0.2)
 
         speedGoal = osim.MocoAverageSpeedGoal('speed')
         speedGoal.set_desired_average_speed(1.235)

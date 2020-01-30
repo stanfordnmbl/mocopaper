@@ -227,7 +227,8 @@ class MotionTrackingWalking(MocoPaperResult):
                     musc.set_max_isometric_force(
                         0.10 * musc.get_max_isometric_force())
         if 'weakpfs' in flags:
-            for muscle in ['soleus', 'gasmed', 'gaslat']:
+            for muscle in ['soleus', 'gasmed', 'gaslat', 'perbrev', 'perlong',
+                           'tibpost', 'fdl', 'fhl']:
                 for side in ['_l', '_r']:
                     musc = model.updMuscles().get('%s%s' % (muscle, side))
                     musc.set_max_isometric_force(

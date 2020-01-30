@@ -24,13 +24,15 @@ from utilities import plot_joint_moment_breakdown
 
 class MocoTrackConfig:
     def __init__(self, name, legend_entry, tracking_weight, effort_weight,
-                 cmap_index, flags=[]):
+                 cmap_index, flags=[],
+                 breakdown_coordact_paths=[]):
         self.name = name
         self.legend_entry = legend_entry
         self.tracking_weight = tracking_weight
         self.effort_weight = effort_weight
         self.cmap_index = cmap_index
         self.flags = flags
+        self.breakdown_coordact_paths = breakdown_coordact_paths
 
 
 class MotionTrackingWalking(MocoPaperResult):
@@ -46,33 +48,20 @@ class MotionTrackingWalking(MocoPaperResult):
             'results/motion_tracking_walking_solution'
         self.cmap = 'nipy_spectral'
         self.configs = [
-            # MocoTrackConfig(name='track',
-            #                 legend_entry='track',
-            #                 tracking_weight=1,
-            #                 effort_weight=0.1,
-            #                 cmap_index=0.2),
-            MocoTrackConfig(name='trackeffort',
-                            legend_entry='track\n+\neffort',
+            MocoTrackConfig(name='noassist',
+                            legend_entry='no assist',
                             tracking_weight=0.5,
                             effort_weight=1,
                             cmap_index=0.5),
-            # MocoTrackConfig(name='effort',
-            #                 legend_entry='effort',
-            #                 tracking_weight=0.01,
-            #                 effort_weight=10,
-            #                 cmap_index=0.9),
-            # MocoTrackConfig(name='weakvasti',
-            #                 legend_entry='weak vasti',
-            #                 tracking_weight=1,
-            #                 effort_weight=10,
-            #                 cmap_index=0.4,
-            #                 flags=['weakvasti']),
-            # MocoTrackConfig(name='weaksoleus',
-            #                 legend_entry='weak soleus',
-            #                 tracking_weight=1,
-            #                 effort_weight=10,
-            #                 cmap_index=0.6,
-            #                 flags=['weaksoleus']),
+            MocoTrackConfig(name='assistankle',
+                            legend_entry='assisted ankle',
+                            tracking_weight=1,
+                            effort_weight=10,
+                            cmap_index=0.9,
+                            flags=['assistankle'],
+                            breakdown_coordact_paths=[
+                                '/forceset/device_ankle_angle_l'
+                            ]),
             MocoTrackConfig(name='slippery',
                             legend_entry='slippery',
                             tracking_weight=0,
@@ -160,17 +149,17 @@ class MotionTrackingWalking(MocoPaperResult):
         add_reserve(model, 'knee_angle_l', optimal_force, reserves_max)
         add_reserve(model, 'ankle_angle_l', optimal_force, reserves_max)
 
-        def add_device(model, coord):
+        def add_device(model, coord, min_control, max_control):
             actu = osim.ActivationCoordinateActuator()
             actu.set_coordinate(coord)
             actu.setName(f'device_{coord}')
-            actu.setOptimalForce(1000.0)
-            actu.setMinControl(-1.0)
-            actu.setMaxControl(1.0)
+            actu.setOptimalForce(100.0)
+            actu.setMinControl(min_control)
+            actu.setMaxControl(max_control)
             model.addForce(actu)
         if 'assistankle' in flags:
-            add_device(model, 'ankle_angle_r')
-            add_device(model, 'ankle_angle_l')
+            add_device(model, 'ankle_angle_r', -1, 0)
+            add_device(model, 'ankle_angle_l', -1, 0)
 
         if 'weaksoleus' in flags:
             soleus_r = model.updMuscles().get('soleus_r')
@@ -203,6 +192,9 @@ class MotionTrackingWalking(MocoPaperResult):
         modelProcessor.append(osim.ModOpReplaceJointsWithWelds(
             ['subtalar_r', 'mtp_r', 'subtalar_l', 'mtp_l']))
         modelProcessor.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())
+        # Fiber damping causes negative muscle forces, but cuts the number of
+        # iterations by more than half.
+        # modelProcessor.append(osim.ModOpFiberDampingDGF(0.0))
         modelProcessor.append(osim.ModOpIgnoreTendonCompliance())
         # modelProcessor.append(osim.ModOpPassiveFiberStrainAtOneNormForceDGF(4.0))
         modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
@@ -228,17 +220,17 @@ class MotionTrackingWalking(MocoPaperResult):
 
     def get_solution_path(self, root_dir, config):
         return os.path.join(root_dir,
-                            f'{self.tracking_solution_relpath_prefix}'
+                            f'{self.tracking_solution_relpath_prefix}_'
                             + config.name + '.sto')
 
     def get_solution_path_fullcycle(self, root_dir, config):
         return os.path.join(root_dir,
-                            f'{self.tracking_solution_relpath_prefix}'
+                            f'{self.tracking_solution_relpath_prefix}_'
                             + config.name + '_fullcycle.sto')
 
     def get_solution_path_grfs(self, root_dir, config):
         return os.path.join(root_dir,
-                            f'{self.tracking_solution_relpath_prefix}'
+                            f'{self.tracking_solution_relpath_prefix}_'
                             + config.name + '_fullcycle_grfs.sto')
 
     def load_table(self, table_path):
@@ -267,6 +259,22 @@ class MotionTrackingWalking(MocoPaperResult):
                                '.*semimem.*\|tendon_force',
                                '.*semimem.*\|normalized_fiber_length'])
         return output
+
+    def calc_average_muscle_activations(self, model, solution):
+        muscles = model.updMuscles()
+        time = solution.getTimeMat()
+        duration = time[-1] - time[0]
+        labels = list()
+        average_activations = list()
+        for imusc in range(muscles.getSize()):
+            if muscles.get(imusc).getName().endswith('_l'):
+                labels.append(muscles.get(imusc).getName().replace('_l', ''))
+                musclePath = muscles.get(imusc).getAbsolutePathString()
+                activationLabel = musclePath + '/activation'
+                activation = solution.getStateMat(activationLabel)
+                average_activations.append(
+                    np.trapz(activation, x=time) / duration)
+        return labels, average_activations
 
     def run_inverse_problem(self, root_dir):
 
@@ -397,6 +405,9 @@ class MotionTrackingWalking(MocoPaperResult):
                 for side in ['l', 'r']:
                     effort.setWeightForControl(
                         '/forceset/%s_%s' % (muscle, side), 0.25)
+                if actu.getName().startswith('device_'):
+                    effort.setWeightForControl(actu.getAbsolutePathString(), 0)
+
 
         speedGoal = osim.MocoAverageSpeedGoal('speed')
         speedGoal.set_desired_average_speed(1.235)
@@ -733,6 +744,8 @@ class MotionTrackingWalking(MocoPaperResult):
             #         ['data', 'track', 'track\n + \neffort', 'effort'])
             ax_time.set_title('COST TRADE-OFF\n', weight='bold', size=title_fs)
             ax_time.set_aspect(1.0/ax_time.get_data_ratio()*0.8, anchor='N')
+            # Make sure to include the origin.
+            ax_time.plot([0], [0])
             utilities.publication_spines(ax_time)
 
             # ground reaction forces
@@ -839,8 +852,46 @@ class MotionTrackingWalking(MocoPaperResult):
                 print(f'duration (config {config.name}): ', duration)
                 f.write(f'(config {config.name}): {duration:.2f}\n')
 
+        # Summarize muscle activity
+        # -------------------------
+        print(f'Plotting bar graph of muscle activity.')
+        fig = plt.figure(figsize=(8.5, 11))
+        ax = fig.add_subplot(1, 1, 1)
+        plt.barh
+        suffix = ''
+        total_bar_height = 0.8
+        bar_height = total_bar_height / len(self.configs)
+        for iconfig, config in enumerate(self.configs):
+            suffix += '_' + config.name
+            sol_path = self.get_solution_path_fullcycle(root_dir, config)
+            solution = osim.MocoTrajectory(sol_path)
+            modelProcessor = self.create_model_processor(root_dir,
+                                                         config=config)
+            model = modelProcessor.process()
+            model.initSystem()
+            labels, activity = self.calc_average_muscle_activations(model,
+                                                                    solution)
+            sumact = np.sum(activity)
+            print(f'sum(average(activation)) for {config.name}: {sumact}')
+            indices = np.arange(len(labels))
+            ax.barh(indices - bar_height * (iconfig + 0.5), activity,
+                    height=bar_height,
+                    label=config.legend_entry)
+            if iconfig == 0:
+                ax.set_yticks(indices - 0.5 * total_bar_height)
+                ax.set_yticklabels(labels)
+        ax.legend()
+        fig.tight_layout()
+        fig.savefig(os.path.join(
+            root_dir, 'results',
+            f'motion_tracking_walking_summary_activity{suffix}.png'),
+            dpi=600)
+
+
+        # Reserves and joint moment breakdown.
+        # ------------------------------------
         for config in self.configs:
-            print(f'reserves for config {config.name}:')
+            # print(f'reserves for config {config.name}:')
             sol_path = self.get_solution_path_fullcycle(root_dir, config)
             solution = osim.MocoTrajectory(sol_path)
             reserves = self.calc_reserves(root_dir, config, solution)
@@ -851,7 +902,8 @@ class MotionTrackingWalking(MocoPaperResult):
                     reserves.getDependentColumnAtIndex(icol))
                 max = np.max(np.abs(column))
                 max_res = np.max([max_res, max])
-                print(f' max abs {column_labels[icol]}: {max}')
+                # print(f' max abs {column_labels[icol]}: {max}')
+            print(f' max abs reserve for config {config.name}: {max_res}')
             muscle_mechanics = self.calc_muscle_mechanics(root_dir, config,
                                                           solution)
             osim.STOFileAdapter.write(muscle_mechanics,
@@ -865,15 +917,20 @@ class MotionTrackingWalking(MocoPaperResult):
             print(f'Generating joint moment breakdown for {config.name}.')
             coords = [
                 '/jointset/hip_l/hip_flexion_l',
+                '/jointset/hip_l/hip_adduction_l',
+                '/jointset/hip_l/hip_rotation_l',
                 '/jointset/walker_knee_l/knee_angle_l',
                 '/jointset/ankle_l/ankle_angle_l'
             ]
-            fig = plot_joint_moment_breakdown(model, solution,
-                                              coords)
             fpath = os.path.join(root_dir,
                                  'results/motion_tracking_walking_' +
                                  f'breakdown_{config.name}.png')
-            fig.savefig(fpath, dpi=600)
+            plot_breakdown = False
+            if plot_breakdown:
+                fig = plot_joint_moment_breakdown(
+                    model, solution, coords,
+                    coordact_paths=config.breakdown_coordact_paths)
+                fig.savefig(fpath, dpi=600)
 
 
 

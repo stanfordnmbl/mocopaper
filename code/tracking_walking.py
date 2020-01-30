@@ -18,6 +18,10 @@ from utilities import plot_joint_moment_breakdown
 # TODO: feet are crossing over too much (b/c adductor passive force?)
 # TODO: remove reserves from tracking problem?
 
+# TODO: add MocoFrameDistanceConstraint direction.
+# TODO: increase value of pelvis_ty in initial guess.
+# TODO: after a few days, add net joint moment tracking.
+
 class MocoTrackConfig:
     def __init__(self, name, legend_entry, tracking_weight, effort_weight,
                  cmap_index, flags=[]):
@@ -98,6 +102,20 @@ class MotionTrackingWalking(MocoPaperResult):
         model = osim.Model(os.path.join(root_dir,
                 'resources/Rajagopal2016/'
                 'subject_walk_armless_contact_bounded_80musc.osim'))
+
+        # for imusc in range(model.getMuscles().getSize()):
+        #     musc = model.updMuscles().get(imusc)
+        #     musc = osim.Millard2012EquilibriumMuscle.safeDownCast(musc)
+        #     musc.upd_FiberForceLengthCurve().set_strain_at_one_norm_force(
+        #         1.0)
+
+        # for muscle in ['vasmed', 'vasint', 'vaslat', 'recfem', 'semimem',
+        #                'semiten']:
+        #     for side in ['_l', '_r']:
+        #         musc = model.updMuscles().get('%s%s' % (muscle, side))
+        #         musc = osim.Millard2012EquilibriumMuscle.safeDownCast(musc)
+        #         musc.upd_FiberForceLengthCurve().set_strain_at_one_norm_force(
+        #             3.5)
 
         if for_inverse:
             forceSet = model.getForceSet()
@@ -222,6 +240,7 @@ class MotionTrackingWalking(MocoPaperResult):
         modelProcessor.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())
         modelProcessor.append(osim.ModOpIgnoreTendonCompliance())
         modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
+        # modelProcessor.append(osim.ModOpFiberDampingDGF(0.001))
         if for_inverse:
             ext_loads_xml = os.path.join(root_dir,
                     'resources/Rajagopal2016/grf_walk.xml')
@@ -344,9 +363,11 @@ class MotionTrackingWalking(MocoPaperResult):
             weightList.append(('/jointset/ground_pelvis/pelvis_tilt/value', 0))
             weightList.append(('/jointset/ground_pelvis/pelvis_rotation/value', 0))
             weightList.append(('/jointset/hip_r/hip_rotation_r/value', 0))
-            weightList.append(('/jointset/hip_r/hip_adduction_r/value', 0))
+            # weightList.append(('/jointset/hip_r/hip_adduction_r/value', 0))
             weightList.append(('/jointset/hip_l/hip_rotation_l/value', 0))
-            weightList.append(('/jointset/hip_l/hip_adduction_l/value', 0))
+            # weightList.append(('/jointset/hip_l/hip_adduction_l/value', 0))
+            # weightList.append(('/jointset/ankle_r/ankle_angle_r/value', 10))
+            # weightList.append(('/jointset/ankle_l/ankle_angle_l/value', 10))
             for weight in weightList:
                 stateWeights.cloneAndAppend(osim.MocoWeight(weight[0], weight[1]))
             track.set_states_weight_set(stateWeights)
@@ -356,7 +377,7 @@ class MotionTrackingWalking(MocoPaperResult):
             track.setMarkersReferenceFromTRC(os.path.join(root_dir,
                     'resources/Rajagopal2016/markers.trc'))
             track.set_markers_global_tracking_weight(
-                self.tracking_weight / (2 * model.getNumMarkers()))
+                config.tracking_weight / (2 * model.getNumMarkers()))
             iktool = osim.InverseKinematicsTool(os.path.join(root_dir,
                     'resources/Rajagopal2016/ik_setup_walk.xml'))
             iktasks = iktool.getIKTaskSet()
@@ -393,7 +414,7 @@ class MotionTrackingWalking(MocoPaperResult):
         problem.setStateInfo('/jointset/ground_pelvis/pelvis_tx/value', [], 0.446)
         problem.setStateInfo('/jointset/ground_pelvis/pelvis_tilt/value', [], 0)
         problem.setStateInfo('/jointset/ground_pelvis/pelvis_list/value', [], 0)
-        problem.setStateInfo('/jointset/ground_pelvis/pelvis_rotation/value', [], 0)    
+        problem.setStateInfo('/jointset/ground_pelvis/pelvis_rotation/value', [], 0)
 
         # Update the control effort goal to a cost of transport type cost.
         effort = osim.MocoControlGoal().safeDownCast(
@@ -407,11 +428,10 @@ class MotionTrackingWalking(MocoPaperResult):
                 if actu.getConcreteClassName().endswith('Actuator'):
                     effort.setWeightForControl(actu.getAbsolutePathString(),
                         0.001)
-                elif actu.getConcreteClassName().endswith('Muscle'):
-                    if (('psoas' in actuName) or 
-                        ('iliacus' in actuName)):
-                        effort.setWeightForControl(
-                                actu.getAbsolutePathString(), 0.2)
+            # effort.setWeightForControl('/forceset/psoas_r', 0.25)
+            # effort.setWeightForControl('/forceset/iliacus_r', 0.25)
+            # effort.setWeightForControl('/forceset/psoas_l', 0.25)
+            # effort.setWeightForControl('/forceset/iliacus_l', 0.25)
 
         speedGoal = osim.MocoAverageSpeedGoal('speed')
         speedGoal.set_desired_average_speed(1.235)
@@ -422,19 +442,27 @@ class MotionTrackingWalking(MocoPaperResult):
         if self.coordinate_tracking:
             distanceConstraint = osim.MocoFrameDistanceConstraint()
             distanceConstraint.setName('distance_constraint')
-            distance = 0.15
+            # Step width is 0.13 * leg_length
+            # distance = 0.10 # TODO Should be closer to 0.11.
+            # Donelan JM, Kram R, Kuo AD. Mechanical and metabolic determinants
+            # of the preferred step width in human walking.
+            # Proc Biol Sci. 2001;268(1480):1985–1992.
+            # doi:10.1098/rspb.2001.1761
+            # https://www.ncbi.nlm.nih.gov/pmc/articles/PMC1088839/
             distanceConstraint.addFramePair(
                     osim.MocoFrameDistanceConstraintPair(
-                    '/bodyset/calcn_l', '/bodyset/calcn_r', distance, np.inf))
+                    '/bodyset/calcn_l', '/bodyset/calcn_r', 0.09, np.inf))
             distanceConstraint.addFramePair(
                     osim.MocoFrameDistanceConstraintPair(
-                    '/bodyset/toes_l', '/bodyset/toes_r', distance, np.inf))
-            distanceConstraint.addFramePair(
-                    osim.MocoFrameDistanceConstraintPair(
-                    '/bodyset/calcn_l', '/bodyset/toes_r', distance, np.inf))
-            distanceConstraint.addFramePair(
-                    osim.MocoFrameDistanceConstraintPair(
-                    '/bodyset/toes_l', '/bodyset/calcn_r', distance, np.inf))
+                    '/bodyset/toes_l', '/bodyset/toes_r', 0.06, np.inf))
+            # distanceConstraint.addFramePair(
+            #         osim.MocoFrameDistanceConstraintPair(
+            #         '/bodyset/calcn_l', '/bodyset/toes_r', distance, np.inf))
+            # distanceConstraint.addFramePair(
+            #         osim.MocoFrameDistanceConstraintPair(
+            #         '/bodyset/toes_l', '/bodyset/calcn_r', distance, np.inf))
+            distanceConstraint.setProjection("vector")
+            distanceConstraint.setProjectionVector(osim.Vec3(0, 0, 1))
             problem.addPathConstraint(distanceConstraint)
 
         # Symmetry constraints
@@ -549,6 +577,10 @@ class MotionTrackingWalking(MocoPaperResult):
             os.path.join(root_dir, self.inverse_solution_relpath))
         inverseStatesTable = inverseSolution.exportToStatesTable()
         guess.insertStatesTrajectory(inverseStatesTable, True)
+        # Changing this initial guess has a large negative effect on the
+        # solution! Lots of knee flexion.
+        # guess.setState('/jointset/ground_pelvis/pelvis_ty/value',
+        #                osim.Vector(guess.getNumTimes(), 1.01))
         inverseControlsTable = inverseSolution.exportToControlsTable()
         guess.insertControlsTrajectory(inverseControlsTable, True)
         solver.setGuess(guess)
@@ -758,6 +790,8 @@ class MotionTrackingWalking(MocoPaperResult):
                           lw=lw)
             ax_grf_z.set_ylabel('transverse force (BW)')
             ax_grf_z.set_xlabel('time (% gait cycle)')
+            ax_grf_z.set_ylim(-0.35, 0.35)
+            ax_grf_z.set_yticks([-0.2, 0, 0.2])
 
             # kinematics
             rad2deg = 180 / np.pi

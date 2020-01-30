@@ -107,7 +107,7 @@ class MotionTrackingWalking(MocoPaperResult):
         #     musc = model.updMuscles().get(imusc)
         #     musc = osim.Millard2012EquilibriumMuscle.safeDownCast(musc)
         #     musc.upd_FiberForceLengthCurve().set_strain_at_one_norm_force(
-        #         1.0)
+        #         3.0)
 
         # for muscle in ['vasmed', 'vasint', 'vaslat', 'recfem', 'semimem',
         #                'semiten']:
@@ -239,6 +239,7 @@ class MotionTrackingWalking(MocoPaperResult):
             ['subtalar_r', 'mtp_r', 'subtalar_l', 'mtp_l']))
         modelProcessor.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())
         modelProcessor.append(osim.ModOpIgnoreTendonCompliance())
+        # modelProcessor.append(osim.ModOpPassiveFiberStrainAtOneNormForceDGF(4.0))
         modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
         # modelProcessor.append(osim.ModOpFiberDampingDGF(0.001))
         if for_inverse:
@@ -428,10 +429,10 @@ class MotionTrackingWalking(MocoPaperResult):
                 if actu.getConcreteClassName().endswith('Actuator'):
                     effort.setWeightForControl(actu.getAbsolutePathString(),
                         0.001)
-            # effort.setWeightForControl('/forceset/psoas_r', 0.25)
-            # effort.setWeightForControl('/forceset/iliacus_r', 0.25)
-            # effort.setWeightForControl('/forceset/psoas_l', 0.25)
-            # effort.setWeightForControl('/forceset/iliacus_l', 0.25)
+            for muscle in ['psoas', 'iliacus']:
+                for side in ['l', 'r']:
+                    effort.setWeightForControl(
+                        '/forceset/%s_%s' % (muscle, side), 0.25)
 
         speedGoal = osim.MocoAverageSpeedGoal('speed')
         speedGoal.set_desired_average_speed(1.235)

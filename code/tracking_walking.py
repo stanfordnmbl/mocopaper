@@ -73,6 +73,11 @@ class MotionTrackingWalking(MocoPaperResult):
             #                 effort_weight=10,
             #                 cmap_index=0.6,
             #                 flags=['weaksoleus']),
+            MocoTrackConfig(name='slippery',
+                            legend_entry='slippery',
+                            tracking_weight=0,
+                            effort_weight=1,
+                            cmap_index=0.7),
         ]
 
     def create_model_processor(self, root_dir, for_inverse=False, config=None):
@@ -181,6 +186,17 @@ class MotionTrackingWalking(MocoPaperResult):
                     musc.set_max_isometric_force(
                         0.10 * musc.get_max_isometric_force())
 
+        if 'slippery' in flags:
+            forceSet = model.getForceSet()
+            numContacts = 0
+            for i in range(forceSet.getSize()):
+                force = forceSet.get(i)
+                forceName = force.getName()
+                if 'contact' in forceName:
+                    force = osim.SmoothSphereHalfSpaceForce.safeDownCast(force)
+                    force.set_static_friction(0.01)
+                    force.set_dynamic_friction(0.01)
+                    force.set_viscous_friction(0.01)
 
         modelProcessor = osim.ModelProcessor(model)
 
@@ -678,14 +694,15 @@ class MotionTrackingWalking(MocoPaperResult):
 
             sol_path = self.get_solution_path(root_dir, config)
             sol_table = osim.TimeSeriesTable(sol_path)
-            if self.coordinate_tracking:
-                trackingCostStr = \
-                    sol_table.getTableMetaDataString('objective_state_tracking')
-            else:
-                trackingCostStr = \
-                    sol_table.getTableMetaDataString(
+            trackingCost = 0
+            if config.tracking_weight:
+                if self.coordinate_tracking:
+                    trackingCostStr = sol_table.getTableMetaDataString(
+                        'objective_state_tracking')
+                else:
+                    trackingCostStr = sol_table.getTableMetaDataString(
                         'objective_marker_tracking')
-            trackingCost = float(trackingCostStr) / config.tracking_weight
+                trackingCost = float(trackingCostStr) / config.tracking_weight
 
             effortCost = 0
             if config.effort_weight:

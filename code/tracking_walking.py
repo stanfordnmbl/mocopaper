@@ -85,6 +85,20 @@ class MotionTrackingWalking(MocoPaperResult):
                 'resources/Rajagopal2016/'
                 'subject_walk_armless_contact_bounded_80musc.osim'))
 
+        # for imusc in range(model.getMuscles().getSize()):
+        #     musc = model.updMuscles().get(imusc)
+        #     musc = osim.Millard2012EquilibriumMuscle.safeDownCast(musc)
+        #     musc.upd_FiberForceLengthCurve().set_strain_at_one_norm_force(
+        #         1.0)
+
+        # for muscle in ['vasmed', 'vasint', 'vaslat', 'recfem', 'semimem',
+        #                'semiten']:
+        #     for side in ['_l', '_r']:
+        #         musc = model.updMuscles().get('%s%s' % (muscle, side))
+        #         musc = osim.Millard2012EquilibriumMuscle.safeDownCast(musc)
+        #         musc.upd_FiberForceLengthCurve().set_strain_at_one_norm_force(
+        #             3.5)
+
         if for_inverse:
             forceSet = model.getForceSet()
             numContacts = 0

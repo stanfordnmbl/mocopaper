@@ -53,7 +53,7 @@ class MotionTrackingWalking(MocoPaperResult):
                             tracking_weight=5,
                             effort_weight=10,
                             cmap_index=0.5),
-            S
+            MocoTrackConfig(name='assistankle',
                             legend_entry='assisted ankle',
                             tracking_weight=1,
                             effort_weight=10,

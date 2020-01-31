@@ -50,10 +50,10 @@ class MotionTrackingWalking(MocoPaperResult):
         self.configs = [
             MocoTrackConfig(name='noassist',
                             legend_entry='no assist',
-                            tracking_weight=0.5,
-                            effort_weight=1,
+                            tracking_weight=5,
+                            effort_weight=10,
                             cmap_index=0.5),
-            MocoTrackConfig(name='assistankle',
+            S
                             legend_entry='assisted ankle',
                             tracking_weight=1,
                             effort_weight=10,
@@ -176,8 +176,7 @@ class MotionTrackingWalking(MocoPaperResult):
                         0.10 * musc.get_max_isometric_force())
 
         if 'slippery' in flags:
-            forceSet = model.getForceSet()
-            numContacts = 0
+            forceSet = model.updForceSet()
             for i in range(forceSet.getSize()):
                 force = forceSet.get(i)
                 forceName = force.getName()

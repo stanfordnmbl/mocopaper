@@ -17,6 +17,9 @@ from utilities import plot_joint_moment_breakdown
 # TODO: semimem and gasmed forces are negative.
 # TODO: feet are crossing over too much (b/c adductor passive force?)
 # TODO: remove reserves from tracking problem?
+# TODO: use visualize_trajectory.py to comopare kinematics, programmatically.
+#       add skinning through a bunch of markers added to the model? a
+#       python algorithm for smoothing the path through these markers?
 
 # TODO: add MocoFrameDistanceConstraint direction.
 # TODO: increase value of pelvis_ty in initial guess.

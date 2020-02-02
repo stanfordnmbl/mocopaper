@@ -6,6 +6,7 @@ from linear_tangent_steering import LinearTangentSteering
 from suspended_mass import SuspendedMass
 from prescribed_walking import MotionPrescribedWalking
 from tracking_walking import MotionTrackingWalking
+from predicted_walking import MotionPredictedWalking
 from squat_to_stand import SquatToStand
 
 # TODO: create a docker container for these results and generating the preprint.
@@ -24,7 +25,7 @@ if __name__ == "__main__":
         'suspended-mass': SuspendedMass(),
         'prescribed-walking': MotionPrescribedWalking(),
         'tracking-walking': MotionTrackingWalking(),
-        # 'predicting-walking': MotionPredictionAndAssistanceWalking(),
+        'predicted-walking': MotionPredictedWalking(),
         'squat-to-stand': SquatToStand(),
    }
 

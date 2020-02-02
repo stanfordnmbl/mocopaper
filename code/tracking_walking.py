@@ -92,22 +92,25 @@ class MotionTrackingWalking(MocoPaperResult):
                             tracking_weight=5,
                             effort_weight=10,
                             cmap_index=0.8,
-                            flags=['assistankledf', 'weakdfs']),
+                            flags=['assistankledf', 'weakdfs'],
+                            breakdown_coordact_paths=[
+                                '/forceset/device_ankle_angle_l'
+                            ]),
             # MocoTrackConfig(name='weaksoleus',
             #                 legend_entry='weak soleus',
             #                 tracking_weight=1,
             #                 effort_weight=10,
             #                 cmap_index=0.6,
             #                 flags=['weaksoleus']),
-            MocoTrackConfig(name='assistankle',
-                            legend_entry='assisted ankle',
-                            tracking_weight=1,
-                            effort_weight=10,
-                            cmap_index=0.9,
-                            flags=['assistankle'],
-                            breakdown_coordact_paths=[
-                                '/forceset/device_ankle_angle_l'
-                            ]),
+            # MocoTrackConfig(name='assistankle',
+            #                 legend_entry='assisted ankle',
+            #                 tracking_weight=1,
+            #                 effort_weight=10,
+            #                 cmap_index=0.9,
+            #                 flags=['assistankle'],
+            #                 breakdown_coordact_paths=[
+            #                     '/forceset/device_ankle_angle_l'
+            #                 ]),
         ]
 
     def create_model_processor(self, root_dir, for_inverse=False, config=None):
@@ -992,15 +995,15 @@ class MotionTrackingWalking(MocoPaperResult):
             print(f'Generating joint moment breakdown for {config.name}.')
             coords = [
                 '/jointset/hip_l/hip_flexion_l',
-                '/jointset/hip_l/hip_adduction_l',
-                '/jointset/hip_l/hip_rotation_l',
+                # '/jointset/hip_l/hip_adduction_l',
+                # '/jointset/hip_l/hip_rotation_l',
                 '/jointset/walker_knee_l/knee_angle_l',
                 '/jointset/ankle_l/ankle_angle_l'
             ]
             fpath = os.path.join(root_dir,
                                  'results/motion_tracking_walking_' +
                                  f'breakdown_{config.name}.png')
-            plot_breakdown = False
+            plot_breakdown = True
             if plot_breakdown:
                 fig = plot_joint_moment_breakdown(
                     model, solution, coords,

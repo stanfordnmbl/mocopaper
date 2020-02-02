@@ -12,15 +12,14 @@ from moco_paper_result import MocoPaperResult
 import utilities
 from utilities import plot_joint_moment_breakdown
 
-# TODO: try different foot spacing
-# TODO: fix oscillations in GRFz.
 # TODO: semimem and gasmed forces are negative.
-# TODO: feet are crossing over too much (b/c adductor passive force?)
 # TODO: remove reserves from tracking problem?
 
-# TODO: add MocoFrameDistanceConstraint direction.
-# TODO: increase value of pelvis_ty in initial guess.
 # TODO: after a few days, add net joint moment tracking.
+
+# TODO: passive ankle device.
+
+# increase value of pelvis_ty in initial guess. - didn't help
 
 class MocoTrackConfig:
     def __init__(self, name, legend_entry, tracking_weight, effort_weight,
@@ -53,8 +52,8 @@ class MotionTrackingWalking(MocoPaperResult):
             #                 cmap_index=0.2),
             MocoTrackConfig(name='trackeffort',
                             legend_entry='track\n+\neffort',
-                            tracking_weight=0.5,
-                            effort_weight=1,
+                            tracking_weight=5,
+                            effort_weight=10,
                             cmap_index=0.5),
             # MocoTrackConfig(name='effort',
             #                 legend_entry='effort',
@@ -85,6 +84,18 @@ class MotionTrackingWalking(MocoPaperResult):
             #                 effort_weight=1,
             #                 cmap_index=0.9,
             #                 flags=['weakpfs']),
+            MocoTrackConfig(name='weakdfs',
+                            legend_entry='weak dfs',
+                            tracking_weight=5,
+                            effort_weight=10,
+                            cmap_index=0.9,
+                            flags=['weakdfs']),
+            MocoTrackConfig(name='assistweakdfs',
+                            legend_entry='assisted weak dfs',
+                            tracking_weight=5,
+                            effort_weight=10,
+                            cmap_index=0.8,
+                            flags=['assistankledf', 'weakdfs']),
             # MocoTrackConfig(name='weaksoleus',
             #                 legend_entry='weak soleus',
             #                 tracking_weight=1,
@@ -102,6 +113,7 @@ class MotionTrackingWalking(MocoPaperResult):
         model = osim.Model(os.path.join(root_dir,
                 'resources/Rajagopal2016/'
                 'subject_walk_armless_contact_bounded_80musc.osim'))
+        model.initSystem()
 
         # for imusc in range(model.getMuscles().getSize()):
         #     musc = model.updMuscles().get(imusc)
@@ -134,15 +146,15 @@ class MotionTrackingWalking(MocoPaperResult):
                         forceSet.remove(int(i))
                         contactsRemoved += 1
                         break
+        model.initSystem()
 
-
-        stiffnessModifier = 0.8
-        print(f'Modifying contact element stiffnesses by factor {stiffnessModifier}...')
-        for actu in model.getComponentsList():
-            if actu.getConcreteClassName() == 'SmoothSphereHalfSpaceForce':
-                force = osim.SmoothSphereHalfSpaceForce.safeDownCast(actu)
-                force.set_stiffness(stiffnessModifier * force.get_stiffness())
-                print(f'  --> modified contact element {force.getName()}')
+        # stiffnessModifier = 0.8
+        # print(f'Modifying contact element stiffnesses by factor {stiffnessModifier}...')
+        # for actu in model.getComponentsList():
+        #     if actu.getConcreteClassName() == 'SmoothSphereHalfSpaceForce':
+        #         force = osim.SmoothSphereHalfSpaceForce.safeDownCast(actu)
+        #         force.set_stiffness(stiffnessModifier * force.get_stiffness())
+        #         print(f'  --> modified contact element {force.getName()}')
 
         def add_reserve(model, coord, optimal_force, max_control):
             actu = osim.ActivationCoordinateActuator()
@@ -182,17 +194,20 @@ class MotionTrackingWalking(MocoPaperResult):
         add_reserve(model, 'knee_angle_l', optimal_force, reserves_max)
         add_reserve(model, 'ankle_angle_l', optimal_force, reserves_max)
 
-        def add_device(model, coord):
+        def add_device(model, coord, optimalForce, minControl, maxControl):
             actu = osim.ActivationCoordinateActuator()
             actu.set_coordinate(coord)
             actu.setName(f'device_{coord}')
-            actu.setOptimalForce(1000.0)
-            actu.setMinControl(-1.0)
-            actu.setMaxControl(1.0)
+            actu.setOptimalForce(optimalForce)
+            actu.setMinControl(minControl)
+            actu.setMaxControl(maxControl)
             model.addForce(actu)
-        if 'assistankle' in flags:
-            add_device(model, 'ankle_angle_r')
-            add_device(model, 'ankle_angle_l')
+        if 'assistanklepf' in flags:
+            add_device(model, 'ankle_angle_r', 150, -1, 0)
+            add_device(model, 'ankle_angle_l', 150, -1, 0)
+        if 'assistankledf' in flags:
+            add_device(model, 'ankle_angle_r', 150, 0, 1)
+            add_device(model, 'ankle_angle_l', 150, 0, 1)
 
         if 'weaksoleus' in flags:
             soleus_r = model.updMuscles().get('soleus_r')
@@ -201,6 +216,12 @@ class MotionTrackingWalking(MocoPaperResult):
             soleus_l = model.updMuscles().get('soleus_l')
             soleus_l.set_max_isometric_force(
                 0.25 * soleus_l.get_max_isometric_force())
+        if 'weakdfs' in flags:
+            for muscle in ['edl', 'ehl', 'tibant']:
+                for side in ['_l', '_r']:
+                    musc = model.updMuscles().get('%s%s' % (muscle, side))
+                    musc.set_max_isometric_force(
+                        0.05 * musc.get_max_isometric_force())
         if 'weakvasti' in flags:
             for muscle in ['vasmed', 'vasint', 'vaslat']:
                 for side in ['_l', '_r']:
@@ -264,17 +285,17 @@ class MotionTrackingWalking(MocoPaperResult):
 
     def get_solution_path(self, root_dir, config):
         return os.path.join(root_dir,
-                            f'{self.tracking_solution_relpath_prefix}'
+                            f'{self.tracking_solution_relpath_prefix}_'
                             + config.name + '.sto')
 
     def get_solution_path_fullcycle(self, root_dir, config):
         return os.path.join(root_dir,
-                            f'{self.tracking_solution_relpath_prefix}'
+                            f'{self.tracking_solution_relpath_prefix}_'
                             + config.name + '_fullcycle.sto')
 
     def get_solution_path_grfs(self, root_dir, config):
         return os.path.join(root_dir,
-                            f'{self.tracking_solution_relpath_prefix}'
+                            f'{self.tracking_solution_relpath_prefix}_'
                             + config.name + '_fullcycle_grfs.sto')
 
     def load_table(self, table_path):
@@ -297,11 +318,11 @@ class MotionTrackingWalking(MocoPaperResult):
     def calc_muscle_mechanics(self, root_dir, config, solution):
         modelProcessor = self.create_model_processor(root_dir, config=config)
         model = modelProcessor.process()
-        output = osim.analyze(model, solution,
-                              ['.*gasmed.*\|tendon_force',
-                               '.*gasmed.*\|normalized_fiber_length',
-                               '.*semimem.*\|tendon_force',
-                               '.*semimem.*\|normalized_fiber_length'])
+        outputs = list()
+        for muscle in ['gasmed', 'semimem', 'soleus']:
+            outputs.append(f'.*{muscle}.*\|tendon_force')
+            outputs.append(f'.*{muscle}.*\|normalized_fiber_length')
+        output = osim.analyze(model, solution, outputs)
         return output
 
     def run_inverse_problem(self, root_dir):
@@ -430,6 +451,9 @@ class MotionTrackingWalking(MocoPaperResult):
                 if actu.getConcreteClassName().endswith('Actuator'):
                     effort.setWeightForControl(actu.getAbsolutePathString(),
                         0.001)
+                # if actuName.startswith('device'):
+                #     effort.setWeightForControl(actu.getAbsolutePathString(), 0)
+
             for muscle in ['psoas', 'iliacus']:
                 for side in ['l', 'r']:
                     effort.setWeightForControl(

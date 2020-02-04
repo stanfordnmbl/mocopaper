@@ -24,6 +24,10 @@ from utilities import plot_joint_moment_breakdown
 # https://ieeexplore-ieee-org.stanford.idm.oclc.org/abstract/document/1273519
 # TODO: Herr paper has graph of AAFO stiffness
 
+# TODO: step width: collision of thighs makes tight rope walking less likely.
+# look into the extent to which the lumbar CoordinateActuators are used.
+# Are these torques reasonable?
+
 # increase value of pelvis_ty in initial guess. - didn't help
 
 class MocoTrackConfig:
@@ -92,15 +96,15 @@ class MotionTrackingWalking(MocoPaperResult):
                             effort_weight=10,
                             cmap_index=0.9,
                             flags=['weakdfs']),
-            MocoTrackConfig(name='assistweakdfs',
-                            legend_entry='assisted weak dfs',
-                            tracking_weight=5,
-                            effort_weight=10,
-                            cmap_index=0.8,
-                            flags=['assistankledf', 'weakdfs'],
-                            breakdown_coordact_paths=[
-                                '/forceset/device_ankle_angle_l'
-                            ]),
+            # MocoTrackConfig(name='assistweakdfs',
+            #                 legend_entry='assisted weak dfs',
+            #                 tracking_weight=5,
+            #                 effort_weight=10,
+            #                 cmap_index=0.8,
+            #                 flags=['assistankledf', 'weakdfs'],
+            #                 breakdown_coordact_paths=[
+            #                     '/forceset/device_ankle_angle_l'
+            #                 ]),
             MocoTrackConfig(name='passassistweakdfs',
                             legend_entry='pass. assisted weak dfs',
                             tracking_weight=5,

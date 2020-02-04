@@ -19,6 +19,11 @@ from utilities import plot_joint_moment_breakdown
 
 # TODO: passive ankle device.
 
+# TODO: for dropfoot, do NOT reduce the weight on hip flexors, in attempt to
+#  obtain foot slap
+# https://ieeexplore-ieee-org.stanford.idm.oclc.org/abstract/document/1273519
+# TODO: Herr paper has graph of AAFO stiffness
+
 # increase value of pelvis_ty in initial guess. - didn't help
 
 class MocoTrackConfig:
@@ -48,7 +53,7 @@ class MotionTrackingWalking(MocoPaperResult):
         self.cmap = 'nipy_spectral'
         self.configs = [
             MocoTrackConfig(name='noassist',
-                            legend_entry='no assist',
+                            legend_entry='healthy',
                             tracking_weight=5,
                             effort_weight=10,
                             cmap_index=0.5),
@@ -96,6 +101,13 @@ class MotionTrackingWalking(MocoPaperResult):
                             breakdown_coordact_paths=[
                                 '/forceset/device_ankle_angle_l'
                             ]),
+            MocoTrackConfig(name='passassistweakdfs',
+                            legend_entry='pass. assisted weak dfs',
+                            tracking_weight=5,
+                            effort_weight=10,
+                            cmap_index=0.7,
+                            flags=['passassistankledf', 'weakdfs'],
+                            ),
             # MocoTrackConfig(name='weaksoleus',
             #                 legend_entry='weak soleus',
             #                 tracking_weight=1,
@@ -217,6 +229,21 @@ class MotionTrackingWalking(MocoPaperResult):
         if 'assistankledf' in flags:
             add_device(model, 'ankle_angle_r', 150, 0, 1)
             add_device(model, 'ankle_angle_l', 150, 0, 1)
+
+        if 'passassistankledf' in flags:
+            stiffnessGuess = 10.0
+            device_r = osim.SpringGeneralizedForce('ankle_angle_r')
+            device_r.setName('device_ankle_angle_r')
+            device_r.setStiffness(stiffnessGuess)
+            device_r.setRestLength(0)
+            device_r.setViscosity(0)
+            model.addForce(device_r)
+            device_l = osim.SpringGeneralizedForce('ankle_angle_l')
+            device_l.setName('device_ankle_angle_l')
+            device_l.setStiffness(stiffnessGuess)
+            device_l.setRestLength(0)
+            device_l.setViscosity(0)
+            model.addForce(device_l)
 
         if 'weaksoleus' in flags:
             soleus_r = model.updMuscles().get('soleus_r')
@@ -608,6 +635,14 @@ class MotionTrackingWalking(MocoPaperResult):
             contactTracking.setProjectionVector(osim.Vec3(0, 0, 1))
             problem.addGoal(contactTracking)
 
+        if 'passassistankledf' in config.flags:
+            problem.addParameter(
+                osim.MocoParameter('stiffness',
+                                   ['/forceset/device_ankle_angle_l',
+                                    '/forceset/device_ankle_angle_r'],
+                                   'stiffness', osim.MocoBounds(0, 200)))
+
+
         # Configure the solver
         # --------------------
         solver = osim.MocoCasADiSolver.safeDownCast(study.updSolver())
@@ -620,6 +655,7 @@ class MotionTrackingWalking(MocoPaperResult):
             1e-6 / model.getNumCoordinates())
         solver.set_implicit_multibody_acceleration_bounds(
                 osim.MocoBounds(-200, 200))
+        solver.set_parameters_require_initsystem(False)
 
         # Set the guess
         # -------------
@@ -815,8 +851,8 @@ class MotionTrackingWalking(MocoPaperResult):
             # ax_time.bar(i+1, time[-1]-time[0], color=color)
             # ax_time.set_ylim(0, 1.2)
             # ax_time.set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2])
-            ax_time.set_xlabel('tracking cost')
-            ax_time.set_ylabel('effort cost')
+            ax_time.set_xlabel('tracking')
+            ax_time.set_ylabel('effort')
             # ax_time.set_xticks([0, 1, 2, 3])
             # ax_time.set_xticklabels(
             #         ['data', 'track', 'track\n + \neffort', 'effort'])
@@ -929,6 +965,8 @@ class MotionTrackingWalking(MocoPaperResult):
                 duration = float(duration) / 60.0 / 60.0
                 print(f'duration (config {config.name}): ', duration)
                 f.write(f'(config {config.name}): {duration:.2f}\n')
+                solution = osim.MocoTrajectory(sol_path)
+                print(f'parameters: ', solution.getParametersMat())
 
         # Summarize muscle activity
         # -------------------------

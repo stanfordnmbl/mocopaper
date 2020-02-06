@@ -56,7 +56,7 @@ class MotionTrackingWalking(MocoPaperResult):
             'results/motion_tracking_walking_solution'
         self.cmap = 'nipy_spectral'
         self.configs = [
-            MocoTrackConfig(name='noassist',
+            MocoTrackConfig(name='healthy',
                             legend_entry='healthy',
                             tracking_weight=5,
                             effort_weight=10,
@@ -448,8 +448,10 @@ class MotionTrackingWalking(MocoPaperResult):
             # weightList.append(('/jointset/hip_r/hip_adduction_r/value', 0))
             weightList.append(('/jointset/hip_l/hip_rotation_l/value', 0))
             # weightList.append(('/jointset/hip_l/hip_adduction_l/value', 0))
-            # weightList.append(('/jointset/ankle_r/ankle_angle_r/value', 10))
-            # weightList.append(('/jointset/ankle_l/ankle_angle_l/value', 10))
+            weightList.append(('/jointset/ankle_r/ankle_angle_r/value', 10))
+            weightList.append(('/jointset/ankle_l/ankle_angle_l/value', 10))
+            weightList.append(('/jointset/walker_knee_r/knee_angle_r/value', 10))
+            weightList.append(('/jointset/walker_knee_l/knee_angle_l/value', 10))
             for weight in weightList:
                 stateWeights.cloneAndAppend(osim.MocoWeight(weight[0], weight[1]))
             track.set_states_weight_set(stateWeights)
@@ -513,10 +515,10 @@ class MotionTrackingWalking(MocoPaperResult):
                 # if actuName.startswith('device'):
                 #     effort.setWeightForControl(actu.getAbsolutePathString(), 0)
 
-            for muscle in ['psoas', 'iliacus']:
-                for side in ['l', 'r']:
-                    effort.setWeightForControl(
-                        '/forceset/%s_%s' % (muscle, side), 0.25)
+            # for muscle in ['psoas', 'iliacus']:
+            #     for side in ['l', 'r']:
+            #         effort.setWeightForControl(
+            #             '/forceset/%s_%s' % (muscle, side), 0.25)
 
         speedGoal = osim.MocoAverageSpeedGoal('speed')
         speedGoal.set_desired_average_speed(1.235)
@@ -644,7 +646,7 @@ class MotionTrackingWalking(MocoPaperResult):
                 osim.MocoParameter('stiffness',
                                    ['/forceset/device_ankle_angle_l',
                                     '/forceset/device_ankle_angle_r'],
-                                   'stiffness', osim.MocoBounds(0, 200)))
+                                   'stiffness', osim.MocoBounds(0, 300)))
 
 
         # Configure the solver

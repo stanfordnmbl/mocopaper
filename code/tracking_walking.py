@@ -42,6 +42,7 @@ class MocoTrackConfig:
         self.flags = flags
         self.breakdown_coordact_paths = breakdown_coordact_paths
 
+dark = False
 
 class MotionTrackingWalking(MocoPaperResult):
     def __init__(self):
@@ -976,30 +977,20 @@ class MotionTrackingWalking(MocoPaperResult):
 
         # Summary plots for weakdfs
         # -------------------------
-        dark = False
+        bgsuffix = 'white'
         expcolor = 'black'
         emgcolor = 'lightgray'
         if dark:
             plt.style.use('dark_background')
+            bgsuffix = 'black'
             expcolor = 'lightgray'
-            emgcolor = 'darkgray'
-        fig = plt.figure(figsize=(2.5, 5))
-        gs = gridspec.GridSpec(6, 1)
-        ax_hip = fig.add_subplot(gs[0:2, 0])
-        ax_ankle = fig.add_subplot(gs[2:4, 0])
-        ax_list = list()
-        ax_list.append(ax_hip)
-        ax_list.append(ax_ankle)
-        muscles = [
-            (fig.add_subplot(gs[4, 0]), 'recfem', 'rectus femoris', 'RF'),
-            (fig.add_subplot(gs[5, 0]), 'tibant', 'tibialis anterior', 'TA'),
-        ]
+            emgcolor = 'dimgray'
+        fig = plt.figure(figsize=(2.5, 2.2))
+        ax_hip = fig.add_subplot(1, 1, 1)
         ax_hip.plot(pgc_coords,
                     coordinates['hip_flexion_l'][coords_start:coords_end],
                     color=expcolor, lw=lw + 1.0)
-        ax_ankle.plot(pgc_coords,
-                      coordinates['ankle_angle_l'][coords_start:coords_end],
-                      color=expcolor, lw=lw + 1.0)
+        rad2deg = 180 / np.pi
         suffix = ''
         for i, config in enumerate(self.configs):
             suffix += '_' + config.name
@@ -1014,29 +1005,73 @@ class MotionTrackingWalking(MocoPaperResult):
             pgc = np.linspace(0, 100, len(time))
 
             # kinematics
-            rad2deg = 180 / np.pi
             ax_hip.plot(pgc, rad2deg*full_traj.getStateMat(
                 '/jointset/hip_l/hip_flexion_l/value'), color=color, lw=lw)
             ax_hip.set_ylabel('angle (degrees)')
             ax_hip.set_title('hip flexion')
-            ax_hip.set_xticklabels([])
+            ax_hip.set_xlabel('time (% gait cycle)')
+
+            utilities.publication_spines(ax_hip)
+            ax_hip.set_xlim(0, 100)
+            ax_hip.set_xticks([0, 50, 100])
+            ax_hip.set_ylim(-20, 45)
+        fig.tight_layout()
+        fig.savefig(os.path.join(
+            root_dir, f'results/motion_tracking_walking_hipflexion{suffix}_{bgsuffix}.png'),
+            dpi=600)
+
+
+        fig = plt.figure(figsize=(2.5, 2.2))
+        ax_ankle = fig.add_subplot(1, 1, 1)
+        ax_ankle.plot(pgc_coords,
+                      coordinates['ankle_angle_l'][coords_start:coords_end],
+                      color=expcolor, lw=lw + 1.0)
+        for i, config in enumerate(self.configs):
+            color = cmap(config.cmap_index)
+            full_path = self.get_solution_path_fullcycle(root_dir, config)
+            full_traj = osim.MocoTrajectory(full_path)
+
+            sol_path = self.get_solution_path(root_dir, config)
+            sol_table = osim.TimeSeriesTable(sol_path)
+
+            time = full_traj.getTimeMat()
+            pgc = np.linspace(0, 100, len(time))
+
+            # kinematics
             ax_ankle.plot(pgc, rad2deg*full_traj.getStateMat(
                 '/jointset/ankle_l/ankle_angle_l/value'), color=color,
                           lw=lw)
             ax_ankle.set_ylabel('angle (degrees)')
             ax_ankle.set_title('ankle dorsiflexion')
-            ax_ankle.set_xticklabels([])
-            # ax_ankle.set_xlabel('time (% gait cycle)')
+            ax_ankle.set_xlabel('time (% gait cycle)')
+            utilities.publication_spines(ax_ankle)
+            ax_ankle.set_xlim(0, 100)
+            ax_ankle.set_xticks([0, 50, 100])
+            ax_ankle.set_ylim(-25, 25)
+        fig.tight_layout()
+        fig.savefig(os.path.join(
+            root_dir, f'results/motion_tracking_walking_ankle{suffix}_{bgsuffix}.png'),
+            dpi=600)
 
-            for ax in ax_list:
-                utilities.publication_spines(ax)
-                ax.set_xlim(0, 100)
-                ax.set_xticks([0, 50, 100])
+        muscles = [
+            ('recfem', 'rectus femoris', 'RF'),
+            ('tibant', 'tibialis anterior', 'TA'),
+        ]
+        for im, muscle in enumerate(muscles):
+            fig = plt.figure(figsize=(2.5, 1.4))
+            ax = fig.add_subplot(1, 1, 1)
+            for i, config in enumerate(self.configs):
+                color = cmap(config.cmap_index)
+                full_path = self.get_solution_path_fullcycle(root_dir, config)
+                full_traj = osim.MocoTrajectory(full_path)
 
-            # muscle activations
-            for im, muscle in enumerate(muscles):
-                activation_path = f'/forceset/{muscle[1]}_l/activation'
-                ax = muscle[0]
+                sol_path = self.get_solution_path(root_dir, config)
+                sol_table = osim.TimeSeriesTable(sol_path)
+
+                time = full_traj.getTimeMat()
+                pgc = np.linspace(0, 100, len(time))
+
+                activation_path = f'/forceset/{muscle[0]}_l/activation'
                 activation = full_traj.getStateMat(activation_path)
                 ax.plot(pgc, activation, color=color, lw=lw, clip_on=False)
 
@@ -1044,7 +1079,7 @@ class MotionTrackingWalking(MocoPaperResult):
                 # TODO: do not assume we want to normalize EMG via simulation 0.
                 if i == 0 and 'PSOAS' not in muscle:
                     self.plot(ax, emg['time'],
-                              emg[muscle[3]] * np.max(activation), shift=False,
+                              emg[muscle[2]] * np.max(activation), shift=False,
                               fill=True, color=emgcolor,
                               label='electromyography')
                 ax.set_ylim(0, 1)
@@ -1052,23 +1087,18 @@ class MotionTrackingWalking(MocoPaperResult):
                 ax.set_xlim(0, 100)
                 ax.set_xticks([0, 50, 100])
 
-                if im < len(muscles) - 1:
-                    ax.set_xticklabels([])
-                ax.text(0.5, 1.0, muscle[2],
+                ax.text(0.5, 1.0, muscle[1],
                         horizontalalignment='center',
                         verticalalignment='bottom',
                         transform=ax.transAxes)
                 utilities.publication_spines(ax)
                 ax.set_ylabel('activation')
-                if im == (len(muscles) - 1):
-                    ax.set_xlabel('time (% gait cycle)')
+                ax.set_xlabel('time (% gait cycle)')
 
-        fig.align_ylabels([ax_hip, ax_ankle, muscles[0][0], muscles[1][0]])
-
-        fig.tight_layout()
-        fig.savefig(os.path.join(
-            root_dir, f'figures/motion_tracking_walking_summary{suffix}.png'),
-                    dpi=600)
+            fig.tight_layout()
+            fig.savefig(os.path.join(
+                root_dir, f'results/motion_tracking_walking_{muscle[0]}{suffix}_{bgsuffix}.png'),
+                dpi=600)
 
         return # TODO
 

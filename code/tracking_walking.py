@@ -857,7 +857,7 @@ class MotionTrackingWalking(MocoPaperResult):
                     ax.set_title('ACTIVATIONS\n', weight='bold', size=title_fs)
                 if im == 8: ax.set_xlabel('time (% gait cycle)')
 
-        fig.align_ylabels([ax_time, ax_grf_x, ax_grf_y])
+        fig.align_ylabels([ax_time, ax_grf_x, ax_grf_y, ax_grf_z])
         fig.align_ylabels([ax_add, ax_hip, ax_knee, ax_ankle])
 
         # fig.tight_layout()

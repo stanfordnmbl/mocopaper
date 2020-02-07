@@ -951,8 +951,8 @@ class MotionTrackingWalking(MocoPaperResult):
                     ax.set_title('ACTIVATIONS\n', weight='bold', size=title_fs)
                 if im == 8: ax.set_xlabel('time (% gait cycle)')
 
-        fig.align_ylabels([ax_grf_x, ax_grf_y])
-        fig.align_ylabels([ax_time, ax_add, ax_hip, ax_knee, ax_ankle])
+        fig.align_ylabels([ax_time, ax_grf_x, ax_grf_y])
+        fig.align_ylabels([ax_add, ax_hip, ax_knee, ax_ankle])
 
         # fig.tight_layout()
         fig.subplots_adjust(left=0.07, right=0.97, top=0.94, bottom=0.065,
@@ -974,12 +974,109 @@ class MotionTrackingWalking(MocoPaperResult):
                 solution = osim.MocoTrajectory(sol_path)
                 print(f'parameters: ', solution.getParametersMat())
 
+        # Summary plots for weakdfs
+        # -------------------------
+        dark = False
+        expcolor = 'black'
+        emgcolor = 'lightgray'
+        if dark:
+            plt.style.use('dark_background')
+            expcolor = 'lightgray'
+            emgcolor = 'darkgray'
+        fig = plt.figure(figsize=(2.5, 5))
+        gs = gridspec.GridSpec(6, 1)
+        ax_hip = fig.add_subplot(gs[0:2, 0])
+        ax_ankle = fig.add_subplot(gs[2:4, 0])
+        ax_list = list()
+        ax_list.append(ax_hip)
+        ax_list.append(ax_ankle)
+        muscles = [
+            (fig.add_subplot(gs[4, 0]), 'recfem', 'rectus femoris', 'RF'),
+            (fig.add_subplot(gs[5, 0]), 'tibant', 'tibialis anterior', 'TA'),
+        ]
+        ax_hip.plot(pgc_coords,
+                    coordinates['hip_flexion_l'][coords_start:coords_end],
+                    color=expcolor, lw=lw + 1.0)
+        ax_ankle.plot(pgc_coords,
+                      coordinates['ankle_angle_l'][coords_start:coords_end],
+                      color=expcolor, lw=lw + 1.0)
+        suffix = ''
+        for i, config in enumerate(self.configs):
+            suffix += '_' + config.name
+            color = cmap(config.cmap_index)
+            full_path = self.get_solution_path_fullcycle(root_dir, config)
+            full_traj = osim.MocoTrajectory(full_path)
+
+            sol_path = self.get_solution_path(root_dir, config)
+            sol_table = osim.TimeSeriesTable(sol_path)
+
+            time = full_traj.getTimeMat()
+            pgc = np.linspace(0, 100, len(time))
+
+            # kinematics
+            rad2deg = 180 / np.pi
+            ax_hip.plot(pgc, rad2deg*full_traj.getStateMat(
+                '/jointset/hip_l/hip_flexion_l/value'), color=color, lw=lw)
+            ax_hip.set_ylabel('angle (degrees)')
+            ax_hip.set_title('hip flexion')
+            ax_hip.set_xticklabels([])
+            ax_ankle.plot(pgc, rad2deg*full_traj.getStateMat(
+                '/jointset/ankle_l/ankle_angle_l/value'), color=color,
+                          lw=lw)
+            ax_ankle.set_ylabel('angle (degrees)')
+            ax_ankle.set_title('ankle dorsiflexion')
+            ax_ankle.set_xticklabels([])
+            # ax_ankle.set_xlabel('time (% gait cycle)')
+
+            for ax in ax_list:
+                utilities.publication_spines(ax)
+                ax.set_xlim(0, 100)
+                ax.set_xticks([0, 50, 100])
+
+            # muscle activations
+            for im, muscle in enumerate(muscles):
+                activation_path = f'/forceset/{muscle[1]}_l/activation'
+                ax = muscle[0]
+                activation = full_traj.getStateMat(activation_path)
+                ax.plot(pgc, activation, color=color, lw=lw, clip_on=False)
+
+                # electromyography data
+                # TODO: do not assume we want to normalize EMG via simulation 0.
+                if i == 0 and 'PSOAS' not in muscle:
+                    self.plot(ax, emg['time'],
+                              emg[muscle[3]] * np.max(activation), shift=False,
+                              fill=True, color=emgcolor,
+                              label='electromyography')
+                ax.set_ylim(0, 1)
+                ax.set_yticks([0, 1])
+                ax.set_xlim(0, 100)
+                ax.set_xticks([0, 50, 100])
+
+                if im < len(muscles) - 1:
+                    ax.set_xticklabels([])
+                ax.text(0.5, 1.0, muscle[2],
+                        horizontalalignment='center',
+                        verticalalignment='bottom',
+                        transform=ax.transAxes)
+                utilities.publication_spines(ax)
+                ax.set_ylabel('activation')
+                if im == (len(muscles) - 1):
+                    ax.set_xlabel('time (% gait cycle)')
+
+        fig.align_ylabels([ax_hip, ax_ankle, muscles[0][0], muscles[1][0]])
+
+        fig.tight_layout()
+        fig.savefig(os.path.join(
+            root_dir, f'figures/motion_tracking_walking_summary{suffix}.png'),
+                    dpi=600)
+
+        return # TODO
+
         # Summarize muscle activity
         # -------------------------
         print(f'Plotting bar graph of muscle activity.')
         fig = plt.figure(figsize=(8.5, 11))
         ax = fig.add_subplot(1, 1, 1)
-        plt.barh
         suffix = ''
         total_bar_height = 0.8
         bar_height = total_bar_height / len(self.configs)
@@ -1008,7 +1105,6 @@ class MotionTrackingWalking(MocoPaperResult):
             root_dir, 'results',
             f'motion_tracking_walking_summary_activity{suffix}.png'),
             dpi=600)
-
 
         # Reserves and joint moment breakdown.
         # ------------------------------------
@@ -1047,7 +1143,7 @@ class MotionTrackingWalking(MocoPaperResult):
             fpath = os.path.join(root_dir,
                                  'results/motion_tracking_walking_' +
                                  f'breakdown_{config.name}.png')
-            plot_breakdown = True
+            plot_breakdown = False
             if plot_breakdown:
                 fig = plot_joint_moment_breakdown(
                     model, solution, coords,

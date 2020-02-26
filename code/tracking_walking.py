@@ -46,16 +46,16 @@ class MotionTrackingWalking(MocoPaperResult):
             'results/motion_tracking_walking_solution'
         self.cmap = 'nipy_spectral'
         self.configs = [
-            # MocoTrackConfig(name='track',
-            #                 legend_entry='track',
-            #                 tracking_weight=1,
-            #                 effort_weight=0.1,
-            #                 cmap_index=0.2),
-            MocoTrackConfig(name='trackeffort',
-                            legend_entry='track\n+\neffort',
-                            tracking_weight=0.5,
+            MocoTrackConfig(name='track',
+                            legend_entry='track',
+                            tracking_weight=10,
                             effort_weight=1,
-                            cmap_index=0.5),
+                            cmap_index=0.2),
+            # MocoTrackConfig(name='trackeffort',
+            #                 legend_entry='track\n+\neffort',
+            #                 tracking_weight=0.5,
+            #                 effort_weight=1,
+            #                 cmap_index=0.5),
             # MocoTrackConfig(name='effort',
             #                 legend_entry='effort',
             #                 tracking_weight=0.01,
@@ -101,21 +101,7 @@ class MotionTrackingWalking(MocoPaperResult):
 
         model = osim.Model(os.path.join(root_dir,
                 'resources/Rajagopal2016/'
-                'subject_walk_armless_contact_bounded_80musc.osim'))
-
-        # for imusc in range(model.getMuscles().getSize()):
-        #     musc = model.updMuscles().get(imusc)
-        #     musc = osim.Millard2012EquilibriumMuscle.safeDownCast(musc)
-        #     musc.upd_FiberForceLengthCurve().set_strain_at_one_norm_force(
-        #         3.0)
-
-        # for muscle in ['vasmed', 'vasint', 'vaslat', 'recfem', 'semimem',
-        #                'semiten']:
-        #     for side in ['_l', '_r']:
-        #         musc = model.updMuscles().get('%s%s' % (muscle, side))
-        #         musc = osim.Millard2012EquilibriumMuscle.safeDownCast(musc)
-        #         musc.upd_FiberForceLengthCurve().set_strain_at_one_norm_force(
-        #             3.5)
+                'subject_walk_contact_bounded_80musc.osim'))
 
         if for_inverse:
             forceSet = model.getForceSet()
@@ -134,15 +120,15 @@ class MotionTrackingWalking(MocoPaperResult):
                         forceSet.remove(int(i))
                         contactsRemoved += 1
                         break
-
-
-        stiffnessModifier = 0.8
-        print(f'Modifying contact element stiffnesses by factor {stiffnessModifier}...')
-        for actu in model.getComponentsList():
-            if actu.getConcreteClassName() == 'SmoothSphereHalfSpaceForce':
-                force = osim.SmoothSphereHalfSpaceForce.safeDownCast(actu)
-                force.set_stiffness(stiffnessModifier * force.get_stiffness())
-                print(f'  --> modified contact element {force.getName()}')
+        else:
+            stiffnessModifier = 0.8
+            print(f'Modifying contact element stiffnesses by '
+                  f'factor {stiffnessModifier}...')
+            for actu in model.getComponentsList():
+                if actu.getConcreteClassName() == 'SmoothSphereHalfSpaceForce':
+                    force = osim.SmoothSphereHalfSpaceForce.safeDownCast(actu)
+                    force.set_stiffness(stiffnessModifier * force.get_stiffness())
+                    print(f'  --> modified contact element {force.getName()}')
 
         def add_reserve(model, coord, optimal_force, max_control):
             actu = osim.ActivationCoordinateActuator()
@@ -158,29 +144,41 @@ class MotionTrackingWalking(MocoPaperResult):
             actu.setMinControl(-max_control)
             actu.setMaxControl(max_control)
             model.addForce(actu)
-        add_reserve(model, 'lumbar_extension', 1, 50)
-        add_reserve(model, 'lumbar_bending', 1, 50)
-        add_reserve(model, 'lumbar_rotation', 1, 50)
 
+        # Upper extremity
+        add_reserve(model, 'lumbar_extension', 50, 1)
+        add_reserve(model, 'lumbar_bending', 50, 1)
+        add_reserve(model, 'lumbar_rotation', 50, 1)
+        add_reserve(model, 'arm_flex_r', 15, 1)
+        add_reserve(model, 'arm_add_r', 10, 1)
+        add_reserve(model, 'arm_rot_r', 5, 1)
+        add_reserve(model, 'elbow_flex_r', 5, 1)
+        add_reserve(model, 'pro_sup_r', 1, 1)
+        add_reserve(model, 'arm_flex_l', 15, 1)
+        add_reserve(model, 'arm_add_l', 10, 1)
+        add_reserve(model, 'arm_rot_l', 5, 1)
+        add_reserve(model, 'elbow_flex_l', 5, 1)
+        add_reserve(model, 'pro_sup_l', 1, 1)
+        # Lower extremity
         reserves_max = 250 if for_inverse else 1
-        add_reserve(model, 'pelvis_tilt', 1, reserves_max)
-        add_reserve(model, 'pelvis_list', 1, reserves_max)
-        add_reserve(model, 'pelvis_rotation', 1, reserves_max)
-        add_reserve(model, 'pelvis_tx', 1, reserves_max)
-        add_reserve(model, 'pelvis_ty', 1, reserves_max)
-        add_reserve(model, 'pelvis_tz', 1, reserves_max)
-
-        optimal_force = 0.1
+        residuals_max = 250 if for_inverse else 50
+        optimal_force = 1
+        add_reserve(model, 'pelvis_tilt', optimal_force, residuals_max)
+        add_reserve(model, 'pelvis_list', optimal_force, residuals_max)
+        add_reserve(model, 'pelvis_rotation', optimal_force, residuals_max)
+        add_reserve(model, 'pelvis_tx', optimal_force, residuals_max)
+        add_reserve(model, 'pelvis_ty', optimal_force, residuals_max)
+        add_reserve(model, 'pelvis_tz', optimal_force, residuals_max)
         add_reserve(model, 'hip_flexion_r', optimal_force, reserves_max)
-        add_reserve(model, 'hip_adduction_r', optimal_force, reserves_max)
-        add_reserve(model, 'hip_rotation_r', optimal_force, reserves_max)
         add_reserve(model, 'knee_angle_r', optimal_force, reserves_max)
         add_reserve(model, 'ankle_angle_r', optimal_force, reserves_max)
         add_reserve(model, 'hip_flexion_l', optimal_force, reserves_max)
-        add_reserve(model, 'hip_adduction_l', optimal_force, reserves_max)
-        add_reserve(model, 'hip_rotation_l', optimal_force, reserves_max)
         add_reserve(model, 'knee_angle_l', optimal_force, reserves_max)
         add_reserve(model, 'ankle_angle_l', optimal_force, reserves_max)
+        add_reserve(model, 'hip_adduction_r', optimal_force, reserves_max)
+        add_reserve(model, 'hip_adduction_l', optimal_force, reserves_max)
+        add_reserve(model, 'hip_rotation_r', optimal_force, reserves_max)
+        add_reserve(model, 'hip_rotation_l', optimal_force, reserves_max)
 
         def add_device(model, coord):
             actu = osim.ActivationCoordinateActuator()
@@ -237,12 +235,13 @@ class MotionTrackingWalking(MocoPaperResult):
         modelProcessor = osim.ModelProcessor(model)
 
         modelProcessor.append(osim.ModOpReplaceJointsWithWelds(
-            ['subtalar_r', 'mtp_r', 'subtalar_l', 'mtp_l']))
+            ['subtalar_r', 'mtp_r', 'subtalar_l', 'mtp_l', 'radius_hand_r',
+             'radius_hand_l']))
         modelProcessor.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())
         modelProcessor.append(osim.ModOpIgnoreTendonCompliance())
-        # modelProcessor.append(osim.ModOpPassiveFiberStrainAtOneNormForceDGF(4.0))
-        modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
-        # modelProcessor.append(osim.ModOpFiberDampingDGF(0.001))
+        # modelProcessor.append(osim.ModOpPassiveFiberStrainAtOneNormForceDGF(1.0))
+        # modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
+        # modelProcessor.append(osim.ModOpFiberDampingDGF(0.01))
         if for_inverse:
             ext_loads_xml = os.path.join(root_dir,
                     'resources/Rajagopal2016/grf_walk.xml')
@@ -253,8 +252,25 @@ class MotionTrackingWalking(MocoPaperResult):
         muscles = model.updMuscles()
         for imusc in np.arange(muscles.getSize()):
             muscle = muscles.get(int(imusc))
-            if 'gas' in muscle.getName() or 'soleus' in muscle.getName():
+            muscName = muscle.getName()
+            if ('gas' in muscName) or ('soleus' in muscName):
                 muscle.set_ignore_tendon_compliance(False)
+
+            muscleDGF = osim.DeGrooteFregly2016Muscle.safeDownCast(muscle)
+            if 'soleus' in muscName:
+                muscleDGF.set_ignore_passive_fiber_force(True)
+                muscleDGF.set_passive_fiber_strain_at_one_norm_force(10.0)
+            elif 'gas' in muscName:
+                muscleDGF.set_passive_fiber_strain_at_one_norm_force(0.4)
+                muscleDGF.set_fiber_damping(0.001)
+            elif (('vas' in muscName) or
+                  ('recfem' in muscName) or
+                  ('semi' in muscName)):
+                muscleDGF.set_passive_fiber_strain_at_one_norm_force(7.0)
+            elif (('tib' in muscName) or
+                  ('ehl' in muscName) or
+                  ('edl' in muscName)) :
+                muscleDGF.set_passive_fiber_strain_at_one_norm_force(7.0)
 
         modelProcessorTendonCompliance = osim.ModelProcessor(model)
         modelProcessorTendonCompliance.append(
@@ -297,12 +313,17 @@ class MotionTrackingWalking(MocoPaperResult):
     def calc_muscle_mechanics(self, root_dir, config, solution):
         modelProcessor = self.create_model_processor(root_dir, config=config)
         model = modelProcessor.process()
-        output = osim.analyze(model, solution,
-                              ['.*gasmed.*\|tendon_force',
-                               '.*gasmed.*\|normalized_fiber_length',
-                               '.*semimem.*\|tendon_force',
-                               '.*semimem.*\|normalized_fiber_length'])
-        return output
+        outputList = list()
+
+        for output in ['normalized_fiber_length', 'normalized_fiber_velocity', 
+                       'passive_fiber_force']:
+            for imusc in range(model.getMuscles().getSize()):
+                musc = model.updMuscles().get(imusc)
+                outputList.append(f'.*{musc.getName()}.*\|{output}')
+
+        outputs = osim.analyze(model, solution, outputList)
+
+        return outputs
 
     def run_inverse_problem(self, root_dir):
 
@@ -365,9 +386,9 @@ class MotionTrackingWalking(MocoPaperResult):
             weightList.append(('/jointset/ground_pelvis/pelvis_tilt/value', 0))
             weightList.append(('/jointset/ground_pelvis/pelvis_rotation/value', 0))
             weightList.append(('/jointset/hip_r/hip_rotation_r/value', 0))
-            # weightList.append(('/jointset/hip_r/hip_adduction_r/value', 0))
+            weightList.append(('/jointset/hip_r/hip_adduction_r/value', 0))
             weightList.append(('/jointset/hip_l/hip_rotation_l/value', 0))
-            # weightList.append(('/jointset/hip_l/hip_adduction_l/value', 0))
+            weightList.append(('/jointset/hip_l/hip_adduction_l/value', 0))
             # weightList.append(('/jointset/ankle_r/ankle_angle_r/value', 10))
             # weightList.append(('/jointset/ankle_l/ankle_angle_l/value', 10))
             for weight in weightList:
@@ -433,7 +454,12 @@ class MotionTrackingWalking(MocoPaperResult):
             for muscle in ['psoas', 'iliacus']:
                 for side in ['l', 'r']:
                     effort.setWeightForControl(
-                        '/forceset/%s_%s' % (muscle, side), 0.25)
+                        '/forceset/%s_%s' % (muscle, side), 0.5)
+
+            for residual in ['tilt', 'list', 'rotation', 'tx', 'ty', 'tz']:
+                effort.setWeightForControl(
+                        '/forceset/residual_pelvis_%s' % residual, 2)
+
 
         speedGoal = osim.MocoAverageSpeedGoal('speed')
         speedGoal.set_desired_average_speed(1.235)
@@ -890,9 +916,11 @@ class MotionTrackingWalking(MocoPaperResult):
                 print(f' max abs {column_labels[icol]}: {max}')
             muscle_mechanics = self.calc_muscle_mechanics(root_dir, config,
                                                           solution)
-            osim.STOFileAdapter.write(muscle_mechanics,
-                                      'results/tracking_walking_muscle_mechanics'
-                                      f'{config.name}.sto')
+
+            fpath = os.path.join(root_dir, 
+                    'results/tracking_walking_muscle_mechanics_'
+                   f'{config.name}.sto')
+            osim.STOFileAdapter.write(muscle_mechanics, fpath)
 
             # Generate joint moment breakdown.
             modelProcessor = self.create_model_processor(root_dir,
@@ -910,8 +938,6 @@ class MotionTrackingWalking(MocoPaperResult):
                                  'results/motion_tracking_walking_' +
                                  f'breakdown_{config.name}.png')
             fig.savefig(fpath, dpi=600)
-
-
 
         # Generate PDF report.
         # --------------------

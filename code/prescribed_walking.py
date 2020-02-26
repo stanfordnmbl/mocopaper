@@ -9,6 +9,7 @@ from moco_paper_result import MocoPaperResult
 
 import utilities
 
+dark = False
 
 class MotionPrescribedWalking(MocoPaperResult):
     def __init__(self):
@@ -386,18 +387,27 @@ class MotionPrescribedWalking(MocoPaperResult):
                     dpi=600)
 
 
-        fig = plt.figure(figsize=(7.5, 3.3))
-        gs = gridspec.GridSpec(3, 4, width_ratios=[0.8, 1, 1, 1])
+        # fig = plt.figure(figsize=(7.5, 3.3))
+        # gs = gridspec.GridSpec(3, 4, width_ratios=[0.8, 1, 1, 1])
+        #
+        # ax = fig.add_subplot(gs[0:3, 0])
+        # import cv2
+        # # Convert BGR color ordering to RGB.
+        # image = cv2.imread(
+        #     os.path.join(
+        #         root_dir,
+        #         'figures/motion_prescribed_walking_inverse_model.png'))[..., ::-1]
+        # ax.imshow(image)
+        # plt.axis('off')
 
-        ax = fig.add_subplot(gs[0:3, 0])
-        import cv2
-        # Convert BGR color ordering to RGB.
-        image = cv2.imread(os.path.join(root_dir,
-                                        'figures/motion_prescribed_walking_inverse_model.png'))[
-                ..., ::-1]
-        ax.imshow(image)
-        plt.axis('off')
-
+        suffix = 'white'
+        emgcolor = 'lightgray'
+        baselinecolor = 'black'
+        if dark:
+            plt.style.use('dark_background')
+            suffix = 'black'
+            emgcolor = 'dimgray'
+            baselinecolor = 'lightgray'
 
         muscles = [
             ((0, 0), 'glmax2', 'gluteus maximus', 'GMAX'),
@@ -413,7 +423,8 @@ class MotionPrescribedWalking(MocoPaperResult):
         ]
         legend_handles_and_labels = []
         for im, muscle in enumerate(muscles):
-            ax = plt.subplot(gs[muscle[0][0], muscle[0][1] + 1])
+            fig = plt.figure(figsize=(2.5, 1.4))
+            ax = fig.add_subplot(1, 1, 1)
             activation_path = f'/forceset/{muscle[1]}_{self.side}/activation'
             legend_musc = []
             # if self.cmc:
@@ -429,7 +440,7 @@ class MotionPrescribedWalking(MocoPaperResult):
                 inverse_activ = sol_inverse.getStateMat(activation_path)
                 handle, = self.plot(ax, time_inverse, inverse_activ,
                           label='MocoInverse',
-                          color='black',
+                          color=baselinecolor,
                           linewidth=2, zorder=2)
                 legend_musc.append((handle, 'MocoInverse'))
             if self.knee and self.inverse:
@@ -443,7 +454,7 @@ class MotionPrescribedWalking(MocoPaperResult):
                                    emg[muscle[3]] * np.max(inverse_activ),
                                    shift=False,
                                    fill=True,
-                                   color='lightgray',
+                                   color=emgcolor,
                                    label='electromyography')
                 legend_musc.append((handle,
                                     'electromyography (normalized; peak '
@@ -452,34 +463,37 @@ class MotionPrescribedWalking(MocoPaperResult):
                 legend_handles_and_labels = legend_musc
             ax.set_ylim(-0.05, 1)
             ax.set_xlim(0, 100)
-            if muscle[0][0] < 2:
-                ax.set_xticklabels([])
-            else:
-                ax.set_xlabel('time (% gait cycle)')
-            if muscle[0][1] == 0:
-                ax.set_ylabel('activation')
+            ax.set_xticks([0, 50, 100])
+            ax.set_xlabel('time (% gait cycle)')
+            ax.set_ylabel('activation')
+            ax.set_title(muscle[2])
 
-            title = f'  {muscle[2]}'
-            plt.text(0.5, 1.20, title,
-                     horizontalalignment='center',
-                     verticalalignment='top',
-                     transform=ax.transAxes)
+            # title = f'  {muscle[2]}'
+            # plt.text(0.5, 1.20, title,
+            #          horizontalalignment='center',
+            #          verticalalignment='top',
+            #          transform=ax.transAxes)
             ax.set_yticks([0, 1])
 
             utilities.publication_spines(ax)
+            fig.tight_layout()
+            fig.savefig(
+                os.path.join(root_dir,
+                             f'results/motion_prescribed_walking_{muscle[1]}_{suffix}.png'),
+                dpi=600)
 
         # if self.inverse and self.knee:
-        legend_handles, legend_labels = zip(*legend_handles_and_labels)
-        plt.figlegend(legend_handles, legend_labels,
-            frameon=False,
-            ncol=5,
-            loc='lower center',
-        )
-        fig.tight_layout(h_pad=1, rect=(0, 0.07, 1, 1), pad=0.4)
-
-        fig.savefig(
-            os.path.join(root_dir, 'figures/motion_prescribed_walking.png'),
-            dpi=600)
+        # legend_handles, legend_labels = zip(*legend_handles_and_labels)
+        # plt.figlegend(legend_handles, legend_labels,
+        #     frameon=False,
+        #     ncol=5,
+        #     loc='lower center',
+        # )
+        # fig.tight_layout(h_pad=1, rect=(0, 0.07, 1, 1), pad=0.4)
+        #
+        # fig.savefig(
+        #     os.path.join(root_dir, 'figures/motion_prescribed_walking.png'),
+        #     dpi=600)
 
         if self.cmc and self.inverse:
             mocosol_cmc = sol_inverse.clone()
@@ -532,8 +546,10 @@ class MotionPrescribedWalking(MocoPaperResult):
                       'inverse_jr_max_reserve.txt'), 'w') as f:
                 f.write(f'{max_res_inverse_jr:.3f}')
 
-            maxjr_inverse = self.calc_max_knee_reaction_force(root_dir, sol_inverse)
-            maxjr_inverse_jr = self.calc_max_knee_reaction_force(root_dir, sol_inverse_jointreaction)
+            maxjr_inverse = self.calc_max_knee_reaction_force(
+                root_dir, sol_inverse)
+            maxjr_inverse_jr = self.calc_max_knee_reaction_force(
+                root_dir, sol_inverse_jointreaction)
             print(f'Max joint reaction {maxjr_inverse} -> {maxjr_inverse_jr}')
             with open(os.path.join(root_dir, 'results/motion_prescribed_walking_'
                       'inverse_maxjr.txt'), 'w') as f:
@@ -541,6 +557,27 @@ class MotionPrescribedWalking(MocoPaperResult):
             with open(os.path.join(root_dir, 'results/motion_prescribed_walking_'
                       'inverse_jr_maxjr.txt'), 'w') as f:
                 f.write(f'{maxjr_inverse_jr:.1f}')
+
+            fig = plt.figure(figsize=(1.5, 3))
+            ax = fig.add_subplot(1, 1, 1)
+            ax.bar([0, 1], [maxjr_inverse, maxjr_inverse_jr],
+                   color=baselinecolor)
+            ax.set_xticks([0, 1])
+            ax.set_xticklabels(['effort', 'effort\n+\nknee force'])
+            ax.set_title('peak knee contact force\n(in body weights)')
+            ax.text(0, maxjr_inverse - 0.3, f'{maxjr_inverse:.1f}',
+                    horizontalalignment='center',
+                    verticalalignment='top',
+                    color='black')
+            ax.text(1, maxjr_inverse_jr - 0.3, f'{maxjr_inverse_jr:.1f}',
+                    horizontalalignment='center',
+                    verticalalignment='top',
+                    color='black')
+            ax.axes.get_yaxis().set_visible(False)
+            ax.spines['left'].set_visible(False)
+            utilities.publication_spines(ax)
+            fig.tight_layout()
+            fig.savefig('motion_prescribed_walking_jointreaction.png', dpi=600)
 
         if self.inverse:
             states = sol_inverse.exportToStatesTrajectory(model)
@@ -554,7 +591,9 @@ class MotionPrescribedWalking(MocoPaperResult):
             report.generate()
 
         if self.knee and self.inverse:
-            report = osim.report.Report(model,
-                                        mocoinverse_jr_solution_file % root_dir)
+            report = osim.report.Report(
+                model,
+                mocoinverse_jr_solution_file % root_dir,
+                ref_files=[self.mocoinverse_solution_file % root_dir])
             report.generate()
 

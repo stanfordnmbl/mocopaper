@@ -42,7 +42,7 @@ class MocoTrackConfig:
         self.flags = flags
         self.breakdown_coordact_paths = breakdown_coordact_paths
 
-dark = False
+dark = True
 
 class MotionTrackingWalking(MocoPaperResult):
     def __init__(self):
@@ -57,11 +57,11 @@ class MotionTrackingWalking(MocoPaperResult):
             'results/motion_tracking_walking_solution'
         self.cmap = 'nipy_spectral'
         self.configs = [
-            MocoTrackConfig(name='healthy',
-                            legend_entry='healthy',
-                            tracking_weight=5,
-                            effort_weight=10,
-                            cmap_index=0.4),
+            # MocoTrackConfig(name='healthy',
+            #                 legend_entry='healthy',
+            #                 tracking_weight=5,
+            #                 effort_weight=10,
+            #                 cmap_index=0.4),
             # MocoTrackConfig(name='effort',
             #                 legend_entry='effort',
             #                 tracking_weight=0.01,
@@ -987,9 +987,9 @@ class MotionTrackingWalking(MocoPaperResult):
             emgcolor = 'dimgray'
         fig = plt.figure(figsize=(2.5, 2.2))
         ax_hip = fig.add_subplot(1, 1, 1)
-        ax_hip.plot(pgc_coords,
-                    coordinates['hip_flexion_l'][coords_start:coords_end],
-                    color=expcolor, lw=lw + 1.0)
+        # ax_hip.plot(pgc_coords,
+        #             coordinates['hip_flexion_l'][coords_start:coords_end],
+        #             color=expcolor, lw=lw + 1.0)
         rad2deg = 180 / np.pi
         suffix = ''
         for i, config in enumerate(self.configs):
@@ -1023,9 +1023,9 @@ class MotionTrackingWalking(MocoPaperResult):
 
         fig = plt.figure(figsize=(2.5, 2.2))
         ax_ankle = fig.add_subplot(1, 1, 1)
-        ax_ankle.plot(pgc_coords,
-                      coordinates['ankle_angle_l'][coords_start:coords_end],
-                      color=expcolor, lw=lw + 1.0)
+        # ax_ankle.plot(pgc_coords,
+        #               coordinates['ankle_angle_l'][coords_start:coords_end],
+        #               color=expcolor, lw=lw + 1.0)
         for i, config in enumerate(self.configs):
             color = cmap(config.cmap_index)
             full_path = self.get_solution_path_fullcycle(root_dir, config)
@@ -1077,11 +1077,11 @@ class MotionTrackingWalking(MocoPaperResult):
 
                 # electromyography data
                 # TODO: do not assume we want to normalize EMG via simulation 0.
-                if i == 0 and 'PSOAS' not in muscle:
-                    self.plot(ax, emg['time'],
-                              emg[muscle[2]] * np.max(activation), shift=False,
-                              fill=True, color=emgcolor,
-                              label='electromyography')
+                # if i == 0 and 'PSOAS' not in muscle:
+                #     self.plot(ax, emg['time'],
+                #               emg[muscle[2]] * np.max(activation), shift=False,
+                #               fill=True, color=emgcolor,
+                #               label='electromyography')
                 ax.set_ylim(0, 1)
                 ax.set_yticks([0, 1])
                 ax.set_xlim(0, 100)

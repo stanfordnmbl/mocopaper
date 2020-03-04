@@ -20,10 +20,13 @@ from utilities import plot_joint_moment_breakdown
 # TODO: use visualize_trajectory.py to comopare kinematics, programmatically.
 #       add skinning through a bunch of markers added to the model? a
 #       python algorithm for smoothing the path through these markers?
+# TODO take out all residuals.
 
 # TODO: add MocoFrameDistanceConstraint direction.
 # TODO: increase value of pelvis_ty in initial guess.
 # TODO: after a few days, add net joint moment tracking.
+
+# TODO: choose passive fiber stiffness based on Adrian Lai's paper?
 
 class MocoTrackConfig:
     def __init__(self, name, legend_entry, tracking_weight, effort_weight,
@@ -64,9 +67,15 @@ class MotionTrackingWalking(MocoPaperResult):
             #                 tracking_weight=0.01,
             #                 effort_weight=10,
             #                 cmap_index=0.9),
+            MocoTrackConfig(name='weakhipabd',
+                            legend_entry='weak hip abductors',
+                            tracking_weight=10,
+                            effort_weight=1,
+                            cmap_index=0.5,
+                            flags=['weakhipabd']),
             # MocoTrackConfig(name='trendelenburg',
             #                 legend_entry='trendelenburg',
-            #                 tracking_weight=0.5,
+            #                 tracking_weight=10,
             #                 effort_weight=1,
             #                 cmap_index=0.9,
             #                 flags=['trendelenburg']),
@@ -82,12 +91,12 @@ class MotionTrackingWalking(MocoPaperResult):
             #                 effort_weight=1,
             #                 cmap_index=0.2,
             #                 flags=['weakvasti']),
-            # MocoTrackConfig(name='weakpfs',
-            #                 legend_entry='weak pfs',
-            #                 tracking_weight=0.5,
-            #                 effort_weight=1,
-            #                 cmap_index=0.9,
-            #                 flags=['weakpfs']),
+            MocoTrackConfig(name='weakpfs',
+                            legend_entry='weak pfs',
+                            tracking_weight=10,
+                            effort_weight=1,
+                            cmap_index=0.9,
+                            flags=['weakpfs']),
             # MocoTrackConfig(name='weaksoleus',
             #                 legend_entry='weak soleus',
             #                 tracking_weight=1,
@@ -153,18 +162,19 @@ class MotionTrackingWalking(MocoPaperResult):
         add_reserve(model, 'lumbar_bending', 50, 1)
         add_reserve(model, 'lumbar_rotation', 50, 1)
         add_reserve(model, 'arm_flex_r', 15, 1)
-        add_reserve(model, 'arm_add_r', 10, 1)
-        add_reserve(model, 'arm_rot_r', 5, 1)
-        add_reserve(model, 'elbow_flex_r', 5, 1)
+        add_reserve(model, 'arm_add_r', 15, 1)
+        add_reserve(model, 'arm_rot_r', 15, 1)
+        add_reserve(model, 'elbow_flex_r', 15, 1)
         add_reserve(model, 'pro_sup_r', 1, 1)
         add_reserve(model, 'arm_flex_l', 15, 1)
-        add_reserve(model, 'arm_add_l', 10, 1)
-        add_reserve(model, 'arm_rot_l', 5, 1)
-        add_reserve(model, 'elbow_flex_l', 5, 1)
+        add_reserve(model, 'arm_add_l', 15, 1)
+        add_reserve(model, 'arm_rot_l', 15, 1)
+        add_reserve(model, 'elbow_flex_l', 15, 1)
         add_reserve(model, 'pro_sup_l', 1, 1)
         # Lower extremity
         reserves_max = 250 if for_inverse else 1
-        residuals_max = 250 if for_inverse else 50
+        residuals_max_high = 250 if for_inverse else 50
+        residuals_max = 250 if for_inverse else 1
         optimal_force = 1
         add_reserve(model, 'pelvis_tilt', optimal_force, residuals_max)
         add_reserve(model, 'pelvis_list', optimal_force, residuals_max)
@@ -223,6 +233,13 @@ class MotionTrackingWalking(MocoPaperResult):
                     'addmagIsch', 'addmagMid', 'addmagProx', 'iliacus', 'psoas',
                     'piri', 'grac', 'bflh', 'recfem', 'sart', 'semimem', 
                     'semiten', 'tfl']:
+                for side in ['_l', '_r']:
+                    musc = model.updMuscles().get('%s%s' % (muscle, side))
+                    musc.set_max_isometric_force(
+                        0.10 * musc.get_max_isometric_force())
+        if 'weakhipabd' in flags:
+            for muscle in ['glmed1', 'glmed2', 'glmed3', 'glmin1', 'glmin2',
+                           'glmin3', 'tfl']:
                 for side in ['_l', '_r']:
                     musc = model.updMuscles().get('%s%s' % (muscle, side))
                     musc.set_max_isometric_force(
@@ -459,9 +476,9 @@ class MotionTrackingWalking(MocoPaperResult):
                     effort.setWeightForControl(
                         '/forceset/%s_%s' % (muscle, side), 0.5)
 
-            for residual in ['tilt', 'list', 'rotation', 'tx', 'ty', 'tz']:
-                effort.setWeightForControl(
-                        '/forceset/residual_pelvis_%s' % residual, 2)
+            # for residual in ['tilt', 'list', 'rotation', 'tx', 'ty', 'tz']:
+            #     effort.setWeightForControl(
+            #             '/forceset/residual_pelvis_%s' % residual, 2)
 
 
         speedGoal = osim.MocoAverageSpeedGoal('speed')

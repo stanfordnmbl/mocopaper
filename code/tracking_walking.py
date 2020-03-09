@@ -142,13 +142,13 @@ class MotionTrackingWalking(MocoPaperResult):
                     radius = force.get_contact_sphere_radius()
                     scale = 1
                     if 'Heel' in force.getName():
-                        scale = 0.9
+                        scale = 1.0
                     elif 'Rearfoot' in force.getName():
-                        scale = 0.8
+                        scale = 0.9
                     elif 'Midfoot' in force.getName():
-                        scale = 0.6
+                        scale = 0.7
                     elif 'Toe' in force.getName():
-                        scale = 0.4
+                        scale = 0.5
 
                     force.set_contact_sphere_radius(scale * radius)
                     print(f'  --> modified contact element {force.getName()}'

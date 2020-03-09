@@ -25,6 +25,8 @@ from utilities import plot_joint_moment_breakdown
 # TODO: increase value of pelvis_ty in initial guess.
 # TODO: after a few days, add net joint moment tracking.
 
+# TODO: choose passive fiber stiffness based on Adrian Lai's paper?
+
 class MocoTrackConfig:
     def __init__(self, name, legend_entry, tracking_weight, effort_weight,
                  cmap_index, flags=[]):
@@ -70,9 +72,15 @@ class MotionTrackingWalking(MocoPaperResult):
             #                 tracking_weight=0.01,
             #                 effort_weight=10,
             #                 cmap_index=0.9),
+            MocoTrackConfig(name='weakhipabd',
+                            legend_entry='weak hip abductors',
+                            tracking_weight=10,
+                            effort_weight=1,
+                            cmap_index=0.5,
+                            flags=['weakhipabd']),
             # MocoTrackConfig(name='trendelenburg',
             #                 legend_entry='trendelenburg',
-            #                 tracking_weight=0.5,
+            #                 tracking_weight=10,
             #                 effort_weight=1,
             #                 cmap_index=0.9,
             #                 flags=['trendelenburg']),
@@ -88,12 +96,12 @@ class MotionTrackingWalking(MocoPaperResult):
             #                 effort_weight=1,
             #                 cmap_index=0.2,
             #                 flags=['weakvasti']),
-            # MocoTrackConfig(name='weakpfs',
-            #                 legend_entry='weak pfs',
-            #                 tracking_weight=0.5,
-            #                 effort_weight=1,
-            #                 cmap_index=0.9,
-            #                 flags=['weakpfs']),
+            MocoTrackConfig(name='weakpfs',
+                            legend_entry='weak pfs',
+                            tracking_weight=10,
+                            effort_weight=1,
+                            cmap_index=0.9,
+                            flags=['weakpfs']),
             # MocoTrackConfig(name='weaksoleus',
             #                 legend_entry='weak soleus',
             #                 tracking_weight=1,
@@ -177,12 +185,12 @@ class MotionTrackingWalking(MocoPaperResult):
         add_reserve(model, 'arm_add_r', 15, 1)
         add_reserve(model, 'arm_rot_r', 15, 1)
         add_reserve(model, 'elbow_flex_r', 15, 1)
-        add_reserve(model, 'pro_sup_r', 15, 1)
+        add_reserve(model, 'pro_sup_r', 1, 1)
         add_reserve(model, 'arm_flex_l', 15, 1)
         add_reserve(model, 'arm_add_l', 15, 1)
         add_reserve(model, 'arm_rot_l', 15, 1)
         add_reserve(model, 'elbow_flex_l', 15, 1)
-        add_reserve(model, 'pro_sup_l', 15, 1)
+        add_reserve(model, 'pro_sup_l', 1, 1)
         # Lower extremity
         optimal_force = 1
         if for_inverse:
@@ -245,6 +253,13 @@ class MotionTrackingWalking(MocoPaperResult):
                     'addmagIsch', 'addmagMid', 'addmagProx', 'iliacus', 'psoas',
                     'piri', 'grac', 'bflh', 'recfem', 'sart', 'semimem', 
                     'semiten', 'tfl']:
+                for side in ['_l', '_r']:
+                    musc = model.updMuscles().get('%s%s' % (muscle, side))
+                    musc.set_max_isometric_force(
+                        0.10 * musc.get_max_isometric_force())
+        if 'weakhipabd' in flags:
+            for muscle in ['glmed1', 'glmed2', 'glmed3', 'glmin1', 'glmin2',
+                           'glmin3', 'tfl']:
                 for side in ['_l', '_r']:
                     musc = model.updMuscles().get('%s%s' % (muscle, side))
                     musc.set_max_isometric_force(

@@ -575,6 +575,7 @@ class MotionTrackingWalking(MocoPaperResult):
                 symmetry.addNegatedStatePair(osim.MocoPeriodicityGoalPair(
                     coordSpeed))
             elif coordName.endswith('_rotation'):
+                # pelvis_rotation and lumbar_rotation.
                 symmetry.addNegatedStatePair(osim.MocoPeriodicityGoalPair(
                     coordValue))
                 symmetry.addNegatedStatePair(osim.MocoPeriodicityGoalPair(
@@ -683,13 +684,11 @@ class MotionTrackingWalking(MocoPaperResult):
         addPatterns = [".*pelvis_tx/value"]
         negatePatterns = [".*pelvis_list(?!/value).*",
                           ".*pelvis_rotation.*",
-                          # ".*pelvis_tilt(?!/value).*",
                           ".*pelvis_tz(?!/value).*",
                           ".*lumbar_bending(?!/value).*",
                           ".*lumbar_rotation.*"]
         negateAndShiftPatterns = [".*pelvis_list/value",
                                   ".*pelvis_tz/value",
-                                  # ".*pelvis_tilt/value",
                                   ".*lumbar_bending/value"]
         fullTraj = osim.createPeriodicTrajectory(solution, addPatterns,
             negatePatterns, negateAndShiftPatterns)

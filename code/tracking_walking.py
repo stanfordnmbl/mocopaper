@@ -56,12 +56,12 @@ class MotionTrackingWalking(MocoPaperResult):
                             tracking_weight=10,
                             effort_weight=0.0001,
                             cmap_index=0.95,
-                            flags=['torque_driven'])
-            # MocoTrackConfig(name='track',
-            #                 legend_entry='track',
-            #                 tracking_weight=10,
-            #                 effort_weight=1,
-            #                 cmap_index=0.2),
+                            flags=['torque_driven']),
+            MocoTrackConfig(name='track',
+                            legend_entry='track',
+                            tracking_weight=10,
+                            effort_weight=10,
+                            cmap_index=0.2),
             # MocoTrackConfig(name='trackeffort',
             #                 legend_entry='track\n+\neffort',
             #                 tracking_weight=0.5,
@@ -75,7 +75,7 @@ class MotionTrackingWalking(MocoPaperResult):
             MocoTrackConfig(name='weakhipabd',
                             legend_entry='weak hip abductors',
                             tracking_weight=10,
-                            effort_weight=1,
+                            effort_weight=10,
                             cmap_index=0.5,
                             flags=['weakhipabd']),
             # MocoTrackConfig(name='trendelenburg',
@@ -99,7 +99,7 @@ class MotionTrackingWalking(MocoPaperResult):
             MocoTrackConfig(name='weakpfs',
                             legend_entry='weak pfs',
                             tracking_weight=10,
-                            effort_weight=1,
+                            effort_weight=10,
                             cmap_index=0.9,
                             flags=['weakpfs']),
             # MocoTrackConfig(name='weaksoleus',
@@ -181,16 +181,12 @@ class MotionTrackingWalking(MocoPaperResult):
         add_reserve(model, 'lumbar_extension', 50, 1)
         add_reserve(model, 'lumbar_bending', 50, 1)
         add_reserve(model, 'lumbar_rotation', 50, 1)
-        add_reserve(model, 'arm_flex_r', 15, 1)
-        add_reserve(model, 'arm_add_r', 15, 1)
-        add_reserve(model, 'arm_rot_r', 15, 1)
-        add_reserve(model, 'elbow_flex_r', 15, 1)
-        add_reserve(model, 'pro_sup_r', 1, 1)
-        add_reserve(model, 'arm_flex_l', 15, 1)
-        add_reserve(model, 'arm_add_l', 15, 1)
-        add_reserve(model, 'arm_rot_l', 15, 1)
-        add_reserve(model, 'elbow_flex_l', 15, 1)
-        add_reserve(model, 'pro_sup_l', 1, 1)
+        for side in ['_l', '_r']:
+            add_reserve(model, f'arm_flex{side}', 15, 1)
+            add_reserve(model, f'arm_add{side}', 15, 1)
+            add_reserve(model, f'arm_rot{side}', 5, 1)
+            add_reserve(model, f'elbow_flex{side}', 5, 1)
+            add_reserve(model, f'pro_sup{side}', 1, 1)
         # Lower extremity
         optimal_force = 1
         if for_inverse:
@@ -731,13 +727,35 @@ class MotionTrackingWalking(MocoPaperResult):
     def report_results(self, root_dir, args):
         self.parse_args(args)
 
-        modelProcessor = self.create_model_processor(root_dir, 
-            config=self.configs[0])
+        modelProcessor = self.create_model_processor(root_dir)
         model = modelProcessor.process()
         state = model.initSystem()
         mass = model.getTotalMass(state)
         gravity = model.getGravity()
         BW = mass*abs(gravity[1])
+
+        # Plot passive joint moments.
+        plotPassiveJointMoments = False
+        if plotPassiveJointMoments:
+            print('Plotting passive joint moments...')
+            coordinatesProc = osim.TableProcessor(
+                os.path.join(root_dir, 'resources',
+                             'Rajagopal2016', 'coordinates.mot'))
+            coords = [
+                '/jointset/hip_l/hip_flexion_l',
+                '/jointset/walker_knee_l/knee_angle_l',
+                '/jointset/ankle_l/ankle_angle_l'
+            ]
+
+            from utilities import plot_passive_joint_moments
+            fig = plot_passive_joint_moments(model,
+                                             coordinatesProc.process(model),
+                                             coords)
+            fpath = os.path.join(root_dir,
+                                 'results/motion_tracking_walking_' +
+                                 'passive_joint_moments.png')
+            fig.savefig(fpath, dpi=600)
+            return
 
         if self.visualize:
             for config in self.configs:
@@ -1008,8 +1026,7 @@ class MotionTrackingWalking(MocoPaperResult):
                 '/jointset/walker_knee_l/knee_angle_l',
                 '/jointset/ankle_l/ankle_angle_l'
             ]
-            fig = plot_joint_moment_breakdown(model, solution,
-                                              coords)
+            fig = plot_joint_moment_breakdown(model, solution, coords)
             fpath = os.path.join(root_dir,
                                  'results/motion_tracking_walking_' +
                                  f'breakdown_{config.name}.png')

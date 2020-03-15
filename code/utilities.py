@@ -337,6 +337,123 @@ def plot_joint_moment_breakdown(model, moco_traj,
     fig.tight_layout()
     return fig
 
+def plot_passive_joint_moments(model, coord_table,
+                               coord_paths, muscle_paths=None):
+    model.initSystem()
+    # for muscle in model.getMuscleList():
+    #     muscle.set_ignore_tendon_compliance(True)
+    # model.initSystem()
+
+    num_coords = len(coord_paths)
+
+    if not muscle_paths:
+        muscle_paths = list()
+        for muscle in model.getMuscleList():
+            muscle_paths.append(muscle.getAbsolutePathString())
+    num_muscles = len(muscle_paths)
+
+    labels = list(coord_table.getColumnLabels())
+    import re
+    for ilabel in range(len(labels)):
+        labels[ilabel] = labels[ilabel].replace('/value', '')
+        labels[ilabel] = re.sub('/jointset/(.*?)/', '', labels[ilabel])
+    coord_table.setColumnLabels(labels)
+    storage = osim.convertTableToStorage(coord_table)
+    # TODO: There's a bug in converting column labels in
+    # convertTableToStorage().
+    stolabels = osim.ArrayStr()
+    stolabels.append('time')
+    for label in labels:
+        stolabels.append(label)
+    storage.setColumnLabels(stolabels)
+
+    net_joint_moments = None
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        id_tool = osim.InverseDynamicsTool()
+        modelID = osim.Model(model)
+        id_tool.setModel(modelID)
+        id_tool.setCoordinateValues(storage)
+        id_tool.setLowpassCutoffFrequency(6)
+        # id_tool.setExternalLoadsFileName(extloads_fpath)
+        excludedForces = osim.ArrayStr()
+        excludedForces.append('ACTUATORS')
+        id_tool.setExcludedForces(excludedForces)
+        id_result = 'joint_moment_breakdown_residuals.sto'
+        id_tool.setResultsDir(tmpdirname)
+        id_tool.setOutputGenForceFileName(id_result)
+        # TODO: Remove muscles from the model?
+        id_tool.run()
+
+        net_joint_moments = osim.TimeSeriesTable(
+            os.path.join(tmpdirname, id_result))
+
+    time = coord_table.getIndependentColumn()
+
+    states_traj = osim.StatesTrajectory.createFromStatesStorage(model, storage,
+                                                                True, True,
+                                                                True)
+
+    # TODO for models without activation dynamics, we must prescribeControlsToModel().
+
+    fig = pl.figure(figsize=(8.5, 11))
+    tendon_forces = np.empty((len(time), num_muscles))
+    for imusc, muscle_path in enumerate(muscle_paths):
+        muscle = model.getComponent(muscle_path)
+        for itime in range(len(time)):
+            state = states_traj.get(itime)
+            state.updU().setToZero()
+            muscle.setActivation(state, 0.01)
+            model.realizeVelocity(state)
+            muscle.computeEquilibrium(state)
+            model.realizeDynamics(state)
+            tendon_forces[itime, imusc] = muscle.getTendonForce(state)
+
+    for icoord, coord_path in enumerate(coord_paths):
+        coord = model.getComponent(coord_path)
+
+        label = os.path.split(coord_path)[-1] + '_moment'
+        net_moment = toarray(net_joint_moments.getDependentColumn(label))
+
+        moment_arms = np.empty((len(time), num_muscles))
+        for imusc, muscle_path in enumerate(muscle_paths):
+            muscle = model.getComponent(muscle_path)
+            for itime in range(len(time)):
+                state = states_traj.get(itime)
+                moment_arms[itime, imusc] = \
+                    muscle.computeMomentArm(state, coord)
+
+        ax = fig.add_subplot(num_coords, 1, icoord + 1)
+        # net_integ = np.trapz(np.abs(net_moment), x=time)
+        sum_actuators_shown = np.zeros_like(time)
+        for imusc, muscle_path in enumerate(muscle_paths):
+            if np.any(moment_arms[:, imusc]) > 0.00001:
+                this_moment = tendon_forces[:, imusc] * moment_arms[:, imusc]
+                mom_integ = np.trapz(np.abs(this_moment), time)
+                if mom_integ > 0.5:
+                    ax.plot(time, this_moment, label=muscle_path)
+
+                    sum_actuators_shown += this_moment
+
+        ax.plot(time, sum_actuators_shown,
+                label='sum actuators shown', color='gray', linewidth=2)
+
+        time_net = np.array(net_joint_moments.getIndependentColumn())
+        filter = (time_net > time[0]) & (time_net < time[-1])
+        # ax.plot(time_net[filter], net_moment[filter],
+        #         label='net', color='black', linewidth=2)
+
+        ax.set_title(coord_path)
+        ax.set_ylabel('moment (N-m)')
+        ax.legend(frameon=False, bbox_to_anchor=(1, 1),
+                  loc='upper left', ncol=2)
+        ax.tick_params(axis='both')
+        ax.set_xlim([time[0], time[-1]])
+    ax.set_xlabel('time (% gait cycle)')
+
+    fig.tight_layout()
+    return fig
+
 class ANCFile(object):
     """A plain-text file format for storing analog data from Motion Analysis
     Realtime. They have a file extension '.anc'. The file extension '.anb' is

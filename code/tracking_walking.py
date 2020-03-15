@@ -765,7 +765,7 @@ class MotionTrackingWalking(MocoPaperResult):
 
         self.plot_paper_figure(root_dir, BW)
 
-        emg = self.load_electromyography(root_dir, BW)
+        emg = self.load_electromyography(root_dir)
 
         fig = plt.figure(figsize=(7.5, 7))
         gs = gridspec.GridSpec(36, 3)

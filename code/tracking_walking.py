@@ -11,6 +11,7 @@ from moco_paper_result import MocoPaperResult
 
 import utilities
 from utilities import plot_joint_moment_breakdown
+from utilities import toarray
 
 # TODO: try different foot spacing
 # TODO: fix oscillations in GRFz.
@@ -764,6 +765,7 @@ class MotionTrackingWalking(MocoPaperResult):
                 osim.visualize(model, solution.exportToStatesTable())
 
         self.plot_paper_figure(root_dir, BW)
+        return # TODO
 
         emg = self.load_electromyography(root_dir)
 
@@ -847,6 +849,7 @@ class MotionTrackingWalking(MocoPaperResult):
             color = cmap(config.cmap_index)
             full_path = self.get_solution_path_fullcycle(root_dir, config)
             full_traj = osim.MocoTrajectory(full_path)
+
 
             sol_path = self.get_solution_path(root_dir, config)
             sol_table = osim.TimeSeriesTable(sol_path)
@@ -981,8 +984,7 @@ class MotionTrackingWalking(MocoPaperResult):
 
         # fig.tight_layout()
         fig.subplots_adjust(left=0.07, right=0.97, top=0.94, bottom=0.065,
-                            hspace=200,
-                            wspace=0.5)
+                            hspace=200, wspace=0.5)
         fig.savefig(os.path.join(root_dir,
                 'results/motion_tracking_walking_details.png'), dpi=600)
 
@@ -1060,6 +1062,7 @@ class MotionTrackingWalking(MocoPaperResult):
 
         fig = plt.figure(figsize=(7.5, 7))
         gs = gridspec.GridSpec(36, 3)
+        ax_TODO = fig.add_subplot(gs[0:12, 0])
         ax_grf_x = fig.add_subplot(gs[12:20, 0])
         ax_grf_y = fig.add_subplot(gs[20:28, 0])
         ax_grf_z = fig.add_subplot(gs[28:36, 0])
@@ -1068,6 +1071,7 @@ class MotionTrackingWalking(MocoPaperResult):
         ax_knee = fig.add_subplot(gs[18:27, 1])
         ax_ankle = fig.add_subplot(gs[27:36, 1])
         ax_list = list()
+        ax_list.append(ax_TODO)
         ax_list.append(ax_grf_x)
         ax_list.append(ax_grf_y)
         ax_list.append(ax_grf_z)
@@ -1090,26 +1094,25 @@ class MotionTrackingWalking(MocoPaperResult):
         title_fs = 10
         lw = 2.5
 
-        # experimental stride time
-        # ax_time.bar(0, self.final_time - self.initial_time, color='black')
-
         # experimental ground reactions
-        grf_table = self.load_table(os.path.join(root_dir,
-                                                 'resources', 'Rajagopal2016', 'grf_walk.mot'))
+        grf_table = self.load_table(
+            os.path.join(root_dir,
+                         'resources', 'Rajagopal2016', 'grf_walk.mot'))
         grf_start = np.argmin(abs(grf_table['time']-self.initial_time))
         grf_end = np.argmin(abs(grf_table['time']-self.final_time))
 
         time_grfs = grf_table['time'][grf_start:grf_end]
         pgc_grfs = np.linspace(0, 100, len(time_grfs))
+        exp_color = 'lightgray'
         ax_grf_x.plot(pgc_grfs,
                       grf_table['ground_force_l_vx'][grf_start:grf_end]/BW,
-                      color='black', lw=lw+1.0)
+                      color=exp_color, lw=lw+1.0)
         ax_grf_y.plot(pgc_grfs,
                       grf_table['ground_force_l_vy'][grf_start:grf_end]/BW,
-                      color='black', lw=lw+1.0)
+                      color=exp_color, lw=lw+1.0)
         ax_grf_z.plot(pgc_grfs,
                       grf_table['ground_force_l_vz'][grf_start:grf_end]/BW,
-                      color='black', lw=lw+1.0)
+                      color=exp_color, lw=lw+1.0)
 
         # experimental coordinates
         coordinates = self.load_table(os.path.join(root_dir, 'resources',
@@ -1121,47 +1124,62 @@ class MotionTrackingWalking(MocoPaperResult):
         pgc_coords = np.linspace(0, 100, len(time_coords))
         ax_add.plot(pgc_coords,
                     coordinates['hip_adduction_l'][coords_start:coords_end],
-                    color='black', lw=lw + 1.0)
+                    color=exp_color, lw=lw + 1.0)
         ax_hip.plot(pgc_coords,
                     coordinates['hip_flexion_l'][coords_start:coords_end],
-                    color='black', lw=lw + 1.0)
+                    color=exp_color, lw=lw + 1.0)
         ax_knee.plot(pgc_coords,
                      coordinates['knee_angle_l'][coords_start:coords_end],
-                     color='black', lw=lw + 1.0)
+                     color=exp_color, lw=lw + 1.0)
         ax_ankle.plot(pgc_coords,
                       coordinates['ankle_angle_l'][coords_start:coords_end],
-                      color='black', lw=lw + 1.0)
+                      color=exp_color, lw=lw + 1.0)
+
+
 
         # simulation results
-        for i, config in enumerate([self.configs[1]]):
+        for i, config in enumerate(self.configs):
             color = cmap(config.cmap_index)
             full_path = self.get_solution_path_fullcycle(root_dir, config)
             full_traj = osim.MocoTrajectory(full_path)
 
-            sol_path = self.get_solution_path(root_dir, config)
-            sol_table = osim.TimeSeriesTable(sol_path)
-            if self.coordinate_tracking:
-                trackingCostStr = \
-                    sol_table.getTableMetaDataString('objective_state_tracking')
-            else:
-                trackingCostStr = \
-                    sol_table.getTableMetaDataString(
-                        'objective_marker_tracking')
-            trackingCost = float(trackingCostStr) / config.tracking_weight
+            modelProcessor = self.create_model_processor(root_dir,
+                                                         for_inverse=False,
+                                                         config=config)
+            model = modelProcessor.process()
+            netgenforce = utilities.calc_net_generalized_forces(model,
+                                                                full_traj)
 
-            effortCost = 0
-            if config.effort_weight:
-                effortCostStr = \
-                    sol_table.getTableMetaDataString('objective_control_effort')
-                effortCost = float(effortCostStr) / config.effort_weight
-            print(f'effort and tracking costs (config: {config.name}): ',
-                  effortCost, trackingCost)
+            # sol_path = self.get_solution_path(root_dir, config)
+            # sol_table = osim.TimeSeriesTable(sol_path)
+            #
+            #
+            # if self.coordinate_tracking:
+            #     trackingCostStr = \
+            #         sol_table.getTableMetaDataString('objective_state_tracking')
+            # else:
+            #     trackingCostStr = \
+            #         sol_table.getTableMetaDataString(
+            #             'objective_marker_tracking')
+            # trackingCost = float(trackingCostStr) / config.tracking_weight
+
+            # effortCost = 0
+            # if config.effort_weight:
+            #     effortCostStr = \
+            #         sol_table.getTableMetaDataString('objective_control_effort')
+            #     effortCost = float(effortCostStr) / config.effort_weight
+            # print(f'effort and tracking costs (config: {config.name}): ',
+            #       effortCost, trackingCost)
 
             grf_path = self.get_solution_path_grfs(root_dir, config)
             grf_table = self.load_table(grf_path)
 
             time = full_traj.getTimeMat()
             pgc = np.linspace(0, 100, len(time))
+
+            ax_TODO.plot(pgc,
+                         toarray(netgenforce.getDependentColumn('ankle_angle_l_moment')),
+                         color=color, lw=lw)
 
             # ground reaction forces
             ax_grf_x.plot(pgc, grf_table['ground_force_l_vx']/BW, color=color,

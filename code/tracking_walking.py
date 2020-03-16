@@ -148,7 +148,7 @@ class MotionTrackingWalking(MocoPaperResult):
                         contactsRemoved += 1
                         break
         else:
-            stiffnessMod = 1
+            stiffnessMod = 1.0
             print(f'Modifying contact element stiffnesses by '
                   f'factor {stiffnessMod} and radii...')
             for actu in model.getComponentsList():
@@ -158,9 +158,9 @@ class MotionTrackingWalking(MocoPaperResult):
                     radius = force.get_contact_sphere_radius()
                     scale = 1
                     if 'Heel' in force.getName():
-                        scale = 1.0
+                        scale = 1
                     elif 'Rearfoot' in force.getName():
-                        scale = 0.9
+                        scale = 0.8
                     elif 'Midfoot' in force.getName():
                         scale = 0.7
                     elif 'Toe' in force.getName():
@@ -186,7 +186,7 @@ class MotionTrackingWalking(MocoPaperResult):
             model.addForce(actu)
 
         # Upper extremity
-        add_reserve(model, 'lumbar_extension', 50, 1)
+        add_reserve(model, 'lumbar_extension', 100, 1)
         add_reserve(model, 'lumbar_bending', 50, 1)
         add_reserve(model, 'lumbar_rotation', 50, 1)
         for side in ['_l', '_r']:
@@ -205,7 +205,7 @@ class MotionTrackingWalking(MocoPaperResult):
             add_reserve(model, 'pelvis_tilt', optimal_force, residuals_max)
             add_reserve(model, 'pelvis_list', optimal_force, residuals_max)
             add_reserve(model, 'pelvis_rotation', optimal_force, residuals_max)
-        reserves_max = 250 if for_inverse or torque_driven else 1
+        reserves_max = 250 #`if for_inverse or torque_driven else 1
         add_reserve(model, 'hip_flexion_r', optimal_force, reserves_max)
         add_reserve(model, 'knee_angle_r', optimal_force, reserves_max)
         add_reserve(model, 'ankle_angle_r', optimal_force, reserves_max)
@@ -287,9 +287,10 @@ class MotionTrackingWalking(MocoPaperResult):
         else:
             modelProcessor.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())
             modelProcessor.append(osim.ModOpIgnoreTendonCompliance())
-        # modelProcessor.append(osim.ModOpPassiveFiberStrainAtOneNormForceDGF(1.0))
-        # modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
-        # modelProcessor.append(osim.ModOpFiberDampingDGF(0.01))
+            # modelProcessor.append(osim.ModOpScaleMaxIsometricForce(1.0))
+            # modelProcessor.append(osim.ModOpPassiveFiberStrainAtOneNormForceDGF(1.0))
+            # modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
+            # modelProcessor.append(osim.ModOpFiberDampingDGF(0.01))
         if for_inverse:
             ext_loads_xml = os.path.join(root_dir,
                     'resources/Rajagopal2016/grf_walk.xml')
@@ -443,11 +444,11 @@ class MotionTrackingWalking(MocoPaperResult):
             weightList.append(('/jointset/ground_pelvis/pelvis_tilt/value', 0.1))
             weightList.append(('/jointset/ground_pelvis/pelvis_rotation/value', 0.1))
             weightList.append(('/jointset/back/lumbar_rotation/value', 0.1))
-            if not torque_driven:
-                weightList.append(('/jointset/hip_r/hip_rotation_r/value', 0))
-                weightList.append(('/jointset/hip_r/hip_adduction_r/value', 0))
-                weightList.append(('/jointset/hip_l/hip_rotation_l/value', 0))
-                weightList.append(('/jointset/hip_l/hip_adduction_l/value', 0))
+            # if not torque_driven:
+            #     weightList.append(('/jointset/hip_r/hip_rotation_r/value', 0))
+            #     weightList.append(('/jointset/hip_r/hip_adduction_r/value', 0))
+            #     weightList.append(('/jointset/hip_l/hip_rotation_l/value', 0))
+            #     weightList.append(('/jointset/hip_l/hip_adduction_l/value', 0))
             for weight in weightList:
                 stateWeights.cloneAndAppend(osim.MocoWeight(weight[0], weight[1]))
             track.set_states_weight_set(stateWeights)
@@ -498,6 +499,7 @@ class MotionTrackingWalking(MocoPaperResult):
         # Update the control effort goal to a cost of transport type cost.
         effort = osim.MocoControlGoal().safeDownCast(
                 problem.updGoal('control_effort'))
+        # effort.setExponent(10)
         effort.setDivideByDisplacement(True)
         # Weight residual and reserve actuators low in the effort cost since
         # they are already weak.
@@ -505,8 +507,7 @@ class MotionTrackingWalking(MocoPaperResult):
             for actu in model.getComponentsList():
                 actuName = actu.getName()
                 if actu.getConcreteClassName().endswith('Actuator'):
-                    effort.setWeightForControl(actu.getAbsolutePathString(),
-                        0.001)
+                    effort.setWeightForControl(actu.getAbsolutePathString(), 1)
 
             if not torque_driven:
                 for muscle in ['psoas', 'iliacus']:
@@ -631,7 +632,7 @@ class MotionTrackingWalking(MocoPaperResult):
                               'forceset/contactMedialToe_l',
                               'forceset/contactMedialMidfoot_l']
         if self.contact_tracking:
-            contactTracking = osim.MocoContactTrackingGoal('contact', 0.001)
+            contactTracking = osim.MocoContactTrackingGoal('contact', 0.0001)
             contactTracking.setExternalLoadsFile(os.path.join(root_dir,
                 'resources/Rajagopal2016/grf_walk.xml'))
             contactTracking.addContactGroup(forceNamesRightFoot, 'Right_GRF')
@@ -652,6 +653,8 @@ class MotionTrackingWalking(MocoPaperResult):
             1e-6 / model.getNumCoordinates())
         solver.set_implicit_multibody_acceleration_bounds(
                 osim.MocoBounds(-200, 200))
+        solver.set_minimize_implicit_auxiliary_derivatives(True)
+        solver.set_implicit_auxiliary_derivatives_weight(1e-6 / 6.0)
 
         # Set the guess
         # -------------
@@ -866,7 +869,9 @@ class MotionTrackingWalking(MocoPaperResult):
                 trackingCostStr = \
                     sol_table.getTableMetaDataString(
                         'objective_marker_tracking')
-            trackingCost = float(trackingCostStr) / config.tracking_weight
+            trackingCost = 0
+            if config.tracking_weight:
+                trackingCost = float(trackingCostStr) / config.tracking_weight
 
             effortCost = 0
             if config.effort_weight:

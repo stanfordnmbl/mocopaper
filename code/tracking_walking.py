@@ -51,29 +51,29 @@ class MotionTrackingWalking(MocoPaperResult):
             'results/motion_tracking_walking_solution'
         self.cmap = 'nipy_spectral'
         self.configs = [
-            MocoTrackConfig(name='torque_driven',
-                            legend_entry='torque driven',
-                            tracking_weight=10,
-                            effort_weight=0.0001,
-                            cmap_index=0.95,
-                            flags=['torque_driven']),
+            # MocoTrackConfig(name='torque_driven',
+            #                 legend_entry='torque driven',
+            #                 tracking_weight=10,
+            #                 effort_weight=0.0001,
+            #                 cmap_index=0.95,
+            #                 flags=['torque_driven']),
             MocoTrackConfig(name='track',
                             legend_entry='track',
                             tracking_weight=10,
                             effort_weight=10,
                             cmap_index=0.2),
-            MocoTrackConfig(name='weakhipabd',
-                            legend_entry='weak hip abductors',
-                            tracking_weight=10,
-                            effort_weight=10,
-                            cmap_index=0.5,
-                            flags=['weakhipabd']),
-            MocoTrackConfig(name='weakpfs',
-                            legend_entry='weak pfs',
-                            tracking_weight=10,
-                            effort_weight=10,
-                            cmap_index=0.8,
-                            flags=['weakpfs']),
+            # MocoTrackConfig(name='weakhipabd',
+            #                 legend_entry='weak hip abductors',
+            #                 tracking_weight=10,
+            #                 effort_weight=10,
+            #                 cmap_index=0.5,
+            #                 flags=['weakhipabd']),
+            # MocoTrackConfig(name='weakpfs',
+            #                 legend_entry='weak pfs',
+            #                 tracking_weight=10,
+            #                 effort_weight=10,
+            #                 cmap_index=0.8,
+            #                 flags=['weakpfs']),
             # MocoTrackConfig(name='trackeffort',
             #                 legend_entry='track\n+\neffort',
             #                 tracking_weight=0.5,
@@ -189,14 +189,14 @@ class MotionTrackingWalking(MocoPaperResult):
             add_reserve(model, f'pro_sup{side}', 1, 1)
         # Lower extremity
         optimal_force = 1
-        # if for_inverse:
-        residuals_max = 250
-        add_reserve(model, 'pelvis_tx', optimal_force, residuals_max)
-        add_reserve(model, 'pelvis_ty', optimal_force, residuals_max)
-        add_reserve(model, 'pelvis_tz', optimal_force, residuals_max)
-        add_reserve(model, 'pelvis_tilt', optimal_force, residuals_max)
-        add_reserve(model, 'pelvis_list', optimal_force, residuals_max)
-        add_reserve(model, 'pelvis_rotation', optimal_force, residuals_max)
+        if for_inverse:
+            residuals_max = 250
+            add_reserve(model, 'pelvis_tx', optimal_force, residuals_max)
+            add_reserve(model, 'pelvis_ty', optimal_force, residuals_max)
+            add_reserve(model, 'pelvis_tz', optimal_force, residuals_max)
+            add_reserve(model, 'pelvis_tilt', optimal_force, residuals_max)
+            add_reserve(model, 'pelvis_list', optimal_force, residuals_max)
+            add_reserve(model, 'pelvis_rotation', optimal_force, residuals_max)
         reserves_max = 250 #`if for_inverse or torque_driven else 1
         add_reserve(model, 'hip_flexion_r', optimal_force, reserves_max)
         add_reserve(model, 'knee_angle_r', optimal_force, reserves_max)
@@ -642,11 +642,11 @@ class MotionTrackingWalking(MocoPaperResult):
         solver.set_multibody_dynamics_mode('implicit')
         solver.set_minimize_implicit_multibody_accelerations(True)
         solver.set_implicit_multibody_accelerations_weight(
-            1e-3 / model.getNumCoordinates())
+            1e-6 / model.getNumCoordinates())
         solver.set_implicit_multibody_acceleration_bounds(
                 osim.MocoBounds(-200, 200))
         solver.set_minimize_implicit_auxiliary_derivatives(True)
-        solver.set_implicit_auxiliary_derivatives_weight(1e-2 / 6.0)
+        solver.set_implicit_auxiliary_derivatives_weight(1e-6 / 6.0)
 
         # Set the guess
         # -------------
@@ -1138,7 +1138,7 @@ class MotionTrackingWalking(MocoPaperResult):
                       color='black', lw=lw + 1.0)
 
         # simulation results
-        for i, config in enumerate([self.configs[1]]):
+        for i, config in enumerate([self.configs[0]]):
             color = cmap(config.cmap_index)
             full_path = self.get_solution_path_fullcycle(root_dir, config)
             full_traj = osim.MocoTrajectory(full_path)

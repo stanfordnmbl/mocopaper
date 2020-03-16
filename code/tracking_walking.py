@@ -331,17 +331,17 @@ class MotionTrackingWalking(MocoPaperResult):
 
     def get_solution_path(self, root_dir, config):
         return os.path.join(root_dir,
-                            f'{self.tracking_solution_relpath_prefix}'
+                            f'{self.tracking_solution_relpath_prefix}_'
                             + config.name + '.sto')
 
     def get_solution_path_fullcycle(self, root_dir, config):
         return os.path.join(root_dir,
-                            f'{self.tracking_solution_relpath_prefix}'
+                            f'{self.tracking_solution_relpath_prefix}_'
                             + config.name + '_fullcycle.sto')
 
     def get_solution_path_grfs(self, root_dir, config):
         return os.path.join(root_dir,
-                            f'{self.tracking_solution_relpath_prefix}'
+                            f'{self.tracking_solution_relpath_prefix}_'
                             + config.name + '_fullcycle_grfs.sto')
 
     def load_table(self, table_path):
@@ -772,7 +772,6 @@ class MotionTrackingWalking(MocoPaperResult):
                 osim.visualize(model, solution.exportToStatesTable())
 
         self.plot_paper_figure(root_dir, mass, BW)
-        return # TODO
 
         emg = self.load_electromyography(root_dir)
 
@@ -1069,25 +1068,23 @@ class MotionTrackingWalking(MocoPaperResult):
 
         fig = plt.figure(figsize=(7.5, 6.5))
         gs = gridspec.GridSpec(12, 4)
-        ax_anklemom = fig.add_subplot(gs[6:9, 3])
         ax_grf_x = fig.add_subplot(gs[3:6, 0])
         ax_grf_y = fig.add_subplot(gs[0:3, 0])
-        # ax_grf_z = fig.add_subplot(gs[28:36, 0])
+        ax_ankle = fig.add_subplot(gs[6:9, 1])
+        ax_anklemom = fig.add_subplot(gs[6:9, 2])
+        ax_hipmom = fig.add_subplot(gs[6:9, 3])
         ax_add = fig.add_subplot(gs[9:12, 2])
         ax_addmom = fig.add_subplot(gs[9:12, 3])
-        # ax_hip = fig.add_subplot(gs[9:18, 1])
-        # ax_knee = fig.add_subplot(gs[18:27, 1])
-        ax_ankle = fig.add_subplot(gs[6:9, 2])
+        # ax_lumbar = fig.add_subplot(gs[9:12, 1])
         ax_list = list()
+        ax_list.append(ax_ankle)
         ax_list.append(ax_anklemom)
+        ax_list.append(ax_hipmom)
+        ax_list.append(ax_add)
         ax_list.append(ax_addmom)
+        # ax_list.append(ax_lumbar)
         ax_list.append(ax_grf_x)
         ax_list.append(ax_grf_y)
-        # ax_list.append(ax_grf_z)
-        ax_list.append(ax_add)
-        # ax_list.append(ax_hip)
-        # ax_list.append(ax_knee)
-        ax_list.append(ax_ankle)
         muscles = [
             (fig.add_subplot(gs[0:2, 1]), 'glmax2', 'gluteus maximus', 'GMAX'),
             (fig.add_subplot(gs[0:2, 2]), 'psoas', 'psoas', 'PSOAS'),
@@ -1102,6 +1099,22 @@ class MotionTrackingWalking(MocoPaperResult):
         cmap = cm.get_cmap(self.cmap)
         title_fs = 10
         lw = 2.5
+
+        ax = fig.add_subplot(gs[6:9, 0])
+        import cv2
+        # Convert BGR color ordering to RGB.
+        image = cv2.imread(os.path.join(root_dir,
+                                        'motion_tracking_visualization/weakpfs.png'))[
+                ..., ::-1]
+        ax.imshow(image)
+        plt.axis('off')
+        ax = fig.add_subplot(gs[9:12, 0])
+        # Convert BGR color ordering to RGB.
+        image = cv2.imread(os.path.join(root_dir,
+                                        'motion_tracking_visualization/weakabd.png'))[
+                ..., ::-1]
+        ax.imshow(image)
+        plt.axis('off')
 
         # experimental ground reactions
         grf_table = self.load_table(
@@ -1143,6 +1156,9 @@ class MotionTrackingWalking(MocoPaperResult):
         ax_ankle.plot(pgc_coords,
                       coordinates['ankle_angle_l'][coords_start:coords_end],
                       color=exp_color, lw=lw + 1.0)
+        # ax_lumbar.plot(pgc_coords,
+        #               coordinates['lumbar_bending'][coords_start:coords_end],
+        #               color=exp_color, lw=lw + 1.0)
 
 
 
@@ -1192,6 +1208,13 @@ class MotionTrackingWalking(MocoPaperResult):
                              color=color, lw=lw)
                 ax_anklemom.set_xticklabels([])
                 ax_anklemom.set_title('ankle plantarflexion moment\n(Nm/kg)')
+
+                hip_moment = netgenforce.getDependentColumn(
+                    'hip_flexion_l_moment')
+                ax_hipmom.plot(pgc, toarray(hip_moment) / mass,
+                                 color=color, lw=lw)
+                ax_hipmom.set_xticklabels([])
+                ax_hipmom.set_title('hip flexion moment\n(Nm/kg)')
             if config.name == 'weakhipabd' or config.name == 'track':
                 hipadd_moment = netgenforce.getDependentColumn(
                     'hip_adduction_l_moment')
@@ -1228,12 +1251,17 @@ class MotionTrackingWalking(MocoPaperResult):
                     '/jointset/ankle_l/ankle_angle_l/value'), color=color,
                               lw=lw)
                 ax_ankle.set_title('ankle dorsiflexion angle\n(degrees)')
-                ax_ankle.set_xticklabels([])
+                ax_ankle.set_xlabel('time (% gait cycle)')
             if config.name == 'weakhipabd' or config.name == 'track':
                 ax_add.plot(pgc, rad2deg*full_traj.getStateMat(
                     '/jointset/hip_l/hip_adduction_l/value'), color=color, lw=lw)
                 ax_add.set_title('hip adduction angle\n(degrees)')
                 ax_add.set_xlabel('time (% gait cycle)')
+
+                # ax_lumbar.plot(pgc, rad2deg*full_traj.getStateMat(
+                #     '/jointset/back/lumbar_bending/value'), color=color, lw=lw)
+                # ax_lumbar.set_title('lumbar bending angle\n(degrees)')
+                # ax_lumbar.set_xlabel('time (% gait cycle)')
 
 
             for ax in ax_list:
@@ -1270,10 +1298,7 @@ class MotionTrackingWalking(MocoPaperResult):
                     if im == 1:
                         ax.set_title('ACTIVATIONS\n', weight='bold',
                                      size=title_fs)
-                    if im == 6:
-                        ax.set_xlabel('time (% gait cycle)')
-                    else:
-                        ax.set_xticklabels([])
+                    ax.set_xticklabels([])
 
 
         fig.align_ylabels([ax_grf_x, ax_grf_y])

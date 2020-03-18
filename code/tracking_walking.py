@@ -12,21 +12,6 @@ from moco_paper_result import MocoPaperResult
 import utilities
 from utilities import plot_joint_moment_breakdown
 
-# TODO: try different foot spacing
-# TODO: fix oscillations in GRFz.
-# TODO: semimem and gasmed forces are negative.
-# TODO: feet are crossing over too much (b/c adductor passive force?)
-# TODO: remove reserves from tracking problem?
-# TODO: use visualize_trajectory.py to comopare kinematics, programmatically.
-#       add skinning through a bunch of markers added to the model? a
-#       python algorithm for smoothing the path through these markers?
-
-# TODO: add MocoFrameDistanceConstraint direction.
-# TODO: increase value of pelvis_ty in initial guess.
-# TODO: after a few days, add net joint moment tracking.
-
-# TODO: choose passive fiber stiffness based on Adrian Lai's paper?
-
 class MocoTrackConfig:
     def __init__(self, name, legend_entry, tracking_weight, effort_weight,
                  cmap_index, flags=[]):
@@ -51,16 +36,10 @@ class MotionTrackingWalking(MocoPaperResult):
             'results/motion_tracking_walking_solution'
         self.cmap = 'nipy_spectral'
         self.configs = [
-            # MocoTrackConfig(name='torque_driven',
-            #                 legend_entry='torque driven',
-            #                 tracking_weight=10,
-            #                 effort_weight=0.0001,
-            #                 cmap_index=0.95,
-            #                 flags=['torque_driven']),
             MocoTrackConfig(name='track',
                             legend_entry='track',
-                            tracking_weight=10,
-                            effort_weight=10,
+                            tracking_weight=1,
+                            effort_weight=0.01,
                             cmap_index=0.2),
             # MocoTrackConfig(name='weakhipabd',
             #                 legend_entry='weak hip abductors',
@@ -74,40 +53,6 @@ class MotionTrackingWalking(MocoPaperResult):
             #                 effort_weight=10,
             #                 cmap_index=0.8,
             #                 flags=['weakpfs']),
-            # MocoTrackConfig(name='trackeffort',
-            #                 legend_entry='track\n+\neffort',
-            #                 tracking_weight=0.5,
-            #                 effort_weight=1,
-            #                 cmap_index=0.5),
-            # MocoTrackConfig(name='effort',
-            #                 legend_entry='effort',
-            #                 tracking_weight=0.01,
-            #                 effort_weight=10,
-            #                 cmap_index=0.9),
-            # MocoTrackConfig(name='trendelenburg',
-            #                 legend_entry='trendelenburg',
-            #                 tracking_weight=10,
-            #                 effort_weight=1,
-            #                 cmap_index=0.9,
-            #                 flags=['trendelenburg']),
-            # MocoTrackConfig(name='trendelenburg-lite',
-            #                 legend_entry='trendelenburg-lite',
-            #                 tracking_weight=0.5,
-            #                 effort_weight=1,
-            #                 cmap_index=0.5,
-            #                 flags=['trendelenburg-lite']),
-            # MocoTrackConfig(name='weakvasti',
-            #                 legend_entry='weak vasti',
-            #                 tracking_weight=0.5,
-            #                 effort_weight=1,
-            #                 cmap_index=0.2,
-            #                 flags=['weakvasti']),
-            # MocoTrackConfig(name='weaksoleus',
-            #                 legend_entry='weak soleus',
-            #                 tracking_weight=1,
-            #                 effort_weight=10,
-            #                 cmap_index=0.6,
-            #                 flags=['weaksoleus']),
         ]
 
     def create_model_processor(self, root_dir, for_inverse=False, config=None):
@@ -115,8 +60,6 @@ class MotionTrackingWalking(MocoPaperResult):
         flags = []
         if config:
             flags = config.flags
-
-        torque_driven = 'torque_driven' in flags
 
         model = osim.Model(os.path.join(root_dir,
                 'resources/Rajagopal2016/'
@@ -139,6 +82,8 @@ class MotionTrackingWalking(MocoPaperResult):
                         forceSet.remove(int(i))
                         contactsRemoved += 1
                         break
+            print('\n')
+
         else:
             stiffnessMod = 1.0
             print(f'Modifying contact element stiffnesses by '
@@ -149,18 +94,19 @@ class MotionTrackingWalking(MocoPaperResult):
                     force.set_stiffness(stiffnessMod * force.get_stiffness())
                     radius = force.get_contact_sphere_radius()
                     scale = 1
-                    if 'Heel' in force.getName():
-                        scale = 1
-                    elif 'Rearfoot' in force.getName():
-                        scale = 0.8
-                    elif 'Midfoot' in force.getName():
-                        scale = 0.7
-                    elif 'Toe' in force.getName():
-                        scale = 0.5
+                    # if 'Heel' in force.getName():
+                    #     scale = 1
+                    # elif 'Rearfoot' in force.getName():
+                    #     scale = 0.8
+                    # elif 'Midfoot' in force.getName():
+                    #     scale = 0.7
+                    # elif 'Toe' in force.getName():
+                    #     scale = 0.5
 
                     force.set_contact_sphere_radius(scale * radius)
                     print(f'  --> modified contact element {force.getName()}'
                           f' with radius modifier {scale}')
+            print('\n')
 
         def add_reserve(model, coord, optimal_force, max_control):
             actu = osim.ActivationCoordinateActuator()
@@ -197,7 +143,7 @@ class MotionTrackingWalking(MocoPaperResult):
             add_reserve(model, 'pelvis_tilt', optimal_force, residuals_max)
             add_reserve(model, 'pelvis_list', optimal_force, residuals_max)
             add_reserve(model, 'pelvis_rotation', optimal_force, residuals_max)
-        reserves_max = 250 #`if for_inverse or torque_driven else 1
+        reserves_max = 250
         add_reserve(model, 'hip_flexion_r', optimal_force, reserves_max)
         add_reserve(model, 'knee_angle_r', optimal_force, reserves_max)
         add_reserve(model, 'ankle_angle_r', optimal_force, reserves_max)
@@ -209,50 +155,6 @@ class MotionTrackingWalking(MocoPaperResult):
         add_reserve(model, 'hip_rotation_r', optimal_force, reserves_max)
         add_reserve(model, 'hip_rotation_l', optimal_force, reserves_max)
 
-        def add_device(model, coord):
-            actu = osim.ActivationCoordinateActuator()
-            actu.set_coordinate(coord)
-            actu.setName(f'device_{coord}')
-            actu.setOptimalForce(1000.0)
-            actu.setMinControl(-1.0)
-            actu.setMaxControl(1.0)
-            model.addForce(actu)
-        if 'assistankle' in flags:
-            add_device(model, 'ankle_angle_r')
-            add_device(model, 'ankle_angle_l')
-
-        if 'weaksoleus' in flags:
-            soleus_r = model.updMuscles().get('soleus_r')
-            soleus_r.set_max_isometric_force(
-                0.25 * soleus_r.get_max_isometric_force())
-            soleus_l = model.updMuscles().get('soleus_l')
-            soleus_l.set_max_isometric_force(
-                0.25 * soleus_l.get_max_isometric_force())
-        if 'weakvasti' in flags:
-            for muscle in ['vasmed', 'vasint', 'vaslat']:
-                for side in ['_l', '_r']:
-                    musc = model.updMuscles().get('%s%s' % (muscle, side))
-                    musc.set_max_isometric_force(
-                        0.10 * musc.get_max_isometric_force())
-        if 'trendelenburg-lite' in flags:
-            for muscle in ['glmin1','glmin2','glmin3','glmed1','glmed2','glmed3',
-                    'glmax1','glmax2','glmax3','addbrev', 'addlong', 'addmagDist', 
-                    'addmagIsch', 'addmagMid', 'addmagProx', 'piri', 'bflh', 
-                    'sart', 'grac']:
-                for side in ['_l', '_r']:
-                    musc = model.updMuscles().get('%s%s' % (muscle, side))
-                    musc.set_max_isometric_force(
-                        0.10 * musc.get_max_isometric_force())
-        if 'trendelenburg' in flags:
-            for muscle in ['glmin1','glmin2','glmin3','glmed1','glmed2','glmed3',
-                    'glmax1','glmax2','glmax3','addbrev', 'addlong', 'addmagDist', 
-                    'addmagIsch', 'addmagMid', 'addmagProx', 'iliacus', 'psoas',
-                    'piri', 'grac', 'bflh', 'recfem', 'sart', 'semimem', 
-                    'semiten', 'tfl']:
-                for side in ['_l', '_r']:
-                    musc = model.updMuscles().get('%s%s' % (muscle, side))
-                    musc.set_max_isometric_force(
-                        0.10 * musc.get_max_isometric_force())
         if 'weakhipabd' in flags:
             for muscle in ['glmed1', 'glmed2', 'glmed3', 'glmin1', 'glmin2',
                            'glmin3', 'tfl']:
@@ -273,54 +175,70 @@ class MotionTrackingWalking(MocoPaperResult):
         modelProcessor.append(osim.ModOpReplaceJointsWithWelds(
             ['subtalar_r', 'mtp_r', 'subtalar_l', 'mtp_l', 'radius_hand_r',
              'radius_hand_l']))
+        modelProcessor.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())
+        # We will re-enable tendon compliance for the plantarflexors below.
+        modelProcessor.append(osim.ModOpIgnoreTendonCompliance())
+        modelProcessor.append(osim.ModOpFiberDampingDGF(0.01))
 
-        if torque_driven:
-            modelProcessor.append(osim.ModOpRemoveMuscles())
-        else:
-            modelProcessor.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())
-            modelProcessor.append(osim.ModOpIgnoreTendonCompliance())
-            # modelProcessor.append(osim.ModOpScaleMaxIsometricForce(1.0))
-            # modelProcessor.append(osim.ModOpPassiveFiberStrainAtOneNormForceDGF(1.0))
-            # modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
-            # modelProcessor.append(osim.ModOpFiberDampingDGF(0.01))
         if for_inverse:
             ext_loads_xml = os.path.join(root_dir,
                     'resources/Rajagopal2016/grf_walk.xml')
             modelProcessor.append(osim.ModOpAddExternalLoads(ext_loads_xml))
 
-        if torque_driven:
-            return modelProcessor
-        else:
-            model = modelProcessor.process()
-            model.initSystem()
-            muscles = model.updMuscles()
-            for imusc in np.arange(muscles.getSize()):
-                muscle = muscles.get(int(imusc))
-                muscName = muscle.getName()
-                if ('gas' in muscName) or ('soleus' in muscName):
-                    muscle.set_ignore_tendon_compliance(False)
+        # Update passive muscle force parameters so that muscle passive force
+        # doesn't exceed a maximum value, assuming a rigid tendon. Muscle-tendon
+        # length information was obtained from an OpenSim MuscleAnalysis using
+        # the reference coordinate data.
+        maxPassiveForce = 25
+        print(f'Updating muscle passive force parameters with max passive force '
+              f'{maxPassiveForce} N...')
+        model = modelProcessor.process()
+        model.initSystem()
+        muscleTendonLengths = osim.TimeSeriesTable(os.path.join(root_dir,
+            'resources/Rajagopal2016/muscle_tendon_lengths.sto'))
+        muscles = model.updMuscles()
+        for imusc in np.arange(muscles.getSize()):
+            muscle = osim.DeGrooteFregly2016Muscle.safeDownCast(
+                muscles.get(int(imusc)))
+            muscName = muscle.getName()
+            tendonSlackLength = muscle.getTendonSlackLength()
+            optimalFiberLength = muscle.getOptimalFiberLength()
+            maxIsometricForce = muscle.getMaxIsometricForce()
+            muscleTendonLength = \
+                muscleTendonLengths.getDependentColumn(muscName)
 
-                muscleDGF = osim.DeGrooteFregly2016Muscle.safeDownCast(muscle)
-                if 'soleus' in muscName:
-                    muscleDGF.set_ignore_passive_fiber_force(True)
-                    muscleDGF.set_passive_fiber_strain_at_one_norm_force(10.0)
-                elif 'gas' in muscName:
-                    muscleDGF.set_passive_fiber_strain_at_one_norm_force(0.4)
-                    muscleDGF.set_fiber_damping(0.001)
-                elif (('vas' in muscName) or
-                      ('recfem' in muscName) or
-                      ('semi' in muscName)):
-                    muscleDGF.set_passive_fiber_strain_at_one_norm_force(7.0)
-                elif (('tib' in muscName) or
-                      ('ehl' in muscName) or
-                      ('edl' in muscName)) :
-                    muscleDGF.set_passive_fiber_strain_at_one_norm_force(7.0)
+            maxMuscleTendonLength = 0
+            for i in range(muscleTendonLengths.getNumRows()):
+                if muscleTendonLength[i] > maxMuscleTendonLength:
+                    maxMuscleTendonLength = muscleTendonLength[i]
 
-            modelProcessorTendonCompliance = osim.ModelProcessor(model)
-            modelProcessorTendonCompliance.append(
-                    osim.ModOpUseImplicitTendonComplianceDynamicsDGF())
+            maxFiberLength = maxMuscleTendonLength - tendonSlackLength
+            maxNormFiberLength = maxFiberLength / optimalFiberLength
+            currStrain = muscle.get_passive_fiber_strain_at_one_norm_force()
+            currMultiplier = \
+                muscle.calcPassiveForceMultiplier(maxNormFiberLength)
 
-            return modelProcessorTendonCompliance
+            if currMultiplier*maxIsometricForce > maxPassiveForce:
+                while currMultiplier*maxIsometricForce > maxPassiveForce:
+                    currStrain *= 1.05
+                    muscle.set_passive_fiber_strain_at_one_norm_force(currStrain)
+                    currMultiplier = \
+                        muscle.calcPassiveForceMultiplier(maxNormFiberLength)
+
+                print(f'  --> Updated {muscName} passive fiber strain at one '
+                      f'normalized force to {currStrain}')
+
+            # Enable tendon compliance dynamics in the plantarflexors.
+            if ('gas' in muscName) or ('soleus' in muscName):
+                muscle.set_ignore_tendon_compliance(False)
+
+        print('\n')
+
+        modelProcessorTendonCompliance = osim.ModelProcessor(model)
+        modelProcessorTendonCompliance.append(
+                osim.ModOpUseImplicitTendonComplianceDynamicsDGF())
+
+        return modelProcessorTendonCompliance
 
     def get_solution_path(self, root_dir, config):
         return os.path.join(root_dir,
@@ -396,8 +314,6 @@ class MotionTrackingWalking(MocoPaperResult):
         if config:
             flags = config.flags
 
-        torque_driven = 'torque_driven' in flags
-
         modelProcessor = self.create_model_processor(root_dir,
                                                      for_inverse=False,
                                                      config=config)
@@ -432,15 +348,14 @@ class MotionTrackingWalking(MocoPaperResult):
             weightList = list()
             weightList.append(('/jointset/ground_pelvis/pelvis_ty/value', 0))
             weightList.append(('/jointset/ground_pelvis/pelvis_tz/value', 0))
-            weightList.append(('/jointset/ground_pelvis/pelvis_list/value', 0.1))
-            weightList.append(('/jointset/ground_pelvis/pelvis_tilt/value', 0.1))
-            weightList.append(('/jointset/ground_pelvis/pelvis_rotation/value', 0.1))
-            weightList.append(('/jointset/back/lumbar_rotation/value', 0.1))
-            # if not torque_driven:
-            #     weightList.append(('/jointset/hip_r/hip_rotation_r/value', 0))
-            #     weightList.append(('/jointset/hip_r/hip_adduction_r/value', 0))
-            #     weightList.append(('/jointset/hip_l/hip_rotation_l/value', 0))
-            #     weightList.append(('/jointset/hip_l/hip_adduction_l/value', 0))
+            weightList.append(('/jointset/ground_pelvis/pelvis_ty/speed', 0))
+            weightList.append(('/jointset/ground_pelvis/pelvis_tz/speed', 0))
+            weightList.append(('/jointset/ground_pelvis/pelvis_list/value', 0.01))
+            weightList.append(('/jointset/ground_pelvis/pelvis_list/value', 0.01))
+            weightList.append(('/jointset/ground_pelvis/pelvis_tilt/value', 0.01))
+            weightList.append(('/jointset/ground_pelvis/pelvis_tilt/value', 0.01))
+            weightList.append(('/jointset/ground_pelvis/pelvis_rotation/value', 0.01))
+            weightList.append(('/jointset/ground_pelvis/pelvis_rotation/value', 0.01))
             for weight in weightList:
                 stateWeights.cloneAndAppend(osim.MocoWeight(weight[0], weight[1]))
             track.set_states_weight_set(stateWeights)
@@ -501,11 +416,10 @@ class MotionTrackingWalking(MocoPaperResult):
                 if actu.getConcreteClassName().endswith('Actuator'):
                     effort.setWeightForControl(actu.getAbsolutePathString(), 1)
 
-            if not torque_driven:
-                for muscle in ['psoas', 'iliacus']:
-                    for side in ['l', 'r']:
-                        effort.setWeightForControl(
-                            '/forceset/%s_%s' % (muscle, side), 0.5)
+            for muscle in ['psoas', 'iliacus']:
+                for side in ['l', 'r']:
+                    effort.setWeightForControl(
+                        '/forceset/%s_%s' % (muscle, side), 0.5)
 
         speedGoal = osim.MocoAverageSpeedGoal('speed')
         speedGoal.set_desired_average_speed(1.235)
@@ -535,7 +449,7 @@ class MotionTrackingWalking(MocoPaperResult):
             # distanceConstraint.addFramePair(
             #         osim.MocoFrameDistanceConstraintPair(
             #         '/bodyset/toes_l', '/bodyset/calcn_r', distance, np.inf))
-            distanceConstraint.setProjection("vector")
+            distanceConstraint.setProjection('vector')
             distanceConstraint.setProjectionVector(osim.Vec3(0, 0, 1))
             problem.addPathConstraint(distanceConstraint)
 
@@ -629,7 +543,7 @@ class MotionTrackingWalking(MocoPaperResult):
                 'resources/Rajagopal2016/grf_walk.xml'))
             contactTracking.addContactGroup(forceNamesRightFoot, 'Right_GRF')
             contactTracking.addContactGroup(forceNamesLeftFoot, 'Left_GRF')
-            contactTracking.setProjection("plane")
+            contactTracking.setProjection('plane')
             contactTracking.setProjectionVector(osim.Vec3(0, 0, 1))
             problem.addGoal(contactTracking)
 
@@ -642,11 +556,11 @@ class MotionTrackingWalking(MocoPaperResult):
         solver.set_multibody_dynamics_mode('implicit')
         solver.set_minimize_implicit_multibody_accelerations(True)
         solver.set_implicit_multibody_accelerations_weight(
-            1e-6 / model.getNumCoordinates())
+            1e-3 / model.getNumCoordinates())
         solver.set_implicit_multibody_acceleration_bounds(
                 osim.MocoBounds(-200, 200))
         solver.set_minimize_implicit_auxiliary_derivatives(True)
-        solver.set_implicit_auxiliary_derivatives_weight(1e-6 / 6.0)
+        solver.set_implicit_auxiliary_derivatives_weight(1e-2 / 6.0)
 
         # Set the guess
         # -------------
@@ -661,10 +575,7 @@ class MotionTrackingWalking(MocoPaperResult):
             if ('pelvis' in stateLabel) and stateLabel.endswith('/activation'):
                 inverseStatesTable.removeColumn(stateLabel)
         guess.insertStatesTrajectory(inverseStatesTable, True)
-        # Changing this initial guess has a large negative effect on the
-        # solution! Lots of knee flexion.
-        # guess.setState('/jointset/ground_pelvis/pelvis_ty/value',
-        #                osim.Vector(guess.getNumTimes(), 1.01))
+        # Controls guess.
         inverseControlsTable = inverseSolution.exportToControlsTable()
         for controlLabel in inverseControlsTable.getColumnLabels():
             if 'pelvis' in controlLabel:
@@ -676,8 +587,6 @@ class MotionTrackingWalking(MocoPaperResult):
         # -------------------------
         solution = study.solve()
         solution.write(self.get_solution_path(root_dir, config))
-
-        # solution = osim.MocoTrajectory(self.get_solution_path(root_dir, config))
 
         # Create a full gait cycle trajectory from the periodic solution.
         addPatterns = [".*pelvis_tx/value"]
@@ -949,37 +858,36 @@ class MotionTrackingWalking(MocoPaperResult):
                 ax.set_xticks([0, 50, 100])
 
             # muscle activations
-            if not 'torque_driven' in config.flags:
-                for im, muscle in enumerate(muscles):
-                    activation_path = f'/forceset/{muscle[1]}_l/activation'
-                    ax = muscle[0]
-                    activation = full_traj.getStateMat(activation_path)
-                    ax.plot(pgc, activation, color=color, lw=lw)
+            for im, muscle in enumerate(muscles):
+                activation_path = f'/forceset/{muscle[1]}_l/activation'
+                ax = muscle[0]
+                activation = full_traj.getStateMat(activation_path)
+                ax.plot(pgc, activation, color=color, lw=lw)
 
-                    # electromyography data
-                    # TODO: do not assume we want to normalize EMG via 
-                    # simulation 0.
-                    if i == 0 and 'PSOAS' not in muscle:
-                        self.plot(ax, emg['time'],
-                                  emg[muscle[3]] * np.max(activation), 
-                                  shift=False, fill=True, color='lightgray',
-                                  label='electromyography')
-                    ax.set_ylim(0, 1)
-                    ax.set_yticks([0, 1])
-                    ax.set_xlim(0, 100)
-                    ax.set_xticks([0, 50, 100])
+                # electromyography data
+                # TODO: do not assume we want to normalize EMG via 
+                # simulation 0.
+                if i == 0 and 'PSOAS' not in muscle:
+                    self.plot(ax, emg['time'],
+                              emg[muscle[3]] * np.max(activation), 
+                              shift=False, fill=True, color='lightgray',
+                              label='electromyography')
+                ax.set_ylim(0, 1)
+                ax.set_yticks([0, 1])
+                ax.set_xlim(0, 100)
+                ax.set_xticks([0, 50, 100])
 
-                    if im < 8:
-                        ax.set_xticklabels([])
-                    ax.text(0.5, 1.2, muscle[2],
-                           horizontalalignment='center',
-                           verticalalignment='top',
-                           transform=ax.transAxes)
-                    utilities.publication_spines(ax)
-                    if im == 0:
-                        ax.set_title('ACTIVATIONS\n', weight='bold', 
-                                     size=title_fs)
-                    if im == 8: ax.set_xlabel('time (% gait cycle)')
+                if im < 8:
+                    ax.set_xticklabels([])
+                ax.text(0.5, 1.2, muscle[2],
+                       horizontalalignment='center',
+                       verticalalignment='top',
+                       transform=ax.transAxes)
+                utilities.publication_spines(ax)
+                if im == 0:
+                    ax.set_title('ACTIVATIONS\n', weight='bold', 
+                                 size=title_fs)
+                if im == 8: ax.set_xlabel('time (% gait cycle)')
 
         fig.align_ylabels([ax_grf_x, ax_grf_y])
         fig.align_ylabels([ax_time, ax_add, ax_hip, ax_knee, ax_ankle])

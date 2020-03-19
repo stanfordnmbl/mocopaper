@@ -72,6 +72,21 @@ class MotionTrackingWalking(MocoPaperResult):
             effort_weight=10,
             color=cm.get_cmap(self.cmap)(0.8),
             flags=['weakpfs'])
+        self.config_weakdfs = MocoTrackConfig(
+            name='weakdfs',
+            legend_entry='weak dfs',
+            tracking_weight=10,
+            effort_weight=10,
+            color=cm.get_cmap(self.cmap)(0.8),
+            flags=['weakdfs'])
+        self.config_assistdfs = MocoTrackConfig(
+            name='passassistweakdfs',
+            legend_entry='pass. assisted weak dfs',
+            tracking_weight=5,
+            effort_weight=10,
+            color=cm.get_cmap(self.cmap)(0.75),
+            flags=['passassistankledf', 'weakdfs'],
+        ),
         self.config_moongravity = MocoTrackConfig(
             name='moongravity',
             legend_entry='Moon gravity',
@@ -90,6 +105,8 @@ class MotionTrackingWalking(MocoPaperResult):
             # self.config_weakhipabd,
             # self.config_weakpfs,
             self.config_moongravity,
+            # TODO! Include Moon as video.
+            # TODO! Use drop foot instead.
             # MocoTrackConfig(name='trackeffort',
             #                 legend_entry='track\n+\neffort',
             #                 tracking_weight=0.5,
@@ -247,6 +264,12 @@ class MotionTrackingWalking(MocoPaperResult):
             soleus_l = model.updMuscles().get('soleus_l')
             soleus_l.set_max_isometric_force(
                 0.25 * soleus_l.get_max_isometric_force())
+        if 'weakdfs' in flags:
+            for muscle in ['edl', 'ehl', 'tibant']:
+                for side in ['_l', '_r']:
+                    musc = model.updMuscles().get('%s%s' % (muscle, side))
+                    musc.set_max_isometric_force(
+                        0.10 * musc.get_max_isometric_force())
         if 'weakvasti' in flags:
             for muscle in ['vasmed', 'vasint', 'vaslat']:
                 for side in ['_l', '_r']:
@@ -494,8 +517,11 @@ class MotionTrackingWalking(MocoPaperResult):
         # -----------------------------------
         study = track.initialize()
         problem = study.updProblem()
-        problem.setTimeBounds(self.initial_time, 
-                [self.half_time-0.2, self.half_time+0.2])
+        # if 'moongravity' in flags:
+        #     problem.setTimeBounds(self.initial_time, [])
+        if True: # else:
+            problem.setTimeBounds(self.initial_time,
+                                  [self.half_time-0.2, self.half_time+0.2])
 
         # Set the initial values for the lumbar and pelvis coordinates that
         # produce "normal" walking motions.
@@ -505,7 +531,7 @@ class MotionTrackingWalking(MocoPaperResult):
         # problem.setStateInfo('/jointset/ground_pelvis/pelvis_tx/value', [], 0.446)
         problem.setStateInfo('/jointset/ground_pelvis/pelvis_tilt/value', [], -0.01)
         problem.setStateInfo('/jointset/ground_pelvis/pelvis_list/value', [], 0)
-        problem.setStateInfo('/jointset/ground_pelvis/pelvis_rotation/value', [], 0)
+        # problem.setStateInfo('/jointset/ground_pelvis/pelvis_rotation/value', [], 0)
 
         # Update the control effort goal to a cost of transport type cost.
         effort = osim.MocoControlGoal().safeDownCast(
@@ -528,6 +554,8 @@ class MotionTrackingWalking(MocoPaperResult):
 
         speedGoal = osim.MocoAverageSpeedGoal('speed')
         speedGoal.set_desired_average_speed(1.235)
+        if 'moongravity' in flags:
+            speedGoal.setEnabled(False)
         problem.addGoal(speedGoal)
 
         # MocoFrameDistanceConstraint
@@ -824,6 +852,7 @@ class MotionTrackingWalking(MocoPaperResult):
 
         # experimental stride time
         # ax_time.bar(0, self.final_time - self.initial_time, color='black')
+        exp_color = 'gray'
 
         # experimental ground reactions
         grf_table = self.load_table(os.path.join(root_dir,
@@ -835,13 +864,13 @@ class MotionTrackingWalking(MocoPaperResult):
         pgc_grfs = np.linspace(0, 100, len(time_grfs))
         ax_grf_x.plot(pgc_grfs, 
             grf_table['ground_force_l_vx'][grf_start:grf_end]/BW, 
-            color='black', lw=lw+1.0)
+            color=exp_color, lw=lw+1.0)
         ax_grf_y.plot(pgc_grfs, 
             grf_table['ground_force_l_vy'][grf_start:grf_end]/BW, 
-            color='black', lw=lw+1.0)
+            color=exp_color, lw=lw+1.0)
         ax_grf_z.plot(pgc_grfs,
                       grf_table['ground_force_l_vz'][grf_start:grf_end]/BW,
-                      color='black', lw=lw+1.0)
+                      color=exp_color, lw=lw+1.0)
 
         # experimental coordinates
         coordinates = self.load_table(os.path.join(root_dir, 'resources', 
@@ -853,16 +882,16 @@ class MotionTrackingWalking(MocoPaperResult):
         pgc_coords = np.linspace(0, 100, len(time_coords))
         ax_add.plot(pgc_coords,
                     coordinates['hip_adduction_l'][coords_start:coords_end],
-                    color='black', lw=lw + 1.0)
+                    color=exp_color, lw=lw + 1.0)
         ax_hip.plot(pgc_coords,
                     coordinates['hip_flexion_l'][coords_start:coords_end],
-                    color='black', lw=lw + 1.0)
+                    color=exp_color, lw=lw + 1.0)
         ax_knee.plot(pgc_coords,
                      coordinates['knee_angle_l'][coords_start:coords_end],
-                     color='black', lw=lw + 1.0)
+                     color=exp_color, lw=lw + 1.0)
         ax_ankle.plot(pgc_coords,
                       coordinates['ankle_angle_l'][coords_start:coords_end],
-                      color='black', lw=lw + 1.0)
+                      color=exp_color, lw=lw + 1.0)
 
         # simulation results
         for i, config in enumerate(self.configs):
@@ -913,6 +942,8 @@ class MotionTrackingWalking(MocoPaperResult):
             #         ['data', 'track', 'track\n + \neffort', 'effort'])
             ax_time.set_title('COST TRADE-OFF\n', weight='bold', size=title_fs)
             ax_time.set_aspect(1.0/ax_time.get_data_ratio()*0.8, anchor='N')
+            # Make sure to include the origin.
+            ax_time.plot([0], [0])
             utilities.publication_spines(ax_time)
 
             # ground reaction forces

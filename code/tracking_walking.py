@@ -766,15 +766,14 @@ class MotionTrackingWalking(MocoPaperResult):
 
             sol_path = self.get_solution_path(root_dir, config.name)
             sol_table = osim.TimeSeriesTable(sol_path)
-            if self.coordinate_tracking:
-                trackingCostStr = \
-                    sol_table.getTableMetaDataString('objective_state_tracking')
-            else:
-                trackingCostStr = \
-                    sol_table.getTableMetaDataString(
-                        'objective_marker_tracking')
             trackingCost = 0
             if config.tracking_weight:
+                if self.coordinate_tracking:
+                    trackingCostStr = sol_table.getTableMetaDataString(
+                        'objective_state_tracking')
+                else:
+                    trackingCostStr = sol_table.getTableMetaDataString(
+                            'objective_marker_tracking')
                 trackingCost = float(trackingCostStr) / config.tracking_weight
 
             effortCost = 0
@@ -806,6 +805,8 @@ class MotionTrackingWalking(MocoPaperResult):
             #         ['data', 'track', 'track\n + \neffort', 'effort'])
             ax_time.set_title('COST TRADE-OFF\n', weight='bold', size=title_fs)
             ax_time.set_aspect(1.0/ax_time.get_data_ratio()*0.8, anchor='N')
+            # Make sure to include the origin.
+            ax_time.plot([0], [0])
             utilities.publication_spines(ax_time)
 
             # ground reaction forces

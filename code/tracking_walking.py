@@ -40,22 +40,22 @@ class MotionTrackingWalking(MocoPaperResult):
         self.configs = [
             MocoTrackConfig(name='track',
                             legend_entry='track',
-                            tracking_weight=5,
-                            effort_weight=1,
+                            tracking_weight=10,
+                            effort_weight=10,
                             cmap_index=0.2),
             # MocoTrackConfig(name='weakhipabd',
             #                 legend_entry='weak hip abductors',
             #                 tracking_weight=10,
             #                 effort_weight=10,
             #                 cmap_index=0.5,
-            #                 guess='track'
+            #                 guess='track',
             #                 flags=['weakhipabd']),
             # MocoTrackConfig(name='weakpfs',
             #                 legend_entry='weak pfs',
             #                 tracking_weight=10,
             #                 effort_weight=10,
             #                 cmap_index=0.8,
-            #                 guess='track'
+            #                 guess='track',
             #                 flags=['weakpfs']),
         ]
 
@@ -193,6 +193,7 @@ class MotionTrackingWalking(MocoPaperResult):
         # doesn't exceed a maximum value, assuming a rigid tendon. Muscle-tendon
         # length information was obtained from an OpenSim MuscleAnalysis using
         # the reference coordinate data.
+        maxPassiveMultiplier = 0.05
         print(f'Updating muscle passive force parameters...')
         model = modelProcessor.process()
         model.initSystem()
@@ -207,9 +208,6 @@ class MotionTrackingWalking(MocoPaperResult):
             # Enable tendon compliance dynamics in the plantarflexors.
             if ('gas' in muscName) or ('soleus' in muscName):
                 muscle.set_ignore_tendon_compliance(False)
-                maxPassiveMultiplier = 1
-            else:
-                maxPassiveMultiplier = 0.1
 
             tendonSlackLength = muscle.getTendonSlackLength()
             optimalFiberLength = muscle.getOptimalFiberLength()
@@ -404,29 +402,26 @@ class MotionTrackingWalking(MocoPaperResult):
         # produce "normal" walking motions.
         problem.setStateInfo('/jointset/back/lumbar_extension/value', [], -0.12)
         problem.setStateInfo('/jointset/back/lumbar_bending/value', [], 0)
-        # problem.setStateInfo('/jointset/back/lumbar_rotation/value', [], 0.04)
-        # problem.setStateInfo('/jointset/ground_pelvis/pelvis_tx/value', [], 0.446)
         problem.setStateInfo('/jointset/ground_pelvis/pelvis_tilt/value', [], -0.01)
-        # problem.setStateInfo('/jointset/ground_pelvis/pelvis_list/value', [], 0)
-        # problem.setStateInfo('/jointset/ground_pelvis/pelvis_rotation/value', [], 0)
 
         # Update the control effort goal to a cost of transport type cost.
         effort = osim.MocoControlGoal().safeDownCast(
                 problem.updGoal('control_effort'))
         effort.setExponent(3)
         effort.setDivideByDisplacement(True)
-        # Weight residual and reserve actuators low in the effort cost since
-        # they are already weak.
-        if config.effort_weight:
-            for actu in model.getComponentsList():
-                actuName = actu.getName()
-                if actu.getConcreteClassName().endswith('Actuator'):
-                    effort.setWeightForControl(actu.getAbsolutePathString(), 1)
-
-            for muscle in ['psoas', 'iliacus']:
-                for side in ['l', 'r']:
-                    effort.setWeightForControl(
-                        '/forceset/%s_%s' % (muscle, side), 0.5)
+        # Weight muscles based on max isometric force values.
+        musclePaths = list()
+        muscleMaxIsoForces = list()
+        muscles = model.getMuscles()
+        for i in range(muscles.getSize()):
+            muscle = muscles.get(i)
+            musclePaths.append(muscle.getAbsolutePathString())
+            muscleMaxIsoForces.append(muscle.getMaxIsometricForce())
+        
+        maxMaxIsoForce = max(muscleMaxIsoForces)
+        muscleWeights = [Fmax / maxMaxIsoForce for Fmax in muscleMaxIsoForces]
+        for path, weight in zip(musclePaths, muscleWeights):
+            effort.setWeightForControl(path, weight)
 
         speedGoal = osim.MocoAverageSpeedGoal('speed')
         speedGoal.set_desired_average_speed(1.235)
@@ -438,7 +433,6 @@ class MotionTrackingWalking(MocoPaperResult):
             distanceConstraint = osim.MocoFrameDistanceConstraint()
             distanceConstraint.setName('distance_constraint')
             # Step width is 0.13 * leg_length
-            # distance = 0.10 # TODO Should be closer to 0.11.
             # Donelan JM, Kram R, Kuo AD. Mechanical and metabolic determinants
             # of the preferred step width in human walking.
             # Proc Biol Sci. 2001;268(1480):1985–1992.
@@ -597,8 +591,6 @@ class MotionTrackingWalking(MocoPaperResult):
         # -------------------------
         solution = study.solve()
         solution.write(self.get_solution_path(root_dir, config.name))
-        # solution = osim.MocoTrajectory(self.get_solution_path(root_dir, 
-        #       config.name))
 
         # Create a full gait cycle trajectory from the periodic solution.
         addPatterns = [".*pelvis_tx/value"]
@@ -1014,9 +1006,6 @@ class MotionTrackingWalking(MocoPaperResult):
         cmap = cm.get_cmap(self.cmap)
         title_fs = 10
         lw = 2.5
-
-        # experimental stride time
-        # ax_time.bar(0, self.final_time - self.initial_time, color='black')
 
         # experimental ground reactions
         grf_table = self.load_table(os.path.join(root_dir,

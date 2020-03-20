@@ -80,9 +80,10 @@ class MotionTrackingWalking(MocoPaperResult):
             color=cm.get_cmap(self.cmap)(0.9),
             flags=['moongravity'])
         self.configs = [
-            # self.config_track,
+            self.config_track,
             # self.config_weakhipabd,
             # self.config_weakpfs,
+            self.config_weakdfs,
             self.config_moongravity,
         ]
 

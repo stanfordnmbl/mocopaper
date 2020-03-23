@@ -88,29 +88,10 @@ class MotionTrackingWalking(MocoPaperResult):
             flags=['moongravity'])
         self.configs = [
             self.config_track,
-            # self.config_weakhipabd,
+            self.config_weakhipabd,
             # self.config_weakpfs,
             self.config_weakdfs,
             self.config_moongravity,
-            MocoTrackConfig(name='track',
-                            legend_entry='track',
-                            tracking_weight=5,
-                            effort_weight=1,
-                            cmap_index=0.2),
-            # MocoTrackConfig(name='weakhipabd',
-            #                 legend_entry='weak hip abductors',
-            #                 tracking_weight=10,
-            #                 effort_weight=10,
-            #                 cmap_index=0.5,
-            #                 guess='track'
-            #                 flags=['weakhipabd']),
-            # MocoTrackConfig(name='weakpfs',
-            #                 legend_entry='weak pfs',
-            #                 tracking_weight=10,
-            #                 effort_weight=10,
-            #                 cmap_index=0.8,
-            #                 guess='track'
-            #                 flags=['weakpfs']),
         ]
 
     def create_model_processor(self, root_dir, for_inverse=False, config=None):
@@ -221,7 +202,7 @@ class MotionTrackingWalking(MocoPaperResult):
                 for side in ['_l', '_r']:
                     musc = model.updMuscles().get('%s%s' % (muscle, side))
                     musc.set_max_isometric_force(
-                        0.10 * musc.get_max_isometric_force())
+                        0.05 * musc.get_max_isometric_force())
         if 'weakhipabd' in flags:
             for muscle in ['glmed1', 'glmed2', 'glmed3', 'glmin1', 'glmin2',
                            'glmin3', 'tfl']:

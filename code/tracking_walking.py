@@ -237,6 +237,7 @@ class MotionTrackingWalking(MocoPaperResult):
         # doesn't exceed a maximum value, assuming a rigid tendon. Muscle-tendon
         # length information was obtained from an OpenSim MuscleAnalysis using
         # the reference coordinate data.
+        maxPassiveMultiplier = 0.05
         print(f'Updating muscle passive force parameters...')
         model = modelProcessor.process()
         model.initSystem()
@@ -251,9 +252,6 @@ class MotionTrackingWalking(MocoPaperResult):
             # Enable tendon compliance dynamics in the plantarflexors.
             if ('gas' in muscName) or ('soleus' in muscName):
                 muscle.set_ignore_tendon_compliance(False)
-                maxPassiveMultiplier = 1
-            else:
-                maxPassiveMultiplier = 0.1
 
             tendonSlackLength = muscle.getTendonSlackLength()
             optimalFiberLength = muscle.getOptimalFiberLength()
@@ -451,10 +449,8 @@ class MotionTrackingWalking(MocoPaperResult):
         # produce "normal" walking motions.
         problem.setStateInfo('/jointset/back/lumbar_extension/value', [], -0.12)
         problem.setStateInfo('/jointset/back/lumbar_bending/value', [], 0)
-        # problem.setStateInfo('/jointset/back/lumbar_rotation/value', [], 0.04)
-        # problem.setStateInfo('/jointset/ground_pelvis/pelvis_tx/value', [], 0.446)
         problem.setStateInfo('/jointset/ground_pelvis/pelvis_tilt/value', [], -0.01)
-        problem.setStateInfo('/jointset/ground_pelvis/pelvis_list/value', [], 0)
+        # problem.setStateInfo('/jointset/ground_pelvis/pelvis_list/value', [], 0)
         # problem.setStateInfo('/jointset/ground_pelvis/pelvis_rotation/value', [], 0)
 
         # Update the control effort goal to a cost of transport type cost.
@@ -462,18 +458,19 @@ class MotionTrackingWalking(MocoPaperResult):
                 problem.updGoal('control_effort'))
         effort.setExponent(3)
         effort.setDivideByDisplacement(True)
-        # Weight residual and reserve actuators low in the effort cost since
-        # they are already weak.
-        if config.effort_weight:
-            for actu in model.getComponentsList():
-                actuName = actu.getName()
-                if actu.getConcreteClassName().endswith('Actuator'):
-                    effort.setWeightForControl(actu.getAbsolutePathString(), 1)
+        # Weight muscles based on max isometric force values.
+        musclePaths = list()
+        muscleMaxIsoForces = list()
+        muscles = model.getMuscles()
+        for i in range(muscles.getSize()):
+            muscle = muscles.get(i)
+            musclePaths.append(muscle.getAbsolutePathString())
+            muscleMaxIsoForces.append(muscle.getMaxIsometricForce())
 
-            for muscle in ['psoas', 'iliacus']:
-                for side in ['l', 'r']:
-                    effort.setWeightForControl(
-                        '/forceset/%s_%s' % (muscle, side), 0.5)
+        maxMaxIsoForce = max(muscleMaxIsoForces)
+        muscleWeights = [Fmax / maxMaxIsoForce for Fmax in muscleMaxIsoForces]
+        for path, weight in zip(musclePaths, muscleWeights):
+            effort.setWeightForControl(path, weight)
 
         speedGoal = osim.MocoAverageSpeedGoal('speed')
         speedGoal.set_desired_average_speed(1.235)
@@ -487,7 +484,6 @@ class MotionTrackingWalking(MocoPaperResult):
             distanceConstraint = osim.MocoFrameDistanceConstraint()
             distanceConstraint.setName('distance_constraint')
             # Step width is 0.13 * leg_length
-            # distance = 0.10 # TODO Should be closer to 0.11.
             # Donelan JM, Kram R, Kuo AD. Mechanical and metabolic determinants
             # of the preferred step width in human walking.
             # Proc Biol Sci. 2001;268(1480):1985–1992.
@@ -646,8 +642,6 @@ class MotionTrackingWalking(MocoPaperResult):
         # -------------------------
         solution = study.solve()
         solution.write(self.get_solution_path(root_dir, config.name))
-        # solution = osim.MocoTrajectory(self.get_solution_path(root_dir,
-        #       config.name))
 
         # Create a full gait cycle trajectory from the periodic solution.
         addPatterns = [".*pelvis_tx/value"]
@@ -825,15 +819,14 @@ class MotionTrackingWalking(MocoPaperResult):
 
             sol_path = self.get_solution_path(root_dir, config.name)
             sol_table = osim.TimeSeriesTable(sol_path)
-            if self.coordinate_tracking:
-                trackingCostStr = \
-                    sol_table.getTableMetaDataString('objective_state_tracking')
-            else:
-                trackingCostStr = \
-                    sol_table.getTableMetaDataString(
-                        'objective_marker_tracking')
             trackingCost = 0
             if config.tracking_weight:
+                if self.coordinate_tracking:
+                    trackingCostStr = sol_table.getTableMetaDataString(
+                        'objective_state_tracking')
+                else:
+                    trackingCostStr = sol_table.getTableMetaDataString(
+                            'objective_marker_tracking')
                 trackingCost = float(trackingCostStr) / config.tracking_weight
 
             effortCost = 0
@@ -1068,22 +1061,6 @@ class MotionTrackingWalking(MocoPaperResult):
         cmap = cm.get_cmap(self.cmap)
         title_fs = 10
         lw = 2.5
-
-        ax = fig.add_subplot(gs[6:9, 0])
-        import cv2
-        # Convert BGR color ordering to RGB.
-        image = cv2.imread(os.path.join(root_dir,
-                                        'motion_tracking_visualization/weakpfs.png'))[
-                ..., ::-1]
-        ax.imshow(image)
-        plt.axis('off')
-        ax = fig.add_subplot(gs[9:12, 0])
-        # Convert BGR color ordering to RGB.
-        image = cv2.imread(os.path.join(root_dir,
-                                        'motion_tracking_visualization/weakabd.png'))[
-                ..., ::-1]
-        ax.imshow(image)
-        plt.axis('off')
 
         # experimental ground reactions
         grf_table = self.load_table(

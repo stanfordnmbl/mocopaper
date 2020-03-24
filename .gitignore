@@ -256,3 +256,5 @@ out.log
 /paper/MocoPaper.blg
 /paper/MocoPaper.synctex*
 /tracking_walking_tracked_markers.sto
+!/motion_tracking_visualization/weakpfs.png
+!/motion_tracking_visualization/weakabd.png

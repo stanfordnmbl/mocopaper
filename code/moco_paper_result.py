@@ -50,33 +50,37 @@ class MocoPaperResult(ABC):
                            clip_on=False, **kwargs)
 
     def load_electromyography(self, root_dir):
-        anc = utilities.ANCFile(
-            os.path.join(root_dir, 'resources/Rajagopal2016/emg_walk_raw.anc'))
-        raw = anc.data
-        fields_to_remove = []
-        for name in anc.names:
-            if name != 'time' and name not in self.emg_sensor_names:
-                fields_to_remove.append(name)
-        del name
-
-        # We don't actually use the data that is initially in this object. We
-        # will overwrite all the data with the filtered data.
-        filtered_emg = utilities.remove_fields_from_structured_ndarray(raw,
-            fields_to_remove).copy()
-
-        # Debugging.
-        emg_fields = list(filtered_emg.dtype.names)
-        emg_fields.remove('time')
-        for expected_field in self.emg_sensor_names:
-            if expected_field not in emg_fields:
-                raise Exception("EMG field {} not found.".format(
-                    expected_field))
-
-        # Filter all columns.
-        for name in filtered_emg.dtype.names:
-            if name != 'time':
-                scaled_raw = anc.ranges[name] * 2 / 65536.0 * 0.001 * anc[name]
-                filtered_emg[name] = utilities.filter_emg(
-                    scaled_raw.copy(), anc.rates[name])
-                filtered_emg[name] /= np.max(filtered_emg[name])
-        return filtered_emg
+        # anc = utilities.ANCFile(
+        #     os.path.join(root_dir, 'resources/Rajagopal2016/emg_walk_raw.anc'))
+        # raw = anc.data
+        # fields_to_remove = []
+        # for name in anc.names:
+        #     if name != 'time' and name not in self.emg_sensor_names:
+        #         fields_to_remove.append(name)
+        # del name
+        #
+        # # We don't actually use the data that is initially in this object. We
+        # # will overwrite all the data with the filtered data.
+        # filtered_emg = utilities.remove_fields_from_structured_ndarray(raw,
+        #     fields_to_remove).copy()
+        #
+        # # Debugging.
+        # emg_fields = list(filtered_emg.dtype.names)
+        # emg_fields.remove('time')
+        # for expected_field in self.emg_sensor_names:
+        #     if expected_field not in emg_fields:
+        #         raise Exception("EMG field {} not found.".format(
+        #             expected_field))
+        #
+        # # Filter all columns.
+        # for name in filtered_emg.dtype.names:
+        #     if name != 'time':
+        #         scaled_raw = anc.ranges[name] * 2 / 65536.0 * 0.001 * anc[name]
+        #         filtered_emg[name] = utilities.filter_emg(
+        #             scaled_raw.copy(), anc.rates[name])
+        #         filtered_emg[name] /= np.max(filtered_emg[name])
+        # return filtered_emg
+        return np.genfromtxt(os.path.join(root_dir, 'resources',
+                                         'PerryBurnfieldElectromyography.csv'),
+                            names=True,
+                            delimiter=',')

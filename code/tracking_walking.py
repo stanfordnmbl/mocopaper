@@ -758,15 +758,15 @@ class MotionTrackingWalking(MocoPaperResult):
         ax_list.append(ax_knee)
         ax_list.append(ax_ankle)
         muscles = [
-            (fig.add_subplot(gs[0:4, 2]), 'glmax2', 'gluteus maximus', 'GMAX'),
-            (fig.add_subplot(gs[4:8, 2]), 'psoas', 'psoas', 'PSOAS'),
-            (fig.add_subplot(gs[8:12, 2]), 'semiten', 'semitendinosus', 'MH'),
-            (fig.add_subplot(gs[12:16, 2]), 'recfem', 'rectus femoris', 'RF'),
-            (fig.add_subplot(gs[16:20, 2]), 'bfsh', 'biceps femoris short head', 'BF'),
-            (fig.add_subplot(gs[20:24, 2]), 'vaslat', 'vastus lateralis', 'VL'),
-            (fig.add_subplot(gs[24:28, 2]), 'gasmed', 'medial gastrocnemius', 'GAS'),
-            (fig.add_subplot(gs[28:32, 2]), 'soleus', 'soleus', 'SOL'),
-            (fig.add_subplot(gs[32:36, 2]), 'tibant', 'tibialis anterior', 'TA'),
+            (fig.add_subplot(gs[0:4, 2]), 'glmax2', 'gluteus maximus', 'GluteusMaximusUpper'), # TODO Lower?
+            (fig.add_subplot(gs[4:8, 2]), 'iliacus', 'iliacus', 'Iliacus'),
+            (fig.add_subplot(gs[8:12, 2]), 'semiten', 'semitendinosus', 'Semitendinosus'),
+            (fig.add_subplot(gs[12:16, 2]), 'recfem', 'rectus femoris', 'RectusFemoris'),
+            (fig.add_subplot(gs[16:20, 2]), 'bfsh', 'biceps femoris short head', 'BicepsFemorisShortHead'),
+            (fig.add_subplot(gs[20:24, 2]), 'vaslat', 'vastus lateralis', 'VastusLateralis'),
+            (fig.add_subplot(gs[24:28, 2]), 'gasmed', 'medial gastrocnemius', 'Gastrocnemius'),
+            (fig.add_subplot(gs[28:32, 2]), 'soleus', 'soleus', 'Soleus'),
+            (fig.add_subplot(gs[32:36, 2]), 'tibant', 'tibialis anterior', 'TibialisAnterior'),
         ]
         cmap = cm.get_cmap(self.cmap)
         title_fs = 10
@@ -928,13 +928,13 @@ class MotionTrackingWalking(MocoPaperResult):
                 ax.plot(pgc, activation, color=color, lw=lw)
 
                 # electromyography data
-                # TODO: do not assume we want to normalize EMG via
-                # simulation 0.
-                if i == 0 and 'PSOAS' not in muscle:
-                    self.plot(ax, emg['time'],
-                              emg[muscle[3]] * np.max(activation),
-                              shift=False, fill=True, color='lightgray',
-                              label='electromyography')
+                if config.name == 'track':
+                    ax.fill_between(emg['percent_gait_cycle'],
+                                    emg[muscle[3]] / 100.0,
+                                    np.zeros_like(emg[muscle[3]]),
+                                    clip_on=False,
+                                    color='lightgray',
+                                    label='electromyography')
                 ax.set_ylim(0, 1)
                 ax.set_yticks([0, 1])
                 ax.set_xlim(0, 100)
@@ -1041,17 +1041,16 @@ class MotionTrackingWalking(MocoPaperResult):
         ax_list.append(ax_grf_x)
         ax_list.append(ax_grf_y)
         muscles = [
-            (fig.add_subplot(gs[0:2, 1]), 'glmax2', 'gluteus maximus', 'GMAX'),
-            (fig.add_subplot(gs[0:2, 2]), 'psoas', 'psoas', 'PSOAS'),
-            (fig.add_subplot(gs[0:2, 3]), 'recfem', 'rectus femoris', 'RF'),
-            (fig.add_subplot(gs[2:4, 1]), 'semiten', 'semitendinosus', 'MH'),
-            (fig.add_subplot(gs[2:4, 2]), 'bfsh', 'biceps femoris short head', 'BF'),
-            (fig.add_subplot(gs[2:4, 3]), 'vaslat', 'vastus lateralis', 'VL'),
-            (fig.add_subplot(gs[4:6, 1]), 'gasmed', 'medial gastrocnemius', 'GAS'),
-            (fig.add_subplot(gs[4:6, 2]), 'soleus', 'soleus', 'SOL'),
-            (fig.add_subplot(gs[4:6, 3]), 'tibant', 'tibialis anterior', 'TA'),
+            (fig.add_subplot(gs[0:2, 1]), 'glmax2', 'gluteus maximus', 'GluteusMaximusUpper'), # TODO Lower?
+            (fig.add_subplot(gs[0:2, 2]), 'psoas', 'psoas', 'Iliacus'),
+            (fig.add_subplot(gs[0:2, 3]), 'recfem', 'rectus femoris', 'RectusFemoris'),
+            (fig.add_subplot(gs[2:4, 1]), 'semiten', 'semitendinosus', 'Semitendinosus'),
+            (fig.add_subplot(gs[2:4, 2]), 'bfsh', 'biceps femoris short head', 'BicepsFemorisShortHead'),
+            (fig.add_subplot(gs[2:4, 3]), 'vaslat', 'vastus lateralis', 'VastusLateralis'),
+            (fig.add_subplot(gs[4:6, 1]), 'gasmed', 'medial gastrocnemius', 'Gastrocnemius'),
+            (fig.add_subplot(gs[4:6, 2]), 'soleus', 'soleus', 'Soleus'),
+            (fig.add_subplot(gs[4:6, 3]), 'tibant', 'tibialis anterior', 'TibialisAnterior'),
         ]
-        cmap = cm.get_cmap(self.cmap)
         title_fs = 10
         lw = 2.5
 
@@ -1129,11 +1128,15 @@ class MotionTrackingWalking(MocoPaperResult):
                 # electromyography data
                 # TODO: do not assume we want to normalize EMG via
                 # simulation 0.
-                if config.name == 'track' and 'PSOAS' not in muscle:
-                    self.plot(ax, emg['time'],
-                              emg[muscle[3]] * np.max(activation),
-                              shift=False, fill=True, color='lightgray',
-                              label='electromyography')
+                print('DEBUG', emg['percent_gait_cycle'], emg[muscle[3]])
+
+                if config.name == 'track':
+                    ax.fill_between(emg['percent_gait_cycle'],
+                                    emg[muscle[3]] / 100.0,
+                                    np.zeros_like(emg[muscle[3]]),
+                                    clip_on=False,
+                                    color='lightgray',
+                                    label='electromyography')
                 ax.set_ylim(0, 1)
                 ax.set_yticks([0, 1])
                 ax.set_xlim(0, 100)

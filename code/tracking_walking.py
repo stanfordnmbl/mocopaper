@@ -668,6 +668,7 @@ class MotionTrackingWalking(MocoPaperResult):
         self.coordinate_tracking = False
         self.contact_tracking = False
         self.visualize = False
+        self.plot_quick = True
         if len(args) == 0: return
         print('Received arguments {}'.format(args))
         if 'skip-inverse' in args:
@@ -678,6 +679,8 @@ class MotionTrackingWalking(MocoPaperResult):
             self.contact_tracking = True
         if 'visualize' in args:
             self.visualize = True
+        if 'plot-quick' in args:
+            self.plot_quick = True
 
     def generate_results(self, root_dir, args):
         self.parse_args(args)
@@ -731,6 +734,8 @@ class MotionTrackingWalking(MocoPaperResult):
 
         self.plot_paper_figure_normal(root_dir, mass, BW)
         self.plot_paper_figure_modified(root_dir, mass, BW)
+        if self.plot_quick:
+            return
 
         emg = self.load_electromyography(root_dir)
 

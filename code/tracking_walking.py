@@ -37,8 +37,7 @@ class MotionTrackingWalking(MocoPaperResult):
             'results/motion_tracking_walking_inverse_solution.sto'
         self.tracking_solution_relpath_prefix = \
             'results/motion_tracking_walking_solution'
-        self.cmap = 'nipy_spectral'
-        cmap = cm.get_cmap(self.cmap)
+        self.cmap = cm.get_cmap('nipy_spectral')
         self.config_track = MocoTrackConfig(
             name='track',
             legend_entry='track',
@@ -51,7 +50,7 @@ class MotionTrackingWalking(MocoPaperResult):
             legend_entry='weak hip abductors',
             tracking_weight=10,
             effort_weight=10,
-            color=cm.get_cmap(self.cmap)(0.5),
+            color=self.cmap(0.5),
             guess='track',
             flags=['weakhipabd'])
         self.config_weakpfs = MocoTrackConfig(
@@ -59,7 +58,7 @@ class MotionTrackingWalking(MocoPaperResult):
             legend_entry='weak pfs',
             tracking_weight=10,
             effort_weight=10,
-            color=cm.get_cmap(self.cmap)(0.8),
+            color=self.cmap(0.8),
             guess='track',
             flags=['weakpfs'])
         self.config_weakdfs = MocoTrackConfig(
@@ -67,7 +66,7 @@ class MotionTrackingWalking(MocoPaperResult):
             legend_entry='weak dfs',
             tracking_weight=10,
             effort_weight=10,
-            color=cm.get_cmap(self.cmap)(0.8),
+            color=self.cmap(0.8),
             guess='track',
             flags=['weakdfs'])
         self.config_assistdfs = MocoTrackConfig(
@@ -75,7 +74,7 @@ class MotionTrackingWalking(MocoPaperResult):
             legend_entry='pass. assisted weak dfs',
             tracking_weight=5,
             effort_weight=10,
-            color=cm.get_cmap(self.cmap)(0.75),
+            color=self.cmap(0.75),
             guess='track',
             flags=['passassistankledf', 'weakdfs'],
         ),
@@ -84,7 +83,7 @@ class MotionTrackingWalking(MocoPaperResult):
             legend_entry='Moon gravity',
             tracking_weight=0,
             effort_weight=10,
-            color=cm.get_cmap(self.cmap)(0.9),
+            color=self.cmap(0.9),
             flags=['moongravity'])
         self.configs = [
             self.config_track,
@@ -731,6 +730,7 @@ class MotionTrackingWalking(MocoPaperResult):
                 osim.visualize(model, solution.exportToStatesTable())
 
         self.plot_paper_figure_normal(root_dir, mass, BW)
+        self.plot_paper_figure_modified(root_dir, mass, BW)
 
         emg = self.load_electromyography(root_dir)
 
@@ -1028,23 +1028,11 @@ class MotionTrackingWalking(MocoPaperResult):
 
         emg = self.load_electromyography(root_dir)
 
-        fig = plt.figure(figsize=(7.5, 6.5))
-        gs = gridspec.GridSpec(12, 4)
-        ax_grf_x = fig.add_subplot(gs[3:6, 0])
+        fig = plt.figure(figsize=(7.5, 3.3))
+        gs = gridspec.GridSpec(6, 4)
         ax_grf_y = fig.add_subplot(gs[0:3, 0])
-        ax_ankle = fig.add_subplot(gs[6:9, 1])
-        ax_anklemom = fig.add_subplot(gs[6:9, 2])
-        ax_hipmom = fig.add_subplot(gs[6:9, 3])
-        ax_add = fig.add_subplot(gs[9:12, 2])
-        ax_addmom = fig.add_subplot(gs[9:12, 3])
-        # ax_lumbar = fig.add_subplot(gs[9:12, 1])
+        ax_grf_x = fig.add_subplot(gs[3:6, 0])
         ax_list = list()
-        ax_list.append(ax_ankle)
-        ax_list.append(ax_anklemom)
-        ax_list.append(ax_hipmom)
-        ax_list.append(ax_add)
-        ax_list.append(ax_addmom)
-        # ax_list.append(ax_lumbar)
         ax_list.append(ax_grf_x)
         ax_list.append(ax_grf_y)
         muscles = [
@@ -1082,9 +1070,145 @@ class MotionTrackingWalking(MocoPaperResult):
         #               grf_table['ground_force_l_vz'][grf_start:grf_end]/BW,
         #               color=exp_color, lw=lw+1.0)
 
+        # simulation results
+        config = self.config_track
+        color = config.color
+        full_path = self.get_solution_path_fullcycle(root_dir, config.name)
+        full_traj = osim.MocoTrajectory(full_path)
+
+        modelProcessor = self.create_model_processor(root_dir,
+                                                     for_inverse=False,
+                                                     config=config)
+        model = modelProcessor.process()
+        # TODO use sum of muscles instead of inverse dynamics? how can
+        # muscles spike like this?
+        netgenforce = utilities.calc_net_generalized_forces(model,
+                                                            full_traj)
+
+        time = full_traj.getTimeMat()
+        pgc = np.linspace(0, 100, len(time))
+
+        # ground reaction forces
+        if config.name == 'track':
+            grf_path = self.get_solution_path_grfs(root_dir, config.name)
+            grf_table = self.load_table(grf_path)
+            ax_grf_x.plot(pgc, grf_table['ground_force_l_vx']/BW, color=color,
+                          lw=lw)
+            ax_grf_x.set_ylabel('horizontal force (BW)')
+            ax_grf_x.set_ylim(-0.35, 0.35)
+            ax_grf_x.set_yticks([-0.2, 0, 0.2])
+            ax_grf_x.set_xlabel('time (% gait cycle)')
+
+            ax_grf_y.plot(pgc, grf_table['ground_force_l_vy']/BW, color=color,
+                          lw=lw)
+            ax_grf_y.set_ylabel('vertical force (BW)')
+            ax_grf_y.set_ylim(0, 1.5)
+            ax_grf_y.set_yticks([0, 0.5, 1, 1.5])
+            ax_grf_y.set_xticklabels([])
+            ax_grf_y.set_title('GROUND REACTIONS\n', weight='bold',
+                               size=title_fs)
+
+        for ax in ax_list:
+            utilities.publication_spines(ax)
+            ax.set_xlim(0, 100)
+            ax.set_xticks([0, 50, 100])
+
+        # muscle activations
+        if config.name == 'track':
+            for im, muscle in enumerate(muscles):
+                activation_path = f'/forceset/{muscle[1]}_l/activation'
+                ax = muscle[0]
+                activation = full_traj.getStateMat(activation_path)
+                ax.plot(pgc, activation, color=color, lw=lw)
+
+                # electromyography data
+                # TODO: do not assume we want to normalize EMG via
+                # simulation 0.
+                if config.name == 'track' and 'PSOAS' not in muscle:
+                    self.plot(ax, emg['time'],
+                              emg[muscle[3]] * np.max(activation),
+                              shift=False, fill=True, color='lightgray',
+                              label='electromyography')
+                ax.set_ylim(0, 1)
+                ax.set_yticks([0, 1])
+                ax.set_xlim(0, 100)
+                ax.set_xticks([0, 50, 100])
+
+                ax.text(0.5, 1.2, muscle[2],
+                        horizontalalignment='center',
+                        verticalalignment='top',
+                        transform=ax.transAxes)
+                utilities.publication_spines(ax)
+                if im == 1:
+                    ax.set_title('ACTIVATIONS\n', weight='bold',
+                                 size=title_fs)
+                if im >= 6:
+                    ax.set_xlabel('time (% gait cycle)')
+                else:
+                    ax.set_xticklabels([])
+
+
+        fig.align_ylabels([ax_grf_x, ax_grf_y])
+
+        fig.tight_layout(h_pad=0.1)
+        fig.savefig(os.path.join(root_dir,
+                                 'figures/motion_tracking_walking_normal.png'),
+                    dpi=600)
+
+    def plot_paper_figure_modified(self, root_dir, mass, BW):
+
+        emg = self.load_electromyography(root_dir)
+
+        fig = plt.figure(figsize=(7.5, 4))
+        gs = gridspec.GridSpec(6, 4)
+        ax_ankle = fig.add_subplot(gs[0:2, 1])
+        ax_anklemom = fig.add_subplot(gs[4:6, 1])
+        ax_hipmom = fig.add_subplot(gs[2:4, 1])
+        ax_add = fig.add_subplot(gs[0:3, 3])
+        ax_addmom = fig.add_subplot(gs[3:6, 3])
+        # ax_lumbar = fig.add_subplot(gs[9:12, 1])
+        ax_list = list()
+        ax_list.append(ax_ankle)
+        ax_list.append(ax_anklemom)
+        ax_list.append(ax_hipmom)
+        ax_list.append(ax_add)
+        ax_list.append(ax_addmom)
+        # ax_list.append(ax_lumbar)
+        cmap = cm.get_cmap(self.cmap)
+        title_fs = 10
+        lw = 2.5
+
+        ax = fig.add_subplot(gs[0:6, 0])
+        import cv2
+        # Convert BGR color ordering to RGB.
+        image = cv2.imread(os.path.join(root_dir,
+                                        'motion_tracking_visualization/weakpfs.png'))[
+                ..., ::-1]
+        ax.imshow(image)
+        plt.axis('off')
+        ax = fig.add_subplot(gs[0:6, 2])
+        # Convert BGR color ordering to RGB.
+        image = cv2.imread(os.path.join(root_dir,
+                                        'motion_tracking_visualization/weakabd.png'))[
+                ..., ::-1]
+        ax.imshow(image)
+        plt.axis('off')
+
+        # experimental ground reactions
+        grf_table = self.load_table(
+            os.path.join(root_dir,
+                         'resources', 'Rajagopal2016', 'grf_walk.mot'))
+        grf_start = np.argmin(abs(grf_table['time']-self.initial_time))
+        grf_end = np.argmin(abs(grf_table['time']-self.final_time))
+
+        time_grfs = grf_table['time'][grf_start:grf_end]
+        pgc_grfs = np.linspace(0, 100, len(time_grfs))
+        exp_color = 'gray'
+
         # experimental coordinates
-        coordinates = self.load_table(os.path.join(root_dir, 'resources',
-                                                   'Rajagopal2016', 'coordinates.mot'))
+        coordinates = self.load_table(
+            os.path.join(root_dir, 'resources',
+                         'Rajagopal2016', 'coordinates.mot'))
         coords_start = np.argmin(abs(coordinates['time']-self.initial_time))
         coords_end = np.argmin(abs(coordinates['time']-self.final_time))
 
@@ -1093,12 +1217,6 @@ class MotionTrackingWalking(MocoPaperResult):
         ax_add.plot(pgc_coords,
                     coordinates['hip_adduction_l'][coords_start:coords_end],
                     color=exp_color, lw=lw + 1.0)
-        # ax_hip.plot(pgc_coords,
-        #             coordinates['hip_flexion_l'][coords_start:coords_end],
-        #             color=exp_color, lw=lw + 1.0)
-        # ax_knee.plot(pgc_coords,
-        #              coordinates['knee_angle_l'][coords_start:coords_end],
-        #              color=exp_color, lw=lw + 1.0)
         ax_ankle.plot(pgc_coords,
                       coordinates['ankle_angle_l'][coords_start:coords_end],
                       color=exp_color, lw=lw + 1.0)
@@ -1123,86 +1241,44 @@ class MotionTrackingWalking(MocoPaperResult):
             netgenforce = utilities.calc_net_generalized_forces(model,
                                                                 full_traj)
 
-            # sol_path = self.get_solution_path(root_dir, config.name)
-            # sol_table = osim.TimeSeriesTable(sol_path)
-            #
-            #
-            # if self.coordinate_tracking:
-            #     trackingCostStr = \
-            #         sol_table.getTableMetaDataString('objective_state_tracking')
-            # else:
-            #     trackingCostStr = \
-            #         sol_table.getTableMetaDataString(
-            #             'objective_marker_tracking')
-            # trackingCost = float(trackingCostStr) / config.tracking_weight
-
-            # effortCost = 0
-            # if config.effort_weight:
-            #     effortCostStr = \
-            #         sol_table.getTableMetaDataString('objective_control_effort')
-            #     effortCost = float(effortCostStr) / config.effort_weight
-            # print(f'effort and tracking costs (config: {config.name}): ',
-            #       effortCost, trackingCost)
-
             time = full_traj.getTimeMat()
             pgc = np.linspace(0, 100, len(time))
 
-            if config.name == 'weakpfs' or config.name == 'track':
+            if config.name == 'weakdfs' or config.name == 'track':
                 ankle_moment = netgenforce.getDependentColumn(
                     'ankle_angle_l_moment')
                 ax_anklemom.plot(pgc, -toarray(ankle_moment) / mass,
-                             color=color, lw=lw)
-                ax_anklemom.set_xticklabels([])
-                ax_anklemom.set_title('ankle plantarflexion moment\n(Nm/kg)')
+                                 color=color, lw=lw)
+                ax_anklemom.set_ylabel('ankle plantarflexion\nmoment (Nm/kg)')
+                ax_anklemom.set_xlabel('time (% gait cycle)')
 
                 hip_moment = netgenforce.getDependentColumn(
                     'hip_flexion_l_moment')
                 ax_hipmom.plot(pgc, toarray(hip_moment) / mass,
-                                 color=color, lw=lw)
+                               color=color, lw=lw)
+                ax_hipmom.set_ylabel('hip flexion\nmoment (Nm/kg)')
                 ax_hipmom.set_xticklabels([])
-                ax_hipmom.set_title('hip flexion moment\n(Nm/kg)')
             if config.name == 'weakhipabd' or config.name == 'track':
                 hipadd_moment = netgenforce.getDependentColumn(
                     'hip_adduction_l_moment')
                 ax_addmom.plot(pgc, -toarray(hipadd_moment) / mass,
-                             color=color, lw=lw)
+                               color=color, lw=lw)
+                ax_addmom.set_ylabel('hip abduction moment (Nm/kg)')
                 ax_addmom.set_xlabel('time (% gait cycle)')
-                ax_addmom.set_title('hip abduction moment\n(Nm/kg)')
-
-
-            # ground reaction forces
-            if config.name == 'track':
-                grf_path = self.get_solution_path_grfs(root_dir, config.name)
-                grf_table = self.load_table(grf_path)
-                ax_grf_x.plot(pgc, grf_table['ground_force_l_vx']/BW, color=color,
-                              lw=lw)
-                ax_grf_x.set_ylabel('horizontal force (BW)')
-                ax_grf_x.set_ylim(-0.35, 0.35)
-                ax_grf_x.set_yticks([-0.2, 0, 0.2])
-                ax_grf_x.set_xlabel('time (% gait cycle)')
-
-                ax_grf_y.plot(pgc, grf_table['ground_force_l_vy']/BW, color=color,
-                              lw=lw)
-                ax_grf_y.set_ylabel('vertical force (BW)')
-                ax_grf_y.set_ylim(0, 1.5)
-                ax_grf_y.set_yticks([0, 0.5, 1, 1.5])
-                ax_grf_y.set_xticklabels([])
-                ax_grf_y.set_title('GROUND REACTIONS\n', weight='bold',
-                                   size=title_fs)
 
             # kinematics
             rad2deg = 180 / np.pi
-            if config.name == 'weakpfs' or config.name == 'track':
+            if config.name == 'weakdfs' or config.name == 'track':
                 ax_ankle.plot(pgc, rad2deg*full_traj.getStateMat(
                     '/jointset/ankle_l/ankle_angle_l/value'), color=color,
                               lw=lw)
-                ax_ankle.set_title('ankle dorsiflexion angle\n(degrees)')
-                ax_ankle.set_xlabel('time (% gait cycle)')
+                ax_ankle.set_xticklabels([])
+                ax_ankle.set_ylabel('ankle dorsiflexion\nangle (degrees)')
             if config.name == 'weakhipabd' or config.name == 'track':
                 ax_add.plot(pgc, rad2deg*full_traj.getStateMat(
                     '/jointset/hip_l/hip_adduction_l/value'), color=color, lw=lw)
-                ax_add.set_title('hip adduction angle\n(degrees)')
-                ax_add.set_xlabel('time (% gait cycle)')
+                ax_add.set_ylabel('hip adduction angle (degrees)')
+                ax_add.set_xticklabels([])
 
                 # ax_lumbar.plot(pgc, rad2deg*full_traj.getStateMat(
                 #     '/jointset/back/lumbar_bending/value'), color=color, lw=lw)
@@ -1215,189 +1291,10 @@ class MotionTrackingWalking(MocoPaperResult):
                 ax.set_xlim(0, 100)
                 ax.set_xticks([0, 50, 100])
 
-            # muscle activations
-            if config.name == 'track':
-                for im, muscle in enumerate(muscles):
-                    activation_path = f'/forceset/{muscle[1]}_l/activation'
-                    ax = muscle[0]
-                    activation = full_traj.getStateMat(activation_path)
-                    ax.plot(pgc, activation, color=color, lw=lw)
+        fig.align_ylabels([ax_ankle, ax_hipmom, ax_anklemom])
+        fig.align_ylabels([ax_add, ax_addmom])
 
-                    # electromyography data
-                    # TODO: do not assume we want to normalize EMG via
-                    # simulation 0.
-                    if config.name == 'track' and 'PSOAS' not in muscle:
-                        self.plot(ax, emg['time'],
-                                  emg[muscle[3]] * np.max(activation),
-                                  shift=False, fill=True, color='lightgray',
-                                  label='electromyography')
-                    ax.set_ylim(0, 1)
-                    ax.set_yticks([0, 1])
-                    ax.set_xlim(0, 100)
-                    ax.set_xticks([0, 50, 100])
-
-                    ax.text(0.5, 1.2, muscle[2],
-                            horizontalalignment='center',
-                            verticalalignment='top',
-                            transform=ax.transAxes)
-                    utilities.publication_spines(ax)
-                    if im == 1:
-                        ax.set_title('ACTIVATIONS\n', weight='bold',
-                                     size=title_fs)
-                    ax.set_xticklabels([])
-
-
-        fig.align_ylabels([ax_grf_x, ax_grf_y])
-        fig.align_ylabels([ax_add, ax_ankle])
-
-        fig.tight_layout(h_pad=0.1)
-        fig.savefig(os.path.join(root_dir,
-                                 'figures/motion_tracking_walking_normal.png'),
-                    dpi=600)
-
-    def plot_paper_figure_modified(self, root_dir, mass, BW):
-
-        emg = self.load_electromyography(root_dir)
-
-        fig = plt.figure(figsize=(7.5, 6.5))
-        gs = gridspec.GridSpec(12, 4)
-        ax_grf_x = fig.add_subplot(gs[3:6, 0])
-        ax_grf_y = fig.add_subplot(gs[0:3, 0])
-        ax_ankle = fig.add_subplot(gs[6:9, 1])
-        ax_anklemom = fig.add_subplot(gs[6:9, 2])
-        ax_hipmom = fig.add_subplot(gs[6:9, 3])
-        ax_add = fig.add_subplot(gs[9:12, 2])
-        ax_addmom = fig.add_subplot(gs[9:12, 3])
-        # ax_lumbar = fig.add_subplot(gs[9:12, 1])
-        ax_list = list()
-        ax_list.append(ax_ankle)
-        ax_list.append(ax_anklemom)
-        ax_list.append(ax_hipmom)
-        ax_list.append(ax_add)
-        ax_list.append(ax_addmom)
-        # ax_list.append(ax_lumbar)
-        ax_list.append(ax_grf_x)
-        ax_list.append(ax_grf_y)
-        cmap = cm.get_cmap(self.cmap)
-        title_fs = 10
-        lw = 2.5
-
-        ax = fig.add_subplot(gs[6:9, 0])
-        import cv2
-        # Convert BGR color ordering to RGB.
-        image = cv2.imread(os.path.join(root_dir,
-                                        'motion_tracking_visualization/weakpfs.png'))[
-                ..., ::-1]
-        ax.imshow(image)
-        plt.axis('off')
-        ax = fig.add_subplot(gs[9:12, 0])
-        # Convert BGR color ordering to RGB.
-        image = cv2.imread(os.path.join(root_dir,
-                                        'motion_tracking_visualization/weakabd.png'))[
-                ..., ::-1]
-        ax.imshow(image)
-        plt.axis('off')
-
-        # experimental ground reactions
-        grf_table = self.load_table(
-            os.path.join(root_dir,
-                         'resources', 'Rajagopal2016', 'grf_walk.mot'))
-        grf_start = np.argmin(abs(grf_table['time']-self.initial_time))
-        grf_end = np.argmin(abs(grf_table['time']-self.final_time))
-
-        time_grfs = grf_table['time'][grf_start:grf_end]
-        pgc_grfs = np.linspace(0, 100, len(time_grfs))
-        exp_color = 'gray'
-
-        # experimental coordinates
-        coordinates = self.load_table(os.path.join(root_dir, 'resources',
-                                                   'Rajagopal2016', 'coordinates.mot'))
-        coords_start = np.argmin(abs(coordinates['time']-self.initial_time))
-        coords_end = np.argmin(abs(coordinates['time']-self.final_time))
-
-        time_coords = coordinates['time'][coords_start:coords_end]
-        pgc_coords = np.linspace(0, 100, len(time_coords))
-        ax_add.plot(pgc_coords,
-                    coordinates['hip_adduction_l'][coords_start:coords_end],
-                    color=exp_color, lw=lw + 1.0)
-        ax_ankle.plot(pgc_coords,
-                      coordinates['ankle_angle_l'][coords_start:coords_end],
-                      color=exp_color, lw=lw + 1.0)
-        # ax_lumbar.plot(pgc_coords,
-        #               coordinates['lumbar_bending'][coords_start:coords_end],
-        #               color=exp_color, lw=lw + 1.0)
-
-
-
-        # simulation results
-        for i, config in enumerate(self.configs):
-            color = config.color
-            full_path = self.get_solution_path_fullcycle(root_dir, config)
-            full_traj = osim.MocoTrajectory(full_path)
-
-            modelProcessor = self.create_model_processor(root_dir,
-                                                         for_inverse=False,
-                                                         config=config)
-            model = modelProcessor.process()
-            # TODO use sum of muscles instead of inverse dynamics? how can
-            # muscles spike like this?
-            netgenforce = utilities.calc_net_generalized_forces(model,
-                                                                full_traj)
-
-            time = full_traj.getTimeMat()
-            pgc = np.linspace(0, 100, len(time))
-
-            if config.name == 'weakpfs' or config.name == 'track':
-                ankle_moment = netgenforce.getDependentColumn(
-                    'ankle_angle_l_moment')
-                ax_anklemom.plot(pgc, -toarray(ankle_moment) / mass,
-                                 color=color, lw=lw)
-                ax_anklemom.set_xticklabels([])
-                ax_anklemom.set_title('ankle plantarflexion moment\n(Nm/kg)')
-
-                hip_moment = netgenforce.getDependentColumn(
-                    'hip_flexion_l_moment')
-                ax_hipmom.plot(pgc, toarray(hip_moment) / mass,
-                               color=color, lw=lw)
-                ax_hipmom.set_xticklabels([])
-                ax_hipmom.set_title('hip flexion moment\n(Nm/kg)')
-            if config.name == 'weakhipabd' or config.name == 'track':
-                hipadd_moment = netgenforce.getDependentColumn(
-                    'hip_adduction_l_moment')
-                ax_addmom.plot(pgc, -toarray(hipadd_moment) / mass,
-                               color=color, lw=lw)
-                ax_addmom.set_xlabel('time (% gait cycle)')
-                ax_addmom.set_title('hip abduction moment\n(Nm/kg)')
-
-            # kinematics
-            rad2deg = 180 / np.pi
-            if config.name == 'weakpfs' or config.name == 'track':
-                ax_ankle.plot(pgc, rad2deg*full_traj.getStateMat(
-                    '/jointset/ankle_l/ankle_angle_l/value'), color=color,
-                              lw=lw)
-                ax_ankle.set_title('ankle dorsiflexion angle\n(degrees)')
-                ax_ankle.set_xlabel('time (% gait cycle)')
-            if config.name == 'weakhipabd' or config.name == 'track':
-                ax_add.plot(pgc, rad2deg*full_traj.getStateMat(
-                    '/jointset/hip_l/hip_adduction_l/value'), color=color, lw=lw)
-                ax_add.set_title('hip adduction angle\n(degrees)')
-                ax_add.set_xlabel('time (% gait cycle)')
-
-                # ax_lumbar.plot(pgc, rad2deg*full_traj.getStateMat(
-                #     '/jointset/back/lumbar_bending/value'), color=color, lw=lw)
-                # ax_lumbar.set_title('lumbar bending angle\n(degrees)')
-                # ax_lumbar.set_xlabel('time (% gait cycle)')
-
-
-            for ax in ax_list:
-                utilities.publication_spines(ax)
-                ax.set_xlim(0, 100)
-                ax.set_xticks([0, 50, 100])
-
-        fig.align_ylabels([ax_grf_x, ax_grf_y])
-        fig.align_ylabels([ax_add, ax_ankle])
-
-        fig.tight_layout(h_pad=0.1)
+        fig.tight_layout() # h_pad=0.1)
         fig.savefig(os.path.join(root_dir,
                                  'figures/motion_tracking_walking_modified.png'),
                     dpi=600)

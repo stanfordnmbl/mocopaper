@@ -41,8 +41,21 @@ class MotionTrackingWalking(MocoPaperResult):
             MocoTrackConfig(name='track',
                             legend_entry='track',
                             tracking_weight=10,
-                            effort_weight=10,
-                            cmap_index=0.2),
+                            effort_weight=1,
+                            cmap_index=0.2,
+                            guess='track'),
+            # MocoTrackConfig(name='track_activations_cubed',
+            #                 legend_entry='track-activations-cubed',
+            #                 tracking_weight=10,
+            #                 effort_weight=10,
+            #                 cmap_index=0.6,
+            #                 flags=['track-activations-cubed']),
+            # MocoTrackConfig(name='track_activations_fifthed',
+            #                 legend_entry='track-activations-fifthed',
+            #                 tracking_weight=10,
+            #                 effort_weight=10,
+            #                 cmap_index=0.8,
+            #                 flags=['track-activations-fifthed']),
             # MocoTrackConfig(name='weakhipabd',
             #                 legend_entry='weak hip abductors',
             #                 tracking_weight=10,
@@ -183,6 +196,7 @@ class MotionTrackingWalking(MocoPaperResult):
         # We will re-enable tendon compliance for the plantarflexors below.
         modelProcessor.append(osim.ModOpIgnoreTendonCompliance())
         modelProcessor.append(osim.ModOpFiberDampingDGF(0.01))
+        modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
 
         if for_inverse:
             ext_loads_xml = os.path.join(root_dir,
@@ -193,7 +207,7 @@ class MotionTrackingWalking(MocoPaperResult):
         # doesn't exceed a maximum value, assuming a rigid tendon. Muscle-tendon
         # length information was obtained from an OpenSim MuscleAnalysis using
         # the reference coordinate data.
-        maxPassiveMultiplier = 0.05
+        maxPassiveMultiplier = 0.01
         print(f'Updating muscle passive force parameters...')
         model = modelProcessor.process()
         model.initSystem()
@@ -407,22 +421,32 @@ class MotionTrackingWalking(MocoPaperResult):
         # Update the control effort goal to a cost of transport type cost.
         effort = osim.MocoControlGoal().safeDownCast(
                 problem.updGoal('control_effort'))
-        effort.setExponent(3)
-        effort.setDivideByDisplacement(True)
-        # Weight muscles based on max isometric force values.
-        musclePaths = list()
-        muscleMaxIsoForces = list()
-        muscles = model.getMuscles()
-        for i in range(muscles.getSize()):
-            muscle = muscles.get(i)
-            musclePaths.append(muscle.getAbsolutePathString())
-            muscleMaxIsoForces.append(muscle.getMaxIsometricForce())
-        
-        maxMaxIsoForce = max(muscleMaxIsoForces)
-        muscleWeights = [Fmax / maxMaxIsoForce for Fmax in muscleMaxIsoForces]
-        for path, weight in zip(musclePaths, muscleWeights):
-            effort.setWeightForControl(path, weight)
+        if config.name == 'track_activations_cubed':
+            effort.setExponent(3)
+        elif config.name == 'track_activations_fifthed':
+            effort.setExponent(5)
 
+        effort.setDivideByDisplacement(True)
+
+        # Weight muscles based on max isometric force values.
+        # musclePaths = list()
+        # muscleMaxIsoForces = list()
+        # muscles = model.getMuscles()
+        # for i in range(muscles.getSize()):
+        #     muscle = muscles.get(i)
+        #     musclePaths.append(muscle.getAbsolutePathString())
+        #     muscleMaxIsoForces.append(muscle.getMaxIsometricForce())
+        
+        # maxMaxIsoForce = max(muscleMaxIsoForces)
+        # from math import log10
+        # muscleWeights = [log10((Fmax / maxMaxIsoForce)+1)+1 for Fmax in muscleMaxIsoForces]
+        # import pdb
+        # pdb.set_trace()
+        # for path, weight in zip(musclePaths, muscleWeights):
+        #     effort.setWeightForControl(path, weight)
+
+        # Average speed goal
+        # ------------------
         speedGoal = osim.MocoAverageSpeedGoal('speed')
         speedGoal.set_desired_average_speed(1.235)
         problem.addGoal(speedGoal)
@@ -557,7 +581,7 @@ class MotionTrackingWalking(MocoPaperResult):
         solver.set_multibody_dynamics_mode('implicit')
         solver.set_minimize_implicit_multibody_accelerations(True)
         solver.set_implicit_multibody_accelerations_weight(
-            1e-4 / model.getNumCoordinates())
+            1e-6 / model.getNumCoordinates())
         solver.set_implicit_multibody_acceleration_bounds(
                 osim.MocoBounds(-200, 200))
         solver.set_minimize_implicit_auxiliary_derivatives(True)

@@ -971,8 +971,8 @@ class MotionTrackingWalking(MocoPaperResult):
                                  size=title_fs)
                 if im == 8: ax.set_xlabel('time (% gait cycle)')
 
-        fig.align_ylabels([ax_grf_x, ax_grf_y])
-        fig.align_ylabels([ax_time, ax_add, ax_hip, ax_knee, ax_ankle])
+        fig.align_ylabels([ax_time, ax_grf_x, ax_grf_y, ax_grf_z])
+        fig.align_ylabels([ax_add, ax_hip, ax_knee, ax_ankle])
 
         fig.subplots_adjust(left=0.07, right=0.97, top=0.94, bottom=0.065,
                             hspace=200, wspace=0.5)

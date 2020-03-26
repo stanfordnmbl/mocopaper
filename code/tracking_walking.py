@@ -40,7 +40,7 @@ class MotionTrackingWalking(MocoPaperResult):
         self.cmap = cm.get_cmap('nipy_spectral')
         self.config_track = MocoTrackConfig(
             name='track',
-            legend_entry='nominal',
+            legend_entry='healthy',
             tracking_weight=10,
             effort_weight=10,
             guess='track',
@@ -753,8 +753,8 @@ class MotionTrackingWalking(MocoPaperResult):
             netgenforces[config.name] = utilities.calc_net_generalized_forces(
                 model, full_traj)
 
-        self.plot_paper_figure_normal(root_dir, mass, BW)
-        self.plot_paper_figure_modified(root_dir, mass, netgenforces)
+        self.plot_paper_figure_healthy(root_dir, mass, BW)
+        self.plot_paper_figure_weak(root_dir, mass, netgenforces)
 
         emg = self.load_electromyography(root_dir)
 
@@ -1148,7 +1148,7 @@ class MotionTrackingWalking(MocoPaperResult):
             dpi=600)
 
 
-    def plot_paper_figure_normal(self, root_dir, mass, BW):
+    def plot_paper_figure_healthy(self, root_dir, mass, BW):
 
         emg = self.load_electromyography(root_dir)
 
@@ -1276,10 +1276,10 @@ class MotionTrackingWalking(MocoPaperResult):
         # fig.tight_layout(h_pad=0.1)
         fig.tight_layout(h_pad=1, pad=0.4)
         fig.savefig(os.path.join(root_dir,
-                                 'figures/motion_tracking_walking_normal.png'),
+                                 'figures/motion_tracking_walking_healthy.png'),
                     dpi=600)
 
-    def plot_paper_figure_modified(self, root_dir, mass, netgenforces):
+    def plot_paper_figure_weak(self, root_dir, mass, netgenforces):
 
         emg = self.load_electromyography(root_dir)
 
@@ -1432,7 +1432,7 @@ class MotionTrackingWalking(MocoPaperResult):
         fig.tight_layout(h_pad=-2.0, rect=(0, 0, 1, 0.95))
         fig.savefig(
             os.path.join(root_dir,
-                         'figures/motion_tracking_walking_modified.png'),
+                         'figures/motion_tracking_walking_weak.png'),
             dpi=600)
 
         # TODO plot lumbar?
@@ -1440,3 +1440,5 @@ class MotionTrackingWalking(MocoPaperResult):
         # TODO update images
         # TODO add inverse dynamics using coordinates data.
         # TODO debug inverse dynamics
+        # TODO scale EMG in a consistent manner. GMAX and PSOAS EMG from PerryBurnfield.
+        # TODO still getting negative muscle forces

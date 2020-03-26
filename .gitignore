@@ -260,5 +260,5 @@ out.log
 !/motion_tracking_visualization/weakabd.png
 /paper/MocoPaperAppendix.synctex.gz
 /paper/MocoPaperAppendix.aux
-!/paper/MocoPaperAppendix.blg
-!/paper/MocoPaperAppendix.bbl
+/paper/MocoPaperAppendix.blg
+/paper/MocoPaperAppendix.bbl

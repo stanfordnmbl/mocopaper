@@ -63,7 +63,7 @@ class MotionTrackingWalking(MocoPaperResult):
             flags=['weakpfs'])
         self.config_weakdfs = MocoTrackConfig(
             name='weakdfs',
-            legend_entry='weak dfs',
+            legend_entry='weak dorsiflexors',
             tracking_weight=10,
             effort_weight=10,
             color=self.cmap(0.8),
@@ -734,6 +734,11 @@ class MotionTrackingWalking(MocoPaperResult):
 
         # inverse dynamics
         netgenforces = dict()
+        coord_sto = osim.Storage(
+            os.path.join(root_dir, 'resources',
+                         'Rajagopal2016', 'coordinates.mot'))
+        netgenforces['experiment'] = utilities.calc_net_generalized_forces(
+            model, coord_sto)
         for i, config in enumerate(self.configs):
             color = config.color
             full_path = self.get_solution_path_fullcycle(root_dir, config.name)
@@ -1058,6 +1063,41 @@ class MotionTrackingWalking(MocoPaperResult):
         ax_knee = fig.add_subplot(5, 1, 4)
         ax_ankle = fig.add_subplot(5, 1, 5)
 
+        axes = [ax_lumbar, ax_add, ax_hip, ax_knee, ax_ankle]
+        for ax in axes:
+            ax.set_xlim([0, 100])
+            ax.axhline(0, color='gray', zorder=0, linewidth=0.75)
+
+        exp = netgenforces['experiment']
+        time_exp = np.array(exp.getIndependentColumn())
+        pgc_exp = 100.0 * ((time_exp - self.initial_time) / (
+                    self.final_time - self.initial_time))
+        lumbar = netgenforces['experiment'].getDependentColumn(
+            'lumbar_bending_moment')
+        ax_lumbar.plot(pgc_exp, -toarray(lumbar) / mass,
+                       color='gray')
+
+        hipadd = netgenforces['experiment'].getDependentColumn(
+            'hip_adduction_l_moment')
+        ax_add.plot(pgc_exp, -toarray(hipadd) / mass,
+                    color='gray')
+
+        hip = netgenforces['experiment'].getDependentColumn(
+            'hip_flexion_l_moment')
+        ax_hip.plot(pgc_exp, toarray(hip) / mass,
+                    color='gray')
+
+        knee = netgenforces['experiment'].getDependentColumn(
+            'knee_angle_l_moment')
+        ax_knee.plot(pgc_exp, toarray(knee) / mass,
+                    color='gray')
+
+        ankle = netgenforces['experiment'].getDependentColumn(
+            'ankle_angle_l_moment')
+        ax_ankle.plot(pgc_exp, -toarray(ankle) / mass,
+                      color='gray',
+                      label='experiment')
+
         # simulation results
         for i, config in enumerate(self.configs):
             color = config.color
@@ -1069,7 +1109,6 @@ class MotionTrackingWalking(MocoPaperResult):
                 'lumbar_bending_moment')
             ax_lumbar.plot(pgc, -toarray(lumbar) / mass,
                         color=color)
-            ax_lumbar.axhline(0, color='gray', zorder=0, linewidth=0.75)
             ax_lumbar.set_ylabel('lumbar bending\nmoment (Nm/kg)')
             ax_lumbar.set_xticklabels([])
 
@@ -1077,7 +1116,6 @@ class MotionTrackingWalking(MocoPaperResult):
                 'hip_adduction_l_moment')
             ax_add.plot(pgc, -toarray(hipadd) / mass,
                         color=color)
-            ax_add.axhline(0, color='gray', zorder=0, linewidth=0.75)
             ax_add.set_ylabel('hip abduction\nmoment (Nm/kg)')
             ax_add.set_xticklabels([])
 
@@ -1085,7 +1123,6 @@ class MotionTrackingWalking(MocoPaperResult):
                 'hip_flexion_l_moment')
             ax_hip.plot(pgc, toarray(hip) / mass,
                            color=color)
-            ax_hip.axhline(0, color='gray', zorder=0, linewidth=0.75)
             ax_hip.set_ylabel('hip flexion\nmoment (Nm/kg)')
             ax_hip.set_xticklabels([])
 
@@ -1093,16 +1130,17 @@ class MotionTrackingWalking(MocoPaperResult):
                 'knee_angle_l_moment')
             ax_knee.plot(pgc, toarray(knee) / mass,
                         color=color)
-            ax_knee.axhline(0, color='gray', zorder=0, linewidth=0.75)
             ax_knee.set_ylabel('knee angle\nmoment (Nm/kg)')
             ax_knee.set_xticklabels([])
 
             ankle = netgenforces[config.name].getDependentColumn(
                 'ankle_angle_l_moment')
             ax_ankle.plot(pgc, -toarray(ankle) / mass,
-                             color=color)
+                             color=color,
+                          label=config.legend_entry)
             ax_ankle.set_ylabel('ankle plantarflexion\nmoment (Nm/kg)')
             ax_ankle.set_xlabel('time (% gait cycle)')
+            ax_ankle.legend(frameon=False)
 
         fig.tight_layout()
         fig.savefig(
@@ -1296,7 +1334,7 @@ class MotionTrackingWalking(MocoPaperResult):
                     coordinates['hip_adduction_l'][coords_start:coords_end],
                     color=exp_color, lw=lw,
                     label='exp.')
-        ax_ankle.plot(pgc_coords,
+        exp_handle, = ax_ankle.plot(pgc_coords,
                       coordinates['ankle_angle_l'][coords_start:coords_end],
                       color=exp_color, lw=lw,
                       label='exp.')
@@ -1304,7 +1342,7 @@ class MotionTrackingWalking(MocoPaperResult):
         #               coordinates['lumbar_bending'][coords_start:coords_end],
         #               color=exp_color, lw=lw + 1.0)
 
-
+        legend_handles_and_labels = []
 
         # simulation results
         for i, config in enumerate(self.configs):
@@ -1333,8 +1371,9 @@ class MotionTrackingWalking(MocoPaperResult):
             if config.name == 'weakhipabd' or config.name == 'track':
                 hipadd_moment = netgenforces[config.name].getDependentColumn(
                     'hip_adduction_l_moment')
-                ax_addmom.plot(pgc, -toarray(hipadd_moment) / mass,
+                handle, = ax_addmom.plot(pgc, -toarray(hipadd_moment) / mass,
                                color=color, lw=lw)
+                legend_handles_and_labels.append((handle, config.legend_entry))
                 ax_addmom.axhline(0, color='gray', zorder=0, linewidth=0.75)
                 ax_addmom.set_ylabel('hip abduction\nmoment (Nm/kg)')
                 ax_addmom.set_xlabel('time (% gait cycle)')
@@ -1376,10 +1415,19 @@ class MotionTrackingWalking(MocoPaperResult):
         fig.text(0.75, 0.95, 'WEAK HIP ABDUCTORS', fontweight='bold',
                  horizontalalignment='center')
 
-        # ax_ankle.legend(frameon=False, bbox_to_anchor=(0, 1),
-        #                 loc='upper right')
-        # ax_add.legend(frameon=False, bbox_to_anchor=(0, 1),
-        #                 loc='upper right')
+        handle, = ax_add.plot([0], [0], color=self.config_weakdfs.color,
+                              label=self.config_weakdfs.legend_entry)
+        legend_handles_and_labels.insert(1,
+            (handle, self.config_weakdfs.legend_entry))
+        legend_handles_and_labels.append(
+            (exp_handle, 'experiment'))
+
+        legend_handles, legend_labels = zip(*legend_handles_and_labels)
+        plt.figlegend(legend_handles, legend_labels,
+                      frameon=False,
+                      loc='center',
+                      bbox_to_anchor=(0.85, 0.15),
+                      )
 
         fig.tight_layout(h_pad=-2.0, rect=(0, 0, 1, 0.95))
         fig.savefig(
@@ -1390,5 +1438,5 @@ class MotionTrackingWalking(MocoPaperResult):
         # TODO plot lumbar?
         # TODO colors
         # TODO update images
-        # TODO add legends
         # TODO add inverse dynamics using coordinates data.
+        # TODO debug inverse dynamics

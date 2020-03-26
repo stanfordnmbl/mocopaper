@@ -214,7 +214,7 @@ def shift_data_to_cycle(
 
     return shifted_time, shifted_ordinate
 
-def calc_net_generalized_forces(model, moco_traj):
+def calc_net_generalized_forces(model, motion):
     model.initSystem()
 
     net_joint_moments = None
@@ -223,21 +223,25 @@ def calc_net_generalized_forces(model, moco_traj):
         id_tool = osim.InverseDynamicsTool()
         modelID = osim.Model(model)
         id_tool.setModel(modelID)
-        table = moco_traj.exportToStatesTable()
-        labels = list(table.getColumnLabels())
-        import re
-        for ilabel in range(len(labels)):
-            labels[ilabel] = labels[ilabel].replace('/value', '')
-            labels[ilabel] = re.sub('/jointset/(.*?)/', '', labels[ilabel])
-        table.setColumnLabels(labels)
-        storage = osim.convertTableToStorage(table)
-        # TODO: There's a bug in converting column labels in
-        # convertTableToStorage().
-        stolabels = osim.ArrayStr()
-        stolabels.append('time')
-        for label in labels:
-            stolabels.append(label)
-        storage.setColumnLabels(stolabels)
+        if type(motion) == osim.Storage:
+            id_tool.setLowpassCutoffFrequency(6)
+            storage = motion
+        else:
+            table = motion.exportToStatesTable()
+            labels = list(table.getColumnLabels())
+            import re
+            for ilabel in range(len(labels)):
+                labels[ilabel] = labels[ilabel].replace('/value', '')
+                labels[ilabel] = re.sub('/jointset/(.*?)/', '', labels[ilabel])
+            table.setColumnLabels(labels)
+            storage = osim.convertTableToStorage(table)
+            # TODO: There's a bug in converting column labels in
+            # convertTableToStorage().
+            stolabels = osim.ArrayStr()
+            stolabels.append('time')
+            for label in labels:
+                stolabels.append(label)
+            storage.setColumnLabels(stolabels)
         id_tool.setCoordinateValues(storage)
         # id_tool.setExternalLoadsFileName(extloads_fpath)
         excludedForces = osim.ArrayStr()

@@ -73,7 +73,7 @@
 % % % % % % % % % % % % % % % % % % % % % % % %
 
 \documentclass[10pt,letterpaper]{article}
-\usepackage[top=0.85in,left=1.625in,right=1.625in,footskip=0.75in]{geometry}
+\usepackage[top=0.85in,left=2.75in,footskip=0.75in]{geometry}
 
 % amsmath and amssymb packages, useful for mathematical formulas and symbols
 \usepackage{amsmath,amssymb,mathtools}
@@ -168,220 +168,6 @@
 
 %% Include all macros below
 
-\newcommand{\ocp}{
-\begin{adjustwidth}{-1.125in}{-1.125in} % Comment out/remove adjustwidth environment if table fits in text column.
-% \mathrlap causes the contents to not take up horizontal space, allowing
-% overlapping columns.
-\begin{align}
-    \begin{aligned}
-        \mbox{minimize}
-         \quad & \sum_j w_{j} J_{j}(t_0, t_f, y_0, y_f, x_{0}, \mathrlap{x_{f}, \lambda_0, \lambda_f, p, S_{c,j})} && \textrm{costs} \\
-        & \quad\quad S_{c,j} = \int_{t_0}^{t_f} s_{c,j}(t, y, x, \lambda, p)\,dt  \\
-        \mbox{subject to}
-         \quad & \dot{q} = u \\
-         & M(q, p)\dot{u} + G(q, p)^T \lambda = f_{\mathrm{app}}(t, y, x, p) - f_{\mathrm{inertial}}(q, u, p)  && \textrm{multibody dynamics} \\
-         & \dot{z}_\textrm{ex}(t) = f_{\dot{z},\textrm{ex}}(t, y, x, \lambda, p) && \textrm{auxiliary dynamics, explicit} \\
-         & 0 = f_{\dot{z},\textrm{im}}(t, y, \dot{z}_{\textrm{im}}, x, \lambda, p) &&  \textrm{auxiliary dynamics, implicit}\\
-         & 0 = \phi(q, p) && \textrm{kinematic constraints} \\
-         & V_{L,k} \leq V_k(t_0, t_f, y_0, y_f, x_{0}, x_{f}, \lambda_0, \lambda_f, p, S_{b,k}) \leq V_{U,k} && \textrm{boundary constraints} \\
-         & \quad\quad S_{b,k} = \int_{t_0}^{t_f} s_{b,k}(t, y, x, \lambda, p)\,dt \quad k = 1, \ldots, K\\
-         & g_{L} \leq g(t, y, x, \lambda, p) \leq g_{U} && \textrm{path constraints} \\
-         & y_{0,L} \leq y_0 \leq y_{0,U} \quad\quad y_{f,L} \leq y_f \leq y_{f,U} && \textrm{initial and final states} \\
-         & x_{0,L} \leq x_0 \leq x_{0,U} \quad\quad x_{f,L} \leq x_f \leq x_{f,U} && \textrm{initial and final controls} \\
-         \mbox{with respect to} \quad
-         & t_0 \in [t_{0,L}, t_{0,U}] && \textrm{initial time} \\
-         & t_f \in [t_{f,L}, t_{f,U}] && \textrm{final time} \\
-         & y(t) = (q(t), u(t), z(t)) \in [y_{L}, y_{U}] && \textrm{states} \\
-         & x(t) \in [x_{L}, x_{U}] && \textrm{controls} \\
-         & \lambda(t) && \textrm{Lagrange multipliers} \\
-         & p \in [p_{L}, p_{U}] && \textrm{time-invariant parameters}
-    \end{aligned}
-\end{align}
-\end{adjustwidth}
-}
-
-\newcommand{\prescribed}{
-\begin{adjustwidth}{-1.125in}{-1.125in} % Comment out/remove adjustwidth environment if table fits in text column.
-\begin{align}
-    \begin{aligned}
-        \mbox{minimize} \quad & \mathrlap{\sum_j w_j J_{j}(t_0, t_f, \hat{q}_0, \hat{q}_f, \hat{u}_0, \hat{u}_f, z_0, z_f, x_{0}, x_{f}, \lambda_0, \lambda_f, p, S_{c,j})} &&&\hspace{6em}& \textrm{costs} \\
-        & \quad\quad \mathrlap{S_{c,j} = \int_{t_0}^{t_f} s_{c,j}(t, \hat{q}, \hat{u}, z, x, \lambda, p)~dt} \\
-        \mbox{subject to} \quad &
-         M(\hat{q}, p)\hat{\dot{u}} + \mathrlap{G(\hat{q}, p)^T \lambda = f_{\textrm{app}}(t, \hat{q}, \hat{u}, z, x, p) - f_{\textrm{inertial}}(\hat{q}, \hat{u}, p)} &&&& \textrm{multibody dynamics} \\
-        & \mathrlap{\dot{z}_{\textrm{ex}}(t) = f_{\dot{z},\textrm{ex}}(t, \hat{q}, \hat{u}, z, x, \lambda, p)} &&&& \textrm{auxiliary dynamics, explicit} \\
-        & \mathrlap{0 = f_{\dot{z},\textrm{im}}(t, \hat{q}, \hat{u}, z, \dot{z}_\textrm{im}, x, \lambda, p)} &&&& \textrm{auxiliary dynamics, implicit}\\
-        & V_{L,k} \leq V_k(t_0, t_f, \hat{q}_0, \mathrlap{\hat{q}_f, \hat{u}_0, \hat{u}_f, z_0, z_f, x_{0}, x_{f}, \lambda_0, \lambda_f, p, S_{b,k}) \leq V_{U,k}}  &&&& \textrm{boundary constraints} \\
-        & \quad\quad \mathrlap{S_{b,k} = \int_{t_0}^{t_f} s_{b,k}(t, \hat{q}, \hat{u}, z, x, \lambda, p)~dt \quad k = 1, \ldots, K} \\
-        & \mathrlap{g_{L} \leq g(t, \hat{q}, \hat{u}, z, x, \lambda, p) \leq g_{U}} &&&& \textrm{path constraints} \\
-        & z_{0,L} \leq z_0 \leq z_{0,U} && z_{f,L} \leq z_f \leq z_{f,U} && \textrm{initial and final states} \\
-        & x_{0,L} \leq x_0 \leq x_{0,U} && x_{f,L} \leq x_f \leq x_{f,U} && \textrm{initial and final controls} \\
-        \mbox{with respect to} \quad
-        & t_0 \in [t_{0,L}, t_{0,U}] && \textrm{initial time} \\
-        & t_f \in [t_{f,L}, t_{f,U}] && \textrm{final time} \\
-        & z(t) \in [z_{L}, z_{U}] && \textrm{auxiliary states} \\
-        & x(t) \in [x_{L}, x_{U}] && \textrm{controls} \\
-        & \lambda(t) && \textrm{Lagrange multipliers} \\
-        & p \in [p_{L}, p_{U}]. && \textrm{time-invariant parameters}
-    \end{aligned}
-\end{align}
-\end{adjustwidth}
-}
-
-\newcommand{\traptau}{
-\begin{equation}
-    \begin{gathered}
-        0 = \tau_0 < \tau_1 < \tau_2 < \ldots < \tau_i < \ldots < \tau_{n - 1} < \tau_n = 1, \\
-        \begin{aligned}
-        t_i &= (t_f - t_0) \tau_i + t_0, \\
-        h_i &= (t_f - t_0)(\tau_i - \tau_{i-1}).
-        \end{aligned}
-    \end{gathered}
-\end{equation}
-}
-
-\newcommand{\trapfunc}{
-\begin{equation}
-    \textrm{trap}_i(F(\eta, p)) = \frac{1}{2} h_i (F(\eta_{i-1}, p) + F(\eta_i, p)),
-\end{equation}
-}
-
-\newcommand{\explicitmultibody}{
-\begin{equation}
-    f_{\dot{u}}(t, y, x, \lambda, p) =
-    M(q, p)^{-1}\big[(f_{\textrm{app}}(t, y, x, p) - f_{\textrm{inertial}}(q, u, p) - G(q, p)^T \lambda\big].
-\end{equation}
-}
-
-\newcommand{\trapnlp}{
-\begin{align}
-    \begin{aligned}
-        \mbox{minimize} \quad
-         & \sum_j w_j J_{j}(t_0, t_f, \mathrlap{y_0, y_n, x_{0}, x_{n}, \lambda_0, \lambda_n, p, S_{c,j})
-          + w_{\lambda} \sum_{i=1}^{n} \textrm{trap}_i(\|\lambda\|_2^2)}  \\
-         & \quad\quad \mathrlap{S_{c,j} = \sum_{i=1}^{n} \textrm{trap}_i(s_{c,j}(t, y, x, \lambda, p))} \\
-        \mbox{subject to} \quad
-         & \mathrlap{q_i = q_{i-1} + \textrm{trap}_i(u)} &&&& i = 1, \ldots, n \\
-         & \mathrlap{u_i = u_{i-1} + \textrm{trap}_i(f_{\dot{u}}(t, y, x, \lambda, p))}  &&&& i = 1, \ldots, n \\
-         & \mathrlap{z_{\textrm{ex},i} = z_{\textrm{ex},i-1} + \textrm{trap}_i(f_{\dot{z},\textrm{ex}}(t, y, x, \lambda, p))} &&&& i = 1, \ldots, n \\
-         & \mathrlap{z_{\textrm{im},i} = z_{\textrm{im},i-1} + \textrm{trap}_i(\zeta)} &&&& i = 1, \ldots, n \\
-         & \mathrlap{0 = f_{\dot{z},\textrm{im}}(t_i, y_i, \zeta_i, x_i, \lambda_i, p)} &&&& i = 0, \ldots, n \\
-         & 0 = \phi(q_i, p)  &&&& i = 0, \ldots, n\\
-         & V_{L,k} \leq V_k(t_0, t_f, y_0, \mathrlap{y_f, x_{0}, x_{f}, \lambda_0, \lambda_f, p, S_{b,k}) \leq V_{U,k}} \\
-         & \quad\quad \mathrlap{S_{b,k} = \sum_{i=1}^{n} \textrm{trap}_i(s_{b,k}(t, y, x, \lambda, p))} &&&& k = 1, \ldots, K \\
-         & \mathrlap{g_{L} \leq g(t_i, y_i, x_{i}, \lambda_i, p) \leq g_{U}}  &&&& i = 0, \ldots, n\\
-         \mbox{with respect to} \quad
-         & t_0 \in [t_{0,L}, t_{0,U}] && t_n \in [t_{f,L}, t_{f,U}] \\
-         & y_0 \in [y_{0,L}, y_{0,U}] && y_n \in [y_{f,L}, y_{f,U}] \\
-         & y_i \in [y_{L}, y_{U}] &&&& i = 1, \ldots, n - 1\\
-         & \zeta_i \in [\zeta_{L}, \zeta_{U}] &&&& i = 0, \ldots, n \\
-         & x_0 \in [x_{0,L}, x_{0,U}] && x_n \in [x_{f,L}, x_{f,U}] \\
-         & x_i \in [x_{L}, x_{U}] &&&& i = 1, \ldots, n - 1\\
-         & \lambda_i \in [\lambda_L, \lambda_U] &&&& i = 0, \ldots, n \\
-         & p \in [p_{L}, p_{U}].
-    \end{aligned}
-\end{align}
-}
-
-\newcommand{\trapimplicit}{
-\begin{align}
-    \begin{aligned}
-    \mbox{subject to} \quad
-         & u_i = u_{i-1} + \textrm{trap}_i(\upsilon)  && i = 1, \ldots, n \\
-         & M(q_i, p)\upsilon_i + G(q_i, p)^T \lambda_i =
-          f_{\textrm{app},i} - f_{\textrm{inertial},i} && i = 0, \ldots, n \\
-    \mbox{with respect to} \quad
-         & \upsilon_i \in [-\upsilon_{B}, \upsilon_{B}] && i = 0, \ldots, n.\\
-    \end{aligned}
-\end{align}
-}
-
-\newcommand{\hermitesimpsontau}{
-\begin{equation}
-    \begin{gathered}
-        0 = \tau_0 < \tau_1 < \tau_2 < \ldots < \tau_i < \ldots < \tau_{n - 1} < \tau_n = 1, \\
-        \begin{aligned}
-        \bar{\tau}_i &= 0.5 (\tau_{i-1} + \tau_i), \\
-        t_i &= (t_f - t_0) \tau_i + t_0, \\
-        \bar{t}_i &= (t_f - t_0) \bar{\tau}_i + t_0, \\
-        h_i &= (t_f - t_0)(\tau_i - \tau_{i-1}),
-        \end{aligned}
-    \end{gathered}
-\end{equation}
-}
-
-\newcommand{\hermitesimpsonfuncs}{
-\begin{align}
-    \textrm{hermite}_i(\eta, F(\eta, p)) &= \frac{1}{2} (\eta_{i-1} + \eta_i) + \frac{h_i}{8} (F(\eta_{i-1}, p) - F(\eta_i, p)), \\
-    \textrm{simpson}_i(F(\eta, p)) &= \frac{h_i}{6} (F(\eta_{i-1}, p) + 4 F(\bar{\eta}_i, p) + F(\eta_i, p)),
-\end{align}
-}
-
-\newcommand{\hermitesimpsonnlp}{
-\begin{align}
-    \begin{aligned}
-        \mbox{minimize} \quad
-         & \sum_j w_j J_{c,j}(t_0, t_f, \mathrlap{y_0, y_n, x_{0}, x_{n}, \lambda_0, \lambda_n, p, S_{c,j})
-         + w_{\lambda} \sum_{i=1}^{n} \textrm{simpson}_i(\|\lambda\|_2^2)}  \\
-         & \quad\quad \mathrlap{S_{c,j} = \sum_{i=1}^{n} \textrm{simpson}_i(s_{c,j}(t, y, x, \lambda, p))} \\
-        \mbox{subject to} \quad
-         & \mathrlap{\bar{q}_i = \textrm{hermite}_i(q, u) + G(\bar{q}_i, p)^T \bar{\gamma}_i} &&&& i = 1, \ldots, n \\
-         & \mathrlap{q_i = q_{i-1} + \textrm{simpson}_i(u)} &&&& i = 1, \ldots, n \\
-         & \mathrlap{\bar{u}_i = \textrm{hermite}_i(u, f_{\dot{u}}(t, y, x, \lambda, p))} &&&& i = 1, \ldots, n \\
-         & \mathrlap{u_i = u_{i-1} + \textrm{simpson}_i(f_{\dot{u}}(t, y, x, \lambda, p))}  &&&& i = 1, \ldots, n \\
-         & \mathrlap{\bar{z}_{\textrm{ex},i} = \textrm{hermite}_i(z_{\textrm{ex}}, f_{\dot{z},\textrm{ex}}(t, y, x, \lambda, p))} &&&& i = 1, \ldots, n \\
-         & \mathrlap{z_{\textrm{ex},i} = z_{\textrm{ex},i-1} + \textrm{simpson}_i(f_{\dot{z},\textrm{ex}}(t, y, x, \lambda, p))} &&&& i = 1, \ldots, n \\
-         & \mathrlap{\bar{z}_{\textrm{im},i} = \textrm{hermite}_i(z_{\textrm{im}}, \zeta)} &&&& i = 1, \ldots, n \\
-         & \mathrlap{z_{\textrm{im},i} = z_{\textrm{im},i-1} + \textrm{simpson}_i(\zeta)} &&&& i = 1, \ldots, n \\
-         & \mathrlap{0 = f_{\dot{z},\textrm{im}}(t_i, y_i, \zeta_i, x_i, \lambda_i, p)} &&&& i = 0, \ldots, n \\
-         & \mathrlap{\bar{x}_i = (x_{i-1} + x_i)/2} &&&& i = 1, \ldots, n \\
-         & \mathrlap{0 = \phi(q_i, p) = \dot{\phi}(q_i, u_i, p) = \ddot{\phi}(t_i, y_i, x_i, \lambda_i, p)}  &&&& i = 0, \ldots, n\\
-         & V_{L,k} \leq V_k(t_0, t_f, y_0, y_f, x_{0}, \mathrlap{x_{f}, \lambda_0, \lambda_f, p, S_{b,k}) \leq V_{U,k}} \\
-        & \quad\quad \mathrlap{S_{b,k} = \sum_{i=1}^{n} \textrm{simpson}_i(s_{b,k}(t, y, x, \lambda, p))} &&&& k = 1, \ldots, K \\
-        & \mathrlap{g_{L} \leq g(t_i, y_i, x_{i}, \lambda_i, p) \leq g_{U}}  &&&& i = 0, \ldots, n\\
-         \mbox{with respect to} \quad
-         & t_0 \in [t_{0,L}, t_{0,U}] && t_n \in [t_{f,L}, t_{f,U}] \\
-         & y_0 \in [y_{0,L}, y_{0,U}] && y_n \in [y_{f,L}, y_{f,U}] \\
-         & y_i \in [y_{L}, y_{U}] &&&& i = 1, \ldots, n - 1 \\
-         & \bar{y}_i \in [y_{L}, y_{U}] &&&& i = 1, \ldots, n \\
-         & \zeta_i \in [\zeta_{L}, \zeta_{U}] &&&& i = 0, \ldots, n \\
-         & \bar{\zeta}_i \in [\zeta_{L}, \zeta_{U}] &&&& i = 1, \ldots, n \\
-         & x_0 \in [x_{0,L}, x_{0,U}] && x_n \in [x_{f,L}, x_{f,U}] \\
-         & x_i \in [x_{L}, x_{U}] &&&& i = 1, \ldots, n - 1 \\
-         & \bar{x}_i \in [x_{L}, x_{U}] &&&& i = 1, \ldots, n \\
-         & \lambda_i \in [\lambda_L, \lambda_U] &&&& i = 0, \ldots, n \\
-         & \bar{\lambda}_i \in [\lambda_L, \lambda_U] &&&& i = 1, \ldots, n \\
-         & \bar{\gamma}_i \in [\bar{\gamma}_L, \bar{\gamma}_U] &&&& i = 1, \ldots, n \\
-         & p \in [p_{L}, p_{U}].
-    \end{aligned}
-\end{align}
-}
-
-\newcommand{\hermitesimpsonkincon}{
-    \begin{align}
-         0 &= \dot{\phi}(q, u, p) = G(q, p) u,\\
-         0 &= \ddot{\phi}(t, y, x, \lambda, p) = G(q, p) f_{\dot{u}}(t, y, x, \lambda, p) + \dot{G}(q, p) u.
-    \end{align}
-}
-
-\newcommand{\hermitesimpsonimplicit}{
-\begin{align}
-    \begin{aligned}
-    \mbox{subject to} \quad
-         & \bar{u}_i = \textrm{hermite}_i(u, \upsilon) && i = 1, \ldots, n \\
-         & u_i = u_{i-1} + \textrm{simpson}_i(\upsilon)  && i = 1, \ldots, n \\
-         & M(q_i, p)\upsilon_i + G(q_i, p)^T \lambda_i =
-          f_{\textrm{app},i} -
-            f_{\textrm{inertial},i} && i = 0, \ldots, n \\
-         & M(\bar{q}_i, p)\bar{\upsilon}_i + G(\bar{q}_i, p)^T \bar{\lambda}_i =
-          \bar{f}_{\textrm{app},i} -
-            \bar{f}_{\textrm{inertial},i} && i = 1, \ldots, n \\
-    \mbox{with respect to} \quad
-         & \upsilon_i \in [-\upsilon_{B}, \upsilon_{B}] && i = 0, \ldots, n \\
-         & \bar{\upsilon}_i \in [-\upsilon_{B}, \upsilon_{B}] && i = 1, \ldots, n.
-    \end{aligned}
-\end{align}
-}
-
 \newcommand{\analytic}{
 \begin{equation}
     \begin{aligned}
@@ -398,14 +184,6 @@
 }
 
 %% END MACROS SECTION
-
-% PREPRINT ONLY:
-% TODO: load results dynamically, not hard-coded.
-\usepackage[charter]{mathdesign}
-\usepackage{charter}
-\usepackage{mathtools}
-\usepackage{matlab-prettifier}
-\lstset{basicstyle=\mlttfamily}
 
 \begin{document}
 \vspace*{0.2in}
@@ -458,7 +236,7 @@ Scott L. Delp\textsuperscript{1,3,4}
 %\textpilcrow Membership list can be found in the Acknowledgments section.
 
 % Use the asterisk to denote corresponding authorship and provide email address in note below.
-* dembia@stanford.edu
+* dembia@alumni.stanford.edu
 
 \end{flushleft}
 % Please keep the abstract below 300 words
@@ -471,7 +249,7 @@ Musculoskeletal simulations of movement can provide insights needed to help huma
 % Author Summary not valid for PLOS ONE submissions.
 % \section*{Author summary}
 
-% TODO \linenumbers
+\linenumbers
 
 % Use "Eq" instead of "Equation" for equation citations.
 \section*{Introduction}
@@ -533,28 +311,20 @@ The modules of a \textit{MocoProblem} can be combined in diverse ways, as demons
 \item \textbf{torso mass calibration}: for a prescribed experimental motion, minimize model residual forces at the pelvis while obeying multibody dynamics. The joint torques and torso mass are the variables.
 \item \textbf{prediction of muscle coordination adaptations to an exoskeleton}: minimize squared muscle excitations and the error between experimental joint angles and model coordinate values (state tracking) while obeying multibody and muscle activation dynamics. The model coordinates, speeds, muscle excitations, muscle activations, and exoskeleton torques are the variables.
 \end{itemize}
-\textit{MocoProblem} describes the optimization problem in Eq (1). We seek the time-dependent states $y(t)$ and controls $x(t)$ that minimize a sum of costs $J_j$ with weights $w_j$. The states include generalized coordinates $q(t)$, generalized speeds $u(t)$, and auxiliary states $z(t)$, such as muscle activations. We may also seek time-invariant parameters $p$, the initial time of the motion $t_0$, or the final time of the motion $t_f$. We place lower ($L$) and upper ($U$) bounds on all variables, as well as bounds on the initial and final values of the states and controls; these bounds allow solving boundary value problems such as standing from a squat.
 
-\ocp
+We demonstrate Moco’s interface in Fig 3 with a simple MATLAB example. Setting the model and adding a cost (termed “goal” in the example) each requires only a single statement. Setting bounds on states and controls by name is easier and less bug-prone than setting bounds by index, as is common in other direct collocation software.
 
-The variables must obey the system's multibody dynamics (involving the mass matrix $M$; applied forces $f_\mathrm{app}$ from gravity, muscles, etc.; and centripetal and Coriolis terms $f_\mathrm{inertial}$) and any auxiliary dynamics, which may be expressed as explicit ($f_{\dot{z},\mathrm{ex}}$) or implicit ($f_{\dot{z},\mathrm{im}}$) differential equations. The system may contain position-level (holonomic) kinematic constraints to, for example, weld a foot to a bicycle pedal. Each constraint is enforced by forces exerted by tissue, bones, bodies, or other parts of the modeled system. These generalized constraint forces are applied in the constrained directions (e.g., the six degrees of freedom between the foot and pedal), and we introduce time-varying Lagrange multiplier variables $\lambda$ to solve for these forces. The derivative of the kinematic constraints $\phi$ yields the kinematic constraint Jacobian $G$; the transpose of this matrix converts the Lagrange multipliers into generalized forces along the system's degrees of freedom. See S1 Appendix for details on how Moco handles kinematic constraints.
-
-Additionally, the variables must obey boundary constraints $V_k$ (with bounds $V_{L,k}$ and $V_{U,k}$) and algebraic path constraints $g$ over the motion (with time-invariant bounds $g_L$ and $g_U$). The cost terms and boundary constraints may depend on initial and final time; states; controls; kinematic constraint multipliers (required for joint reactions); time-invariant parameters; and an integral, $S_{c,j}$ or $S_{b,k}$, over the motion.
-
-We demonstrate Moco's interface with a MATLAB example that seeks the force to apply to a point mass to move the mass by one meter (starting and ending at rest) in minimum time:
-\begin{lstlisting}
-study = MocoStudy();
-problem = study.updProblem();
-problem.addGoal(MocoFinalTimeGoal()); % minimum-time problem
-problem.setModel(Model('sliding_mass.osim')); % load model from file
-problem.setTimeBounds(0, [0, 5]); % initial time = 0, final time <= 5 s
-problem.setStateInfo('/slider/position/value', [-5, 5], 0, 1); % move 1 m
-problem.setStateInfo('/slider/position/speed', [-50, 50], 0, 0);
-problem.setControlInfo('/actuator', [-50, 50]);
-solution = study.solve();
-\end{lstlisting}
-Setting the model and adding a cost (termed ``goal'' in the example) each
-require only a single statement. Setting bounds on states and controls by name is easier and less bug-prone than setting bounds by index, as is common in other direct collocation software.
+% Place figure captions after the first paragraph in which they are cited.
+\begin{figure}[!h]
+    %\begin{adjustwidth}{-2.25in}{0in} % Comment out/remove adjustwidth environment if table fits in text column.
+    \centering
+    \includegraphics{../figures/MocoExampleCode.png}
+    \caption{{\bf Example code for a simple problem.}
+        This MATLAB code uses Moco to find the force to apply to a point mass to move the mass by one meter (starting and ending at rest) in minimum time. Solving this problem requires only 9 lines of code.
+    }
+    \label{mocoexamplecode}
+    %\end{adjustwidth}
+\end{figure}
 
 Direct collocation relies on gradient-based optimization, and therefore converges faster and more reliably when all functions in the optimal control problem are continuous and differentiable. To this end, Moco includes a muscle model \textit{DeGrooteFregly2016Muscle}~\cite{Groote:2016dq} and a compliant contact force model \textit{SmoothSphereHalfSpaceForce}~\cite{Serrancoli:2019aa} that are continuous and differentiable.
 
@@ -639,9 +409,9 @@ Moco can estimate muscle activity in walking, which allows studies of gait disor
 
 % Place figure captions after the first paragraph in which they are cited.
 \begin{figure}[!h]
-        \begin{adjustwidth}{-1.125in}{-1.125in} % Comment out/remove adjustwidth environment if table fits in text column.
+        \begin{adjustwidth}{-2.25in}{0in} % Comment out/remove adjustwidth environment if table fits in text column.
     \centering
-    \includegraphics{../figures/motion_tracking_walking.png}
+    \includegraphics{../figures/motion_prescribed_walking.png}
     \caption{{\bf Estimates of muscle activity during walking.}
     \textit{MocoInverse} produced muscle activations (black) whose timing matched the timing from electromyography measurements (gray; available for all muscles shown except psoas)~\cite{Arnold:2013cs}. Electromyography was normalized such that its peak matched the peak of the \textit{MocoInverse} activations. Minimizing knee joint loading reduced the activity of the vastus lateralis, biceps femoris short head, and medial gastrocnemius, which span the knee (blue).
     }
@@ -658,7 +428,7 @@ To show that Moco can predict motions and optimize parameters of a model, we pre
 
 % Place figure captions after the first paragraph in which they are cited.
 \begin{figure}[!h]
-    \begin{adjustwidth}{-1.125in}{-1.125in} % Comment out/remove adjustwidth environment if table fits in text column.
+    \begin{adjustwidth}{-2.25in}{0in} % Comment out/remove adjustwidth environment if table fits in text column.
         \centering
         \includegraphics{../figures/squat_to_stand.png}
         \caption{{\bf Predicting and assisting a squat-to-stand motion.}
@@ -687,110 +457,12 @@ The performance and ease of use of Moco's direct collocation solvers could be im
 
 We designed Moco to be easy to use, customizable, and extensible. We verified the software and applied it to multiple musculoskeletal problems. Given this foundation, we expect Moco to accelerate research by reducing the time spent wrestling with simulation tools and enabling our field to tackle more ambitious problems. Moco handles models with kinematic constraints, muscle activation dynamics, compliant tendons, and compliant contact, and can minimize a combination of complex costs such as marker tracking and joint reaction loads. To build a community that sustains the Moco project, we have organized several in-person workshops. We invite the community to help improve the software and contribute documentation, examples, teaching materials, and code.
 
-\section*{S1 Appendix}
-
-\subsection*{Kinematic constraints}
-
-Support for kinematic constraints is a key feature of Moco. Understanding how kinematic constraints are handled in multibody dynamics is valuable for understanding how Moco handles such problems. Consider a two-dimensional point mass system with coordinates $q_x$ and $q_y$ constrained to a parabola $0 = q_y - q_x^2$. To prevent the point mass from violating the constraint, we must apply a force perpendicular to the parabola. Each constraint has a corresponding scalar force variable, called a Lagrange multiplier $\lambda$. We must solve for the required magnitudes of these constraint forces, but the direction in which we apply each of these forces is determined by the derivative of the constraint equations. We gather the derivatives of the constraint equations in the kinematic constraint Jacobian matrix $G$. Each row in this matrix contains the derivative of a single constraint equation with respect to each degree of freedom, and the matrix has a column for each degree of freedom. For the parabola example, the Jacobian is $( -2q_x, 1)$. The transpose of this matrix, $G^T$, contains columns that are vectors in the state space which are perpendicular to each constraint. For our single constraint, the vector $(-2q_x, 1)^T$ is perpendicular to the parabola. The matrix-vector product between the Jacobian transpose and the Lagrange multipliers, $G^T \lambda$, yields the vector of generalized forces (whose length is the number of degrees of freedom) necessary for enforcing the system constraints. For our point mass example, the generalized forces yielded by the vector-scalar product  $(-2q_x, 1)^T \lambda$ keep the point mass on the parabola. To apply these forces to the multibody system, we include the $G^T \lambda$ term in the multibody dynamics equations of motion.
-
-When simulating a multibody system with time-stepping forward integration, we first ensure the initial generalized coordinates and speeds satisfy the kinematic constraints $\phi(q) = 0$ and their first derivative $\dot{\phi}(q, u) = 0$ via a root-solve. During the integration, we solve for generalized accelerations and Lagrange multipliers that obey the multibody dynamics equations of motion and the second derivative of the kinematic constraints, $\ddot{\phi}(q, u, \dot{u}) = 0$. Numerically integrating the resulting generalized accelerations yields generalized coordinates and speeds that approximately lie on the constraint manifold defined by $\phi(q) = 0$; to fix any errors in the constraints caused by numerical integration error, we project the generalized coordinates and speeds back onto the constraint manifold~\cite{Sherman:2011byc}.
-
-In direct collocation, the generalized coordinates, generalized speeds, and Lagrange multipliers are the unknowns—we are solving for the entire trajectory of the system. When expressing multibody dynamics as implicit differential equations, the generalized accelerations are also unknowns. How we solve for the trajectory of the system in the presence of kinematic constraints depends on the transcription scheme; see the remainder of this Appendix for details.
-
-\subsection*{Defining problems containing prescribed kinematics}
-
-A common task in musculoskeletal biomechanics is to estimate the muscle and actuator behavior that drove an observed motion. We can solve this problem by minimizing the error between the observed motion and the simulated motion, as with Computed Muscle Control (using the ``slow target'')~\cite{Thelen:2003bba} or \textit{MocoTrack}. Alternatively, we can prescribe the motion exactly, as with Static Optimization, electromyography-driven simulation~\cite{Lloyd:2003}, and the Muscle Redundancy Solver~\cite{Groote:2016dq}. Consider a two-dimensional point mass with coordinates $q_x$ and $q_y$ for which we prescribe a circular motion via the functions $\hat{q}_x(t) = \cos(t)$ and $\hat{q}_y(t) = \sin(t)$. We can either add these functions to the kinematic constraints $\phi(q)$, or we can substitute these functions into the equations of motion, thereby eliminating the variables $q_x$ and $q_y$. With Moco, users can choose either the former approach through OpenSim's \textit{Coordinate}, or the latter (and usually preferable) approach using \textit{PositionMotion}, a new component that employs Simbody's \textit{Motion} class. Prescribing kinematics by eliminating variables leads to a problem that is robust and fast---the nonlinear multibody dynamics are removed from the optimization problem---but prevents predicting kinematic deviations from the observed motion.
-
-When we prescribe kinematics in Moco by eliminating variables, we replace the problem in Eq (1) with the following:
-
-\prescribed
-
-We replace the kinematic variables $q$ and $u$ with known quantities $\hat{q}$ and $\hat{u}$. The system still depends on auxiliary state variables $z$ and control variables $x$, and includes auxiliary dynamics. If none of the parameter variables affect the multibody system, then the multibody dynamics are reduced to a force balance: muscles and other force elements must generate the net generalized forces determined by the kinematics and external loads data. The easiest way to prescribe kinematics in Moco is to use the \textit{MocoInverse} tool.
-
-Whether the motion is prescribed by adding constraints or eliminating variables, OpenSim supplements the modeled force elements with Lagrange multipliers to ensure the prescribed motion is achieved. When using \textit{PositionMotion} with Moco, we require that the prescribed motion's Lagrange multipliers are zero, thereby ensuring the motion is fully generated by the modeled force elements.
-
-\subsection*{Transcription schemes}
-
-\subsubsection*{Trapezoidal transcription}
-
-The trapezoidal scheme transcribes the optimal control problem into a nonlinear program by approximating integrals using the trapezoidal rule. As a second-order scheme, trapezoidal transcription exhibits accuracy that improves four-fold when halving the mesh interval (i.e., time step).
-
-We discretize the continuous variables $t$, $y$, $x$, and $\lambda$ on a mesh of time points $t_i$ defined by dimensionless time $\tau_i$, yielding $n$ mesh intervals with durations $h_i$:
-
-\traptau
-
-For conciseness, we define the following function:
-
-\trapfunc
-
-where $\mathrm{trap}_i()$ is a trapezoidal rule approximation of the area under the function $F$ for mesh interval $i$, and $\eta$ represents any subset of continuous variables. We define the explicit multibody dynamics function as:
-
-\explicitmultibody
-
-The mass matrix $M$, the centripetal and Coriolis forces $f_\mathrm{inertial}$, and kinematic constraint Jacobian $G$ are computed by Simbody (OpenSim's multibody dynamics engine) using order-N recursive algorithms; the complete mass matrix is not computed explicitly. The applied forces $f_\mathrm{app}$ are usually defined by OpenSim components that implement Simbody force elements. Simbody computes the constraint Jacobian $G$ based on any Simbody kinematic constraints that the OpenSim model adds to the system. In Moco, the Lagrange multipliers $\lambda$ are explicit optimization variables; this approach differs from that in forward simulations, in which Simbody solves for accelerations and multipliers simultaneously.
-
-The result of the trapezoidal transcription, with multibody dynamics expressed as explicit differential equations, is the following nonlinear program:
-
-\trapnlp
-
-In this form, the problem can be solved directly by a nonlinear program solver. We introduce the algebraic (control) variable $\zeta$ as the derivative of auxiliary state variables whose dynamics are expressed with an implicit differential equation.
-
-When expressing the multibody dynamics implicitly, we remove the constraint involving $f_{\dot{u}}$, introduce generalized accelerations as an algebraic variable $\upsilon$, and enforce multibody dynamics in “inverse dynamics” form:
-
-\trapimplicit
-
-The constant $\upsilon_B$ is a large positive number (1000 by default).
-
-The dynamic, kinematic, and path constraints are enforced at a set of discrete time points, so the quadratic spline approximation to the continuous variables may violate the original continuous-time constraints between the discrete time points. For this reason, a mesh with more points leads to a more accurate solution.
-
-Our implementation of trapezoidal transcription handles kinematic constraints, but not in the most robust fashion. We enforce $\phi$ but not its time derivatives; enforcing the constraints at only the position level yields an index-3 differential-algebraic system of equations, which is challenging to solve~\cite{Hairer:1996,Campbell:2016,Betts:2010}. Furthermore, we minimize these multipliers (with weight $w_\lambda$) to improve numerical conditioning.
-
-When kinematics are prescribed (see “Prescribed kinematics”), multibody dynamics must be expressed implicitly and kinematic constraints are not enforced; we expect the prescribed kinematics to already obey the constraints.
-
-\subsubsection*{Hermite-Simpson transcription}
-
-The Hermite-Simpson scheme transcribes the optimal control problem into a nonlinear program by approximating integrals using a Hermite interpolant and Simpson integration rule. As a third-order scheme, Hermite-Simpson transcription exhibits accuracy that improves eight-fold when halving the mesh interval.
-
-We use a similar dimensionless time mesh as for the trapezoidal scheme, with $n$ mesh intervals with durations $h_i$. We also introduce collocation points at the midpoints of the mesh intervals, leading to a total of $2n + 1$ time points at which we discretize the continuous variables:
-
-\hermitesimpsontau
-
-where $ \bar{\tau}_i $ denote mesh interval midpoints. For conciseness, we define the following functions:
-
-\hermitesimpsonfuncs
-
-where $\mathrm{hermite}_i()$ represents the Hermite interpolant and $\mathrm{simpson}_i()$ represents the Simpson integration rule. Again, $F$ is a function for mesh interval $i$, and $\eta$ represents any subset of continuous variables.
-
-Using the explicit multibody dynamics function $f_{\dot{u}}$ defined previously, Hermite-Simpson transcription results in the following nonlinear program:
-
-\hermitesimpsonnlp
-
-
-The $G(\bar{q}_i, p)^T \bar{\gamma}_i$ term is a velocity correction that is necessary when enforcing derivatives of kinematic constraints in the nonlinear program. The additional variables $\bar{\gamma}_i$ prevent the kinematics from being overconstrained, and the kinematic constraint Jacobian transpose operator $G(\bar{q}_i, p)^T$ restricts the velocity correction to the tangent plane of the constraint manifold~\cite{Posa:2016}. Currently, we only support enforcing derivatives of position-level, or holonomic, constraints, represented by the equations:
-
-\hermitesimpsonkincon
-
-The explicit multibody dynamics function is used here where $\dot{u}$ would appear if it were a continuous variable in the problem (as in implicit mode, see below).
-
-Algebraic constraints are not enforced at the midpoints of the mesh intervals, but exhibit fourth-order accuracy at these points~\cite{Posa:2016}.
-
-For implicit multibody dynamics, we again remove the constraints involving $f_{\dot{u}}$ and introduce generalized accelerations as algebraic variables $\upsilon$ to enforce multibody dynamics in “inverse dynamics” form:
-
-\hermitesimpsonimplicit
-
-\subsection*{Moco's direct collocation solvers}
-
-Moco provides two solvers as subclasses of \textit{MocoSolver}: \textit{MocoCasADiSolver} uses the third-party CasADi library~\cite{Andersson:2019}, and \textit{MocoTropterSolver} uses a direct collocation solver we developed named Tropter. CasADi is an open-source package for algorithmic differentiation and is a bridge to nonlinear program solvers IPOPT~\cite{Wachter:2006}, SNOPT~\cite{Gill:2005}, and others.
-
-Gradient-based nonlinear program solvers require the gradient of the objective, the Jacobian of the constraints, and sometimes the Hessian of the Lagrangian~\cite{Betts:2010}. To maximize computational efficiency, these derivatives are ideally computed exactly through either analytic expressions or algorithmic differentiation~\cite{Andersson:2019,Walther:2003}. OpenSim's main distribution does not provide exact derivatives, so we use finite differences. CasADi is an ideal library for employing direct collocation, but two limitations led us to create Tropter: CasADi did not initially support finite differences, and CasADi's open-source license is more restrictive than OpenSim's. More recent versions of CasADi support finite differences and CasADi understands the structure of the nonlinear program objective and constraint functions, allowing for potentially more efficient finite difference calculations than with Tropter, which treats the nonlinear program objective and constraints as black-box functions~\cite{Patterson:2012}. If OpenSim provides exact derivatives in the future, we can exploit the algorithmic differentiation modes in Tropter and CasADi~\cite{Falisse:2019a}. Those distributing Moco as a dependency of closed-source software may prefer distributing Moco without CasADi, as CasADi's ``weak copyleft'' GNU Lesser General Public License 3.0 places requirements on how CasADi is redistributed.
-
-
 \section*{Acknowledgments}
 
 We thank Ajay Seth, Michael Sherman, Friedl de Groote, Michael Posa, Joris Gillis, and Joel Andersson for discussing methodology and implementation; Bradley Humphreys, Carmichael Ong, Noah Gordon, and Jenny Yong for contributing code; Andrew Baines, Mohammad Shourijeh, and Prasanna Sritharan for testing the software; and Ayman Habib for reviewing the manuscript.
 This work was supported by the National Institutes of Health grants U54 EB020405 and P2C HD065690. CLD and NAB received support from the National Science Foundation Graduate Research Fellowship Program. CLD received support from the Stanford Bio-X Graduate Fellowship. NAB received support from the Stanford Graduate Fellowship Program.
 
-
+TODO S1 Appendix caption
 \nolinenumbers
 
 % Either type in your references using

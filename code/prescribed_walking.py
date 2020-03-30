@@ -78,29 +78,6 @@ class MotionPrescribedWalking(MocoPaperResult):
         modelProcessor.append(osim.ModOpAddReserves(1, 15, True))
         baseModel = modelProcessor.process()
 
-
-        # Create model for CMC
-        modelProcessorCMC = osim.ModelProcessor(baseModel)
-        cmcModel = modelProcessorCMC.process()
-
-        tasks = osim.CMC_TaskSet()
-        for coord in cmcModel.getCoordinateSet():
-            cname = coord.getName()
-            if cname.endswith('_beta'):
-                continue
-            task = osim.CMC_Joint()
-            task.setName(cname)
-            task.setCoordinateName(cname)
-            task.setKP(400, 1, 1)
-            task.setKV(80, 1, 1)
-            task.setActive(True, False, False)
-            tasks.cloneAndAppend(task)
-        tasks.printToXML(os.path.join(root_dir, 'code',
-                                      'motion_prescribed_walking_cmc_tasks.xml'))
-
-        cmcModel.printToXML(os.path.join(root_dir, "resources/Rajagopal2016/"
-                            "subject_walk_armless_for_cmc.osim"))
-
         # Create direct collocation model:
         #   - implicit tendon compliance mode
         #   - add external loads
@@ -122,17 +99,13 @@ class MotionPrescribedWalking(MocoPaperResult):
         return modelProcessorDC
 
     def parse_args(self, args):
-        self.cmc = False
         self.inverse = False
         self.knee = False
         if len(args) == 0:
-            # self.cmc = True
             self.inverse = True
             self.knee = True
             return
         print('Received arguments {}'.format(args))
-        if 'cmc' in args:
-            self.cmc = True
         if 'inverse' in args:
             self.inverse = True
         if 'knee' in args:
@@ -158,18 +131,6 @@ class MotionPrescribedWalking(MocoPaperResult):
             os.path.join(root_dir, "resources/Rajagopal2016/coordinates.mot"))
         coordinates.append(osim.TabOpLowPassFilter(6))
         coordinates.append(osim.TabOpUseAbsoluteStateNames())
-
-        # cmc = osim.CMCTool()
-        # cmc.setName('motion_prescribed_walking_cmc')
-        # cmc.setExternalLoadsFileName('grf_walk.xml')
-        # cmc.setDesiredKinematicsFileName('coordinates.mot')
-        # # cmc.setLowpassCutoffFrequency(6)
-        # cmc.printToXML('motion_prescribed_walking_cmc_setup.xml')
-        cmc = osim.CMCTool(os.path.join(root_dir,
-                                        'code/motion_prescribed_walking_cmc_setup.xml'))
-        # 2.5 minute
-        if self.cmc:
-            cmc.run()
 
         # MocoInverse
         # -----------
@@ -277,15 +238,6 @@ class MotionPrescribedWalking(MocoPaperResult):
         model.initSystem()
         print(f'Degrees of freedom: {model.getCoordinateSet().getSize()}')
 
-        # TODO: slight shift in CMC solution might be due to how we treat
-        # percent gait cycle and the fact that CMC is missing 0.02 seconds.
-        if self.cmc:
-            cmc_states_fpath = os.path.join(root_dir,
-                                            'results/motion_prescribed_walking_cmc_results/'
-                                            'motion_prescribed_walking_cmc_states.sto')
-            sol_cmc = osim.TimeSeriesTable(cmc_states_fpath)
-            time_cmc = np.array(sol_cmc.getIndependentColumn())
-
         plot_breakdown = True
 
         if plot_breakdown:
@@ -345,11 +297,6 @@ class MotionPrescribedWalking(MocoPaperResult):
 
         for ic, coord in enumerate(coords):
             ax = plt.subplot(7, 2, ic + 1)
-            if self.cmc:
-                y_cmc = coord[2] * np.rad2deg(
-                    toarray(sol_cmc.getDependentColumn(f'{coord[0]}/value')),)
-                self.plot(ax, time_cmc, y_cmc, label='CMC', color='k',
-                          linewidth=2)
 
             if self.inverse:
                 y_inverse = coord[2] * np.rad2deg(
@@ -358,12 +305,6 @@ class MotionPrescribedWalking(MocoPaperResult):
                           linewidth=2)
 
             ax.plot([0], [0], label='MocoInverse-knee', linewidth=2)
-
-            # if self.track:
-            #     y_track = coord[2] * np.rad2deg(
-            #         sol_track.getStateMat(f'{coord[0]}/value'))
-            #     self.plot(ax, time_track, y_track, label='MocoTrack',
-            #               linewidth=1)
 
             ax.set_xlim(0, 100)
             if ic == 1:
@@ -374,7 +315,8 @@ class MotionPrescribedWalking(MocoPaperResult):
                 ax.set_xlabel('time (% gait cycle)')
                 ax.get_xaxis().set_label_coords(0.5, 0)
                 # The '0' would intersect with the y-axis, so remove it.
-                ax.set_xticklabels(['', '20', '40', '60', '80', '100'])
+                ax.set_xticks([0, 50, 100])
+                ax.set_xticklabels(['', '50', '100'])
             ax.set_ylabel(f'{coord[1]} (degrees)')
             ax.get_yaxis().set_label_coords(-0.15, 0.5)
 
@@ -387,13 +329,15 @@ class MotionPrescribedWalking(MocoPaperResult):
 
 
         fig = plt.figure(figsize=(7.5, 3.3))
-        gs = gridspec.GridSpec(3, 4, width_ratios=[0.8, 1, 1, 1])
+        gs = gridspec.GridSpec(3, 4) # , width_ratios=[0.8, 1, 1, 1])
 
         ax = fig.add_subplot(gs[0:3, 0])
         import cv2
         # Convert BGR color ordering to RGB.
-        image = cv2.imread(os.path.join(root_dir,
-                                        'figures/motion_prescribed_walking_inverse_model.png'))[
+        image = cv2.imread(
+            os.path.join(
+                root_dir,
+                'figures/motion_prescribed_walking_inverse_model.png'))[
                 ..., ::-1]
         ax.imshow(image)
         plt.axis('off')
@@ -416,15 +360,6 @@ class MotionPrescribedWalking(MocoPaperResult):
             ax = plt.subplot(gs[muscle[0][0], muscle[0][1] + 1])
             activation_path = f'/forceset/{muscle[1]}_{self.side}/activation'
             legend_musc = []
-            # if self.cmc:
-            #     cmc_activ = toarray(sol_cmc.getDependentColumn(activation_path))
-            #     handle, = self.plot(ax, time_cmc,
-            #               cmc_activ,
-            #               linewidth=1,
-            #               color='black',
-            #               label='Computed Muscle Control',
-            #               )
-            #     legend_musc.append((handle, 'Computed Muscle Control'))
             if self.inverse:
                 inverse_activ = sol_inverse.getStateMat(activation_path)
                 handle, = self.plot(ax, time_inverse, inverse_activ,
@@ -436,7 +371,7 @@ class MotionPrescribedWalking(MocoPaperResult):
                 handle, = self.plot(ax, time_inverse_jointreaction,
                           sol_inverse_jointreaction.getStateMat(activation_path),
                           label='MocoInverse, knee',
-                          linewidth=1, zorder=3)
+                          linewidth=2, zorder=3)
                 legend_musc.append((handle, 'MocoInverse, knee'))
             if self.inverse and len(muscle[3]) > 0:
                 handle = self.plot(ax, emg['time'],
@@ -452,6 +387,7 @@ class MotionPrescribedWalking(MocoPaperResult):
                 legend_handles_and_labels = legend_musc
             ax.set_ylim(-0.05, 1)
             ax.set_xlim(0, 100)
+            ax.set_xticks([0, 50, 100])
             if muscle[0][0] < 2:
                 ax.set_xticklabels([])
             else:
@@ -480,28 +416,6 @@ class MotionPrescribedWalking(MocoPaperResult):
         fig.savefig(
             os.path.join(root_dir, 'figures/motion_prescribed_walking.png'),
             dpi=600)
-
-        if self.cmc and self.inverse:
-            mocosol_cmc = sol_inverse.clone()
-            mocosol_cmc.insertStatesTrajectory(sol_cmc, True)
-            inv_sol_rms = \
-                sol_inverse.compareContinuousVariablesRMSPattern(mocosol_cmc,
-                                                                 'states',
-                                                                 '.*activation')
-
-            peak_inverse_activation = -np.inf
-            for state_name in sol_inverse.getStateNames():
-                if state_name.endswith('activation'):
-                    column = sol_inverse.getStateMat(state_name)
-                    peak_inverse_activation = np.max([peak_inverse_activation,
-                                                      np.max(column)])
-
-            inv_sol_rms_pcent = 100.0 * inv_sol_rms / peak_inverse_activation
-            print(f'Peak MocoInverse activation: {peak_inverse_activation}')
-            print('CMC MocoInverse activation RMS: ', inv_sol_rms_pcent)
-            with open(os.path.join(root_dir, 'results/motion_prescribed_walking_'
-                      'inverse_cmc_rms.txt'), 'w') as f:
-                f.write(f'{inv_sol_rms_pcent:.0f}')
 
         if self.inverse:
             res_inverse = self.calc_reserves(root_dir, sol_inverse)

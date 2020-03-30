@@ -214,6 +214,49 @@ def shift_data_to_cycle(
 
     return shifted_time, shifted_ordinate
 
+def calc_net_generalized_forces(model, motion):
+    model.initSystem()
+
+    net_joint_moments = None
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        id_tool = osim.InverseDynamicsTool()
+        modelID = osim.Model(model)
+        id_tool.setModel(modelID)
+        if type(motion) == osim.Storage:
+            id_tool.setLowpassCutoffFrequency(6)
+            storage = motion
+        else:
+            table = motion.exportToStatesTable()
+            labels = list(table.getColumnLabels())
+            import re
+            for ilabel in range(len(labels)):
+                labels[ilabel] = labels[ilabel].replace('/value', '')
+                labels[ilabel] = re.sub('/jointset/(.*?)/', '', labels[ilabel])
+            table.setColumnLabels(labels)
+            storage = osim.convertTableToStorage(table)
+            # TODO: There's a bug in converting column labels in
+            # convertTableToStorage().
+            stolabels = osim.ArrayStr()
+            stolabels.append('time')
+            for label in labels:
+                stolabels.append(label)
+            storage.setColumnLabels(stolabels)
+        id_tool.setCoordinateValues(storage)
+        # id_tool.setExternalLoadsFileName(extloads_fpath)
+        excludedForces = osim.ArrayStr()
+        excludedForces.append('ACTUATORS')
+        id_tool.setExcludedForces(excludedForces)
+        id_result = 'joint_moment_breakdown_residuals.sto'
+        id_tool.setResultsDir(tmpdirname)
+        id_tool.setOutputGenForceFileName(id_result)
+        # TODO: Remove muscles from the model?
+        id_tool.run()
+
+        net_joint_moments = osim.TimeSeriesTable(
+            os.path.join(tmpdirname, id_result))
+    return net_joint_moments
+
 def plot_joint_moment_breakdown(model, moco_traj,
                                 coord_paths, muscle_paths=None,
                                 coordact_paths=[]):

@@ -1434,6 +1434,7 @@ class MotionTrackingWalking(MocoPaperResult):
             os.path.join(root_dir,
                          'figures/motion_tracking_walking_weak.png'),
             dpi=600)
+        fig.savefig(os.path.join(root_dir, 'figures/Fig9.tiff'), dpi=600)
 
         # TODO plot lumbar?
         # TODO colors

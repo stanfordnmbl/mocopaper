@@ -9,6 +9,11 @@ pdflatex -interaction=nonstopmode MocoPaper.tex
 bibtex MocoPaper
 pdflatex -interaction=nonstopmode MocoPaper.tex
 pdflatex -interaction=nonstopmode MocoPaper.tex
+
+pdflatex -interaction=nonstopmode MocoPaperAppendix.tex
+bibtex MocoPaperAppendix
+pdflatex -interaction=nonstopmode MocoPaperAppendix.tex
+pdflatex -interaction=nonstopmode MocoPaperAppendix.tex
 cd ../
 
 # If this script is being run inside a Docker container, copy certain files
@@ -16,6 +21,8 @@ cd ../
 # the outputs from the Docker container.
 if [ -f /.dockerenv ]; then
     cp paper/MocoPaper.pdf /output/
+    cp paper/MocoPaperAppendix.pdf /output/
     cp results/* /output/
     cp figures/*.png /output/
+    cp figures/*.tiff /output/
 fi

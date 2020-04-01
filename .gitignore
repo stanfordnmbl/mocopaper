@@ -235,6 +235,7 @@ out.log
 !/figures/MocoDiagram.png
 !/figures/Moco*Diagram.png
 !/figures/MocoExampleCode.png
+!/figures/Fig*.png
 *.batch
 *.batch.sh
 

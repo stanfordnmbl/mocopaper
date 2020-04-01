@@ -90,13 +90,10 @@ class MocoPaperResult(ABC):
                              delimiter=',')
 
     def savefig(self, fig, filename):
-        # Save the image in memory in PNG format
-        png1 = io.BytesIO()
-        fig.savefig(png1, format="png", dpi=600)
+        fig.savefig(filename + ".png", format="png", dpi=600)
 
         # Load this image into PIL
-        png2 = Image.open(png1)
+        png2 = Image.open(filename + ".png")
 
         # Save as TIFF
         png2.save(filename + ".tiff", compression='tiff_lzw')
-        png1.close()

@@ -705,9 +705,6 @@ class MotionTrackingWalking(MocoPaperResult):
         mass = model.getTotalMass(state)
         gravity = model.getGravity()
         BW = mass*abs(gravity[1])
-        print('DEBUG mass', mass)
-        print('DEBUG BW', BW)
-        exit(-1)
 
         # Plot passive joint moments.
         plotPassiveJointMoments = False

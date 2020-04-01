@@ -327,6 +327,7 @@ class SquatToStand(MocoPaperResult):
                 ax.set_xticklabels([])
             if muscle[0][1] == 2:
                 ax.set_ylabel('activation')
+            ax.set_xticks([0, 0.4, 0.8])
             utilities.publication_spines(ax)
             muscle_axes += [ax]
         def plot_solution(sol, label, linestyle='-', color=None):
@@ -354,7 +355,7 @@ class SquatToStand(MocoPaperResult):
         print(f'Stiffness: {stiffness}')
         with open(os.path.join(root_dir, 'results/squat_to_stand_stiffness.txt'), 'w') as f:
             f.write(f'{stiffness:.0f}')
-        plot_solution(predict_solution, 'unassisted', color='gray')
+        plot_solution(predict_solution, 'unassisted', color='black')
         plot_solution(predict_assisted_solution, 'assisted')
 
         kinematics_rms = predict_solution.compareContinuousVariablesRMSPattern(
@@ -367,12 +368,13 @@ class SquatToStand(MocoPaperResult):
 
         fig.tight_layout() # w_pad=0.2)
 
-        muscle_axes[0].legend(frameon=False, handlelength=1,
+        muscle_axes[0].legend(frameon=False, # handlelength=1,
                              # bbox_to_anchor=(-1.0, 0.5),
                              # loc='center',
                              )
 
         fig.savefig(os.path.join(root_dir, 'figures/squat_to_stand.png'), dpi=600)
+        self.savefig(fig, os.path.join(root_dir, 'figures/Fig10'))
 
         coords = ['/jointset/hip_r/hip_extension_r',
                   '/jointset/knee_r/knee_extension_r',

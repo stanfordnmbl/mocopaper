@@ -27,7 +27,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 # Must be careful to not embed the GitHub token in the image.
 RUN git clone https://github.com/opensim-org/opensim-moco.git /opensim-moco \
         && cd /opensim-moco \
-        && git checkout 0.1.0-preprint
+        && git checkout master
 
 RUN cd /opensim-moco \
         && git submodule update --init \
@@ -65,7 +65,8 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 
 
 # We need matplotlib 3.1.
-RUN pip3 install matplotlib
+# pillow allows saving images to TIFF.
+RUN pip3 install matplotlib pillow
 
 # Mount a volume to the Docker container's /output folder to save outputs
 # to the local machine.

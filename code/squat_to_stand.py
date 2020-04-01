@@ -374,6 +374,7 @@ class SquatToStand(MocoPaperResult):
                              )
 
         fig.savefig(os.path.join(root_dir, 'figures/squat_to_stand.png'), dpi=600)
+        self.savefig(fig, os.path.join(root_dir, 'figures/Fig10'))
 
         coords = ['/jointset/hip_r/hip_extension_r',
                   '/jointset/knee_r/knee_extension_r',

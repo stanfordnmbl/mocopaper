@@ -216,6 +216,7 @@ class MotionPrescribedWalking(MocoPaperResult):
                 f.write(f'{inverse_jr_duration:.1f}')
 
         emg = self.load_electromyography(root_dir)
+        emgPerry = self.load_electromyography_PerryBurnfield(root_dir)
 
         if self.inverse:
             sol_inverse = osim.MocoTrajectory(self.mocoinverse_solution_file % root_dir)
@@ -344,16 +345,15 @@ class MotionPrescribedWalking(MocoPaperResult):
 
 
         muscles = [
-            ((0, 0), 'glmax2', 'gluteus maximus', 'GMAX'),
-            ((0, 1), 'psoas', 'psoas', ''),
-            # TODO: dashed semimem
-            ((1, 0), 'semiten', 'semitendinosus', 'MH'),
-            ((0, 2), 'recfem', 'rectus femoris', 'RF'),
-            ((1, 1), 'bfsh', 'biceps femoris short head', 'BF'),
-            ((1, 2), 'vaslat', 'vastus lateralis', 'VL'),
-            ((2, 0), 'gasmed', 'medial gastrocnemius', 'GAS'),
-            ((2, 1), 'soleus', 'soleus', 'SOL'),
-            ((2, 2), 'tibant', 'tibialis anterior', 'TA'),
+            ((0, 0), 'glmax2', 'gluteus maximus', 'Perry', 'GluteusMaximusUpper'),
+            ((0, 1), 'iliacus', 'iliacus', 'Perry', 'Iliacus'),
+            ((0, 2), 'recfem', 'rectus femoris', '', 'RF'),
+            ((1, 0), 'semiten', 'semitendinosus', '', 'MH'),
+            ((1, 1), 'bfsh', 'biceps femoris short head', '', 'BF'),
+            ((1, 2), 'vaslat', 'vastus lateralis', '', 'VL'),
+            ((2, 0), 'gasmed', 'medial gastrocnemius', '', 'GAS'),
+            ((2, 1), 'soleus', 'soleus', '', 'SOL'),
+            ((2, 2), 'tibant', 'tibialis anterior', '', 'TA'),
         ]
         legend_handles_and_labels = []
         for im, muscle in enumerate(muscles):
@@ -373,19 +373,31 @@ class MotionPrescribedWalking(MocoPaperResult):
                           label='MocoInverse, knee',
                           linewidth=2, zorder=3)
                 legend_musc.append((handle, 'MocoInverse, knee'))
-            if self.inverse and len(muscle[3]) > 0:
-                handle = self.plot(ax, emg['time'],
-                                   emg[muscle[3]] * np.max(inverse_activ),
-                                   shift=False,
-                                   fill=True,
-                                   color='lightgray',
-                                   label='electromyography')
+            if self.inverse:
+                if muscle[3] == 'Perry':
+                    handle = ax.fill_between(emgPerry['percent_gait_cycle'],
+                                    emgPerry[muscle[4]] / 100.0,
+                                    np.zeros_like(emgPerry[muscle[4]]),
+                                    clip_on=False,
+                                    color='lightgray',
+                                    label='electromyography')
+                else:
+                    handle = self.plot(ax, emg['time'],
+                                       emg[muscle[4]] * np.max(inverse_activ),
+                              shift=False, fill=True, color='lightgray',
+                              label='experiment')
+                # handle = self.plot(ax, emg['time'],
+                #                    emg[muscle[3]] * np.max(inverse_activ),
+                #                    shift=False,
+                #                    fill=True,
+                #                    color='lightgray',
+                #                    label='electromyography')
                 legend_musc.append((handle,
                                     'electromyography (normalized; peak '
                                     'matches the peak from MocoInverse)'))
             if im == 0:
                 legend_handles_and_labels = legend_musc
-            ax.set_ylim(-0.05, 1)
+            ax.set_ylim(0, 1)
             ax.set_xlim(0, 100)
             ax.set_xticks([0, 50, 100])
             if muscle[0][0] < 2:
@@ -413,9 +425,7 @@ class MotionPrescribedWalking(MocoPaperResult):
         )
         fig.tight_layout(h_pad=1, rect=(0, 0.07, 1, 1), pad=0.4)
 
-        fig.savefig(
-            os.path.join(root_dir, 'figures/motion_prescribed_walking.png'),
-            dpi=600)
+        self.savefig(fig, os.path.join(root_dir, 'figures/Fig7'))
 
         if self.inverse:
             res_inverse = self.calc_reserves(root_dir, sol_inverse)

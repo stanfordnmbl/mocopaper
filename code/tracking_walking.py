@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import re
+import matplotlib.transforms as mtransforms
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import matplotlib.cm as cm
@@ -12,6 +13,8 @@ from moco_paper_result import MocoPaperResult
 import utilities
 from utilities import plot_joint_moment_breakdown
 from utilities import toarray
+
+# TODO: mass of subject should be 85.0668.
 
 class MocoTrackConfig:
     def __init__(self, name, legend_entry, tracking_weight, effort_weight,
@@ -702,6 +705,9 @@ class MotionTrackingWalking(MocoPaperResult):
         mass = model.getTotalMass(state)
         gravity = model.getGravity()
         BW = mass*abs(gravity[1])
+        print('DEBUG mass', mass)
+        print('DEBUG BW', BW)
+        exit(-1)
 
         # Plot passive joint moments.
         plotPassiveJointMoments = False
@@ -1151,6 +1157,14 @@ class MotionTrackingWalking(MocoPaperResult):
     def plot_paper_figure_healthy(self, root_dir, mass, BW):
 
         emg = self.load_electromyography(root_dir)
+        emgPerry = self.load_electromyography_PerryBurnfield(root_dir)
+
+        solution_inv_fpath = os.path.join(
+            root_dir,
+            'results/motion_prescribed_walking_inverse_solution.sto')
+        solution_inv = None
+        if os.path.exists(solution_inv_fpath):
+            solution_inv = osim.MocoTrajectory(solution_inv_fpath)
 
         fig = plt.figure(figsize=(7.5, 3.3))
         gs = gridspec.GridSpec(6, 4)
@@ -1160,17 +1174,27 @@ class MotionTrackingWalking(MocoPaperResult):
         ax_list.append(ax_grf_x)
         ax_list.append(ax_grf_y)
         muscles = [
-            (fig.add_subplot(gs[0:2, 1]), 'glmax2', 'gluteus maximus', 'GMAX'),
-            (fig.add_subplot(gs[0:2, 2]), 'psoas', 'psoas', 'PSOAS'),
-            (fig.add_subplot(gs[0:2, 3]), 'recfem', 'rectus femoris', 'RF'),
-            (fig.add_subplot(gs[2:4, 1]), 'semiten', 'semitendinosus', 'MH'),
-            (fig.add_subplot(gs[2:4, 2]), 'bfsh', 'biceps femoris short head', 'BF'),
-            (fig.add_subplot(gs[2:4, 3]), 'vaslat', 'vastus lateralis', 'VL'),
-            (fig.add_subplot(gs[4:6, 1]), 'gasmed', 'medial gastrocnemius', 'GAS'),
-            (fig.add_subplot(gs[4:6, 2]), 'soleus', 'soleus', 'SOL'),
-            (fig.add_subplot(gs[4:6, 3]), 'tibant', 'tibialis anterior', 'TA'),
+            (fig.add_subplot(gs[0:2, 1]), 'glmax2', 'gluteus maximus', 'Perry', 'GluteusMaximusUpper'),
+            (fig.add_subplot(gs[0:2, 2]), 'iliacus', 'iliacus', 'Perry', 'Iliacus'),
+            (fig.add_subplot(gs[0:2, 3]), 'recfem', 'rectus femoris', '', 'RF'),
+            (fig.add_subplot(gs[2:4, 1]), 'semiten', 'semitendinosus', '', 'MH'),
+            (fig.add_subplot(gs[2:4, 2]), 'bfsh', 'biceps femoris short head', '', 'BF'),
+            (fig.add_subplot(gs[2:4, 3]), 'vaslat', 'vastus lateralis', '', 'VL'),
+            (fig.add_subplot(gs[4:6, 1]), 'gasmed', 'medial gastrocnemius', '', 'GAS'),
+            (fig.add_subplot(gs[4:6, 2]), 'soleus', 'soleus', '', 'SOL'),
+            (fig.add_subplot(gs[4:6, 3]), 'tibant', 'tibialis anterior', '', 'TA'),
         ]
-        cmap = cm.get_cmap(self.cmap)
+        muscle_scale = dict()
+        if solution_inv:
+            state_names = solution_inv.getStateNames()
+            for muscle in muscles:
+                path = f'/forceset/{muscle[1]}_l/activation'
+                muscle_scale[muscle[1]] = np.max(solution_inv.getStateMat(path))
+        else:
+            for muscle in muscles:
+                muscle_scale[muscle[1]] = 1.0
+
+
         title_fs = 8
         lw = 2
 
@@ -1190,9 +1214,6 @@ class MotionTrackingWalking(MocoPaperResult):
         ax_grf_y.plot(pgc_grfs,
                       grf_table['ground_force_l_vy'][grf_start:grf_end]/BW,
                       color=exp_color, lw=lw)
-        # ax_grf_z.plot(pgc_grfs,
-        #               grf_table['ground_force_l_vz'][grf_start:grf_end]/BW,
-        #               color=exp_color, lw=lw)
 
         # simulation results
         config = self.config_track
@@ -1241,14 +1262,23 @@ class MotionTrackingWalking(MocoPaperResult):
                 ax = muscle[0]
                 activation = full_traj.getStateMat(activation_path)
                 ax.plot(pgc, activation, color=color, lw=lw,
+                        # clip_box=mtransforms.Bbox.from_bounds(0, 0, 1, 1.2),
+                        clip_on=False,
                         label='MocoTrack')
 
                 # electromyography data
-                # TODO: do not assume we want to normalize EMG via
-                # simulation 0.
-                if config.name == 'track' and 'PSOAS' not in muscle:
-                    self.plot(ax, emg['time'],
-                              np.clip(emg[muscle[3]] * np.max(activation), 0, 1),
+                if config.name == 'track':
+                    if muscle[3] == 'Perry':
+                        ax.fill_between(emgPerry['percent_gait_cycle'],
+                                        emgPerry[muscle[4]] / 100.0,
+                                        np.zeros_like(emgPerry[muscle[4]]),
+                                        clip_on=False,
+                                        color='lightgray',
+                                        label='electromyography')
+                    else:
+                        y = np.clip(
+                            emg[muscle[4]] * muscle_scale[muscle[1]], 0, 1)
+                        self.plot(ax, emg['time'], y,
                               shift=False, fill=True, color='lightgray',
                               label='experiment')
                 ax.set_ylim(0, 1)
@@ -1275,9 +1305,7 @@ class MotionTrackingWalking(MocoPaperResult):
 
         # fig.tight_layout(h_pad=0.1)
         fig.tight_layout(h_pad=1, pad=0.4)
-        fig.savefig(os.path.join(root_dir,
-                                 'figures/motion_tracking_walking_healthy.png'),
-                    dpi=600)
+        self.savefig(fig, os.path.join(root_dir, 'figures/Fig8'))
 
     def plot_paper_figure_weak(self, root_dir, mass, netgenforces):
 
@@ -1430,11 +1458,7 @@ class MotionTrackingWalking(MocoPaperResult):
                       )
 
         fig.tight_layout(h_pad=-2.0, rect=(0, 0, 1, 0.95))
-        fig.savefig(
-            os.path.join(root_dir,
-                         'figures/motion_tracking_walking_weak.png'),
-            dpi=600)
-        fig.savefig(os.path.join(root_dir, 'figures/Fig9.tiff'), dpi=600)
+        self.savefig(fig, os.path.join(root_dir, 'figures/Fig9'))
 
         # TODO plot lumbar?
         # TODO colors

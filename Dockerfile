@@ -65,7 +65,8 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 
 
 # We need matplotlib 3.1.
-RUN pip3 install matplotlib
+# pillow allows saving images to TIFF.
+RUN pip3 install matplotlib pillow
 
 # Mount a volume to the Docker container's /output folder to save outputs
 # to the local machine.

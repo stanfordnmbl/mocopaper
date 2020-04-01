@@ -120,8 +120,9 @@ class SuspendedMass(MocoPaperResult):
 
         time_stepping = None
         if run_time_stepping:
-            time_stepping = osim.simulateIterateWithTimeStepping(solution,
-                                                                 self.build_model())
+            time_stepping = osim.simulateTrajectoryWithTimeStepping(
+                solution,
+                self.build_model())
 
         return solution, time_stepping
 
@@ -335,15 +336,15 @@ class SuspendedMass(MocoPaperResult):
         if plot_prediction:
             ax.plot(predict_solution.getTimeMat(),
                     predict_solution.getStateMat('/forceset/left/activation'),
-                    color=gray, linewidth=6, clip_on=False)
+                    color=gray, linewidth=6)
         if plot_timestepping:
             ax.plot(time_stepping.getTimeMat(),
                     time_stepping.getStateMat('/forceset/left/activation'),
-                    linewidth=stepping_linewidth, clip_on=False)
+                    linewidth=stepping_linewidth)
         if plot_track:
             ax.plot(track_solution.getTimeMat(),
                     track_solution.getStateMat('/forceset/left/activation'),
-                    linewidth=track_linewidth, clip_on=False)
+                    linewidth=track_linewidth)
         # ax.plot(track_p_solution.getTimeMat(),
         #         track_p_solution.getStateMat('/forceset/left/activation'),
         #         linestyle='-', linewidth=1, clip_on=False)
@@ -362,15 +363,15 @@ class SuspendedMass(MocoPaperResult):
         if plot_prediction:
             ax.plot(predict_solution.getTimeMat(),
                     predict_solution.getStateMat('/forceset/middle/activation'),
-                    color=gray, linewidth=6, clip_on=False)
+                    color=gray, linewidth=6)
         if plot_timestepping:
             ax.plot(time_stepping.getTimeMat(),
                     time_stepping.getStateMat('/forceset/middle/activation'),
-                    linewidth=stepping_linewidth, clip_on=False)
+                    linewidth=stepping_linewidth)
         if plot_track:
             ax.plot(track_solution.getTimeMat(),
                     track_solution.getStateMat('/forceset/middle/activation'),
-                    linewidth=track_linewidth, clip_on=False)
+                    linewidth=track_linewidth)
         # ax.plot(track_p_solution.getTimeMat(),
         #         track_p_solution.getStateMat('/forceset/middle/activation'),
         #         linewidth=1, clip_on=False)
@@ -389,15 +390,15 @@ class SuspendedMass(MocoPaperResult):
         if plot_prediction:
             ax.plot(predict_solution.getTimeMat(),
                     predict_solution.getStateMat('/forceset/right/activation'),
-                    color=gray, linewidth=6, clip_on=False)
+                    color=gray, linewidth=6)
         if plot_timestepping:
             ax.plot(time_stepping.getTimeMat(),
                     time_stepping.getStateMat('/forceset/right/activation'),
-                    linewidth=stepping_linewidth, clip_on=False)
+                    linewidth=stepping_linewidth)
         if plot_track:
             ax.plot(track_solution.getTimeMat(),
                     track_solution.getStateMat('/forceset/right/activation'),
-                    linewidth=track_linewidth, clip_on=False)
+                    linewidth=track_linewidth)
         # ax.plot(track_p_solution.getTimeMat(),
         #         track_p_solution.getStateMat('/forceset/right/activation'),
         #         linewidth=1, clip_on=False)
@@ -414,5 +415,4 @@ class SuspendedMass(MocoPaperResult):
 
         fig.tight_layout()
 
-        pl.savefig(os.path.join(root_dir, 'figures/suspended_mass.png'),
-                   dpi=600)
+        self.savefig(fig, os.path.join(root_dir, 'figures/Fig6'))

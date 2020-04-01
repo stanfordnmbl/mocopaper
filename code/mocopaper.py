@@ -8,6 +8,8 @@ from prescribed_walking import MotionPrescribedWalking
 from tracking_walking import MotionTrackingWalking
 from squat_to_stand import SquatToStand
 
+from collections import OrderedDict
+
 # TODO: create a docker container for these results and generating the preprint.
 # TODO fix shift
 # TODO: Add a periodicity cost to walking.
@@ -18,15 +20,14 @@ from squat_to_stand import SquatToStand
 if __name__ == "__main__":
     import argparse
 
-    results = {
-        'analytic': Analytic(),
-        'linear-tangent-steering': LinearTangentSteering(),
-        'suspended-mass': SuspendedMass(),
-        'prescribed-walking': MotionPrescribedWalking(),
-        'tracking-walking': MotionTrackingWalking(),
-        # 'predicting-walking': MotionPredictionAndAssistanceWalking(),
-        'squat-to-stand': SquatToStand(),
-   }
+    results = OrderedDict()
+    results['analytic'] = Analytic()
+    results['linear-tangent-steering'] = LinearTangentSteering()
+    results['suspended-mass'] = SuspendedMass()
+    results['prescribed-walking'] = MotionPrescribedWalking()
+    results['tracking-walking'] = MotionTrackingWalking()
+    # 'predicting-walking': MotionPredictionAndAssistanceWalking(),
+    results['squat-to-stand'] = SquatToStand()
 
     parser = argparse.ArgumentParser(description="Generate results for the"
                                                  "OpenSim Moco publication.")

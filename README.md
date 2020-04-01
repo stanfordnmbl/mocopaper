@@ -5,7 +5,8 @@ This repository holds the code and text for generating the manuscript on
 OpenSim Moco, a software toolkit for solving optimal control problems with
 OpenSim musculoskeletal models.
 
-View the Moco preprint at https://www.biorxiv.org/content/10.1101/839381v1.
+This manuscript was first released as a bioRxiv preprint:
+https://www.biorxiv.org/content/10.1101/839381v1.
 
 To learn more about OpenSim Moco, visit https://simtk.org/projects/opensim-moco.
 
@@ -30,7 +31,7 @@ on your computer. Then, run the following command:
     # On Mac/UNIX using bash.
     docker run --volume $(pwd):/output stanfordnmbl/mocopaper:preprint
 
-The container takes about 3 hours to run.
+The container takes about 10 hours to run.
 The results, figures, and paper PDF will end up in your current directory.
 
 If you want to run your own copy of the mocopaper repository instead of using

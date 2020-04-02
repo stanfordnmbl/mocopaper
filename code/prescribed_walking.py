@@ -487,13 +487,19 @@ class MotionPrescribedWalking(MocoPaperResult):
             maxjr_inverse_jr, avgjr_inverse_jr = \
                 self.calc_knee_reaction_force(root_dir, sol_inverse_jointreaction)
             print(f'Max joint reaction {maxjr_inverse} -> {maxjr_inverse_jr}')
-            print(f'Average joint reaction {avgjr_inverse} -> {avgjr_inverse_jr}')
             with open(os.path.join(root_dir, 'results/motion_prescribed_walking_'
                       'inverse_maxjr.txt'), 'w') as f:
                 f.write(f'{maxjr_inverse:.1f}')
             with open(os.path.join(root_dir, 'results/motion_prescribed_walking_'
                       'inverse_jr_maxjr.txt'), 'w') as f:
                 f.write(f'{maxjr_inverse_jr:.1f}')
+            print(f'Average joint reaction {avgjr_inverse} -> {avgjr_inverse_jr}')
+            with open(os.path.join(root_dir, 'results/motion_prescribed_walking_'
+                                             'inverse_avgjr.txt'), 'w') as f:
+                f.write(f'{avgjr_inverse:.1f}')
+            with open(os.path.join(root_dir, 'results/motion_prescribed_walking_'
+                                             'inverse_jr_avgjr.txt'), 'w') as f:
+                f.write(f'{avgjr_inverse_jr:.1f}')
 
         if self.inverse:
             states = sol_inverse.exportToStatesTrajectory(model)

@@ -27,7 +27,7 @@ class MotionPrescribedWalking(MocoPaperResult):
         # Create base model without reserves.
         model = osim.Model(os.path.join(root_dir,
                 'resources/Rajagopal2016/'
-                'subject_walk_armless_contact_bounded_80musc.osim'))
+                'subject_walk_contact_bounded_80musc.osim'))
 
         forceSet = model.getForceSet()
         numContacts = 0
@@ -62,19 +62,27 @@ class MotionPrescribedWalking(MocoPaperResult):
         add_reserve(model, 'lumbar_extension', 50)
         add_reserve(model, 'lumbar_bending', 50)
         add_reserve(model, 'lumbar_rotation', 20)
+        for side in ['_l', '_r']:
+            add_reserve(model, f'arm_flex{side}', 15)
+            add_reserve(model, f'arm_add{side}', 15)
+            add_reserve(model, f'arm_rot{side}', 5)
+            add_reserve(model, f'elbow_flex{side}', 5)
+            add_reserve(model, f'pro_sup{side}', 1)
         add_reserve(model, 'pelvis_tilt', 60)
         add_reserve(model, 'pelvis_list', 30)
         add_reserve(model, 'pelvis_rotation', 15)
-        add_reserve(model, 'pelvis_tx', 60)
+        add_reserve(model, 'pelvis_tx', 100)
         add_reserve(model, 'pelvis_ty', 200)
         add_reserve(model, 'pelvis_tz', 35)
 
         modelProcessor = osim.ModelProcessor(model)
         modelProcessor.append(osim.ModOpReplaceJointsWithWelds(
-            ['subtalar_r', 'mtp_r', 'subtalar_l', 'mtp_l']))
+            ['subtalar_r', 'mtp_r', 'subtalar_l', 'mtp_l', 'radius_hand_r',
+             'radius_hand_l']))
         modelProcessor.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())
         modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
         modelProcessor.append(osim.ModOpIgnoreTendonCompliance())
+        modelProcessor.append(osim.ModOpFiberDampingDGF(0.01))
         modelProcessor.append(osim.ModOpAddReserves(1, 15, True))
         baseModel = modelProcessor.process()
 
@@ -153,10 +161,10 @@ class MotionPrescribedWalking(MocoPaperResult):
         # -------------------------------------
         study = inverse.initialize()
         problem = study.updProblem()
-        reaction_r = osim.MocoJointReactionGoal('reaction_r', 0.1)
+        reaction_r = osim.MocoJointReactionGoal('reaction_r', 0.05)
         reaction_r.setJointPath('/jointset/walker_knee_r')
         reaction_r.setReactionMeasures(['force-x', 'force-y'])
-        reaction_l = osim.MocoJointReactionGoal('reaction_l', 0.1)
+        reaction_l = osim.MocoJointReactionGoal('reaction_l', 0.05)
         reaction_l.setJointPath('/jointset/walker_knee_l')
         reaction_l.setReactionMeasures(['force-x', 'force-y'])
         problem.addGoal(reaction_r)
@@ -174,12 +182,13 @@ class MotionPrescribedWalking(MocoPaperResult):
         output = osim.analyze(model, solution, ['.*reserve.*actuation'])
         return output
 
-    def calc_max_knee_reaction_force(self, root_dir, solution):
+    def calc_knee_reaction_force(self, root_dir, solution):
         modelProcessor = self.create_model_processor(root_dir)
         model = modelProcessor.process()
         jr = osim.analyzeSpatialVec(model, solution,
                                     ['.*walker_knee.*reaction_on_parent.*'])
         jr = jr.flatten(['_mx', '_my', '_mz', '_fx', '_fy', '_fz'])
+        traj = np.empty(jr.getNumRows())
         max = -np.inf
         for itime in range(jr.getNumRows()):
             for irxn in range(int(jr.getNumColumns() / 6)):
@@ -187,12 +196,15 @@ class MotionPrescribedWalking(MocoPaperResult):
                 fy = jr.getDependentColumnAtIndex(6 * irxn + 4)[itime]
                 fz = jr.getDependentColumnAtIndex(6 * irxn + 5)[itime]
                 norm = np.sqrt(fx**2 + fy**2 + fz**2)
+                traj[itime] = norm
                 max = np.max([norm, max])
+        time = jr.getIndependentColumn()
+        avg = np.trapz(traj, x=time) / (time[-1] - time[0])
         g = np.abs(model.get_gravity()[1])
         state = model.initSystem()
         mass = model.getTotalMass(state)
         weight = mass * g
-        return max / weight
+        return max / weight, avg / weight
 
     def report_results(self, root_dir, args):
         self.parse_args(args)
@@ -218,26 +230,36 @@ class MotionPrescribedWalking(MocoPaperResult):
         emg = self.load_electromyography(root_dir)
         emgPerry = self.load_electromyography_PerryBurnfield(root_dir)
 
+        modelProcessor = self.create_model_processor(root_dir)
+        model = modelProcessor.process()
+        model.initSystem()
+        print(f'Degrees of freedom: {model.getCoordinateSet().getSize()}')
+
         if self.inverse:
             sol_inverse = osim.MocoTrajectory(self.mocoinverse_solution_file % root_dir)
             time_inverse = sol_inverse.getTimeMat()
+            most_neg = self.calc_negative_muscle_forces_base(model, sol_inverse)
+            if most_neg < -0.005:
+                raise Exception("Muscle forces are too negative! sol_inverse")
 
         if self.knee and self.inverse:
             sol_inverse_jointreaction = \
                 osim.MocoTrajectory(self.mocoinverse_jointreaction_solution_file % root_dir)
             sol_inverse_jointreaction.insertStatesTrajectory(
                 sol_inverse.exportToStatesTable(), False)
+
+            most_neg = self.calc_negative_muscle_forces_base(
+                model, sol_inverse_jointreaction)
+            if most_neg < -0.005:
+                raise Exception(
+                    "Muscle forces are too negative! sol_inverse_jointreaction")
+
             mocoinverse_jr_solution_file = \
                 self.mocoinverse_jointreaction_solution_file.replace('.sto',
                                                                      '_with_q_u.sto')
 
             sol_inverse_jointreaction.write(mocoinverse_jr_solution_file % root_dir)
             time_inverse_jointreaction = sol_inverse_jointreaction.getTimeMat()
-
-        modelProcessor = self.create_model_processor(root_dir)
-        model = modelProcessor.process()
-        model.initSystem()
-        print(f'Degrees of freedom: {model.getCoordinateSet().getSize()}')
 
         plot_breakdown = True
 
@@ -456,9 +478,12 @@ class MotionPrescribedWalking(MocoPaperResult):
                       'inverse_jr_max_reserve.txt'), 'w') as f:
                 f.write(f'{max_res_inverse_jr:.3f}')
 
-            maxjr_inverse = self.calc_max_knee_reaction_force(root_dir, sol_inverse)
-            maxjr_inverse_jr = self.calc_max_knee_reaction_force(root_dir, sol_inverse_jointreaction)
+            maxjr_inverse, avgjr_inverse = \
+                self.calc_knee_reaction_force(root_dir, sol_inverse)
+            maxjr_inverse_jr, avgjr_inverse_jr = \
+                self.calc_knee_reaction_force(root_dir, sol_inverse_jointreaction)
             print(f'Max joint reaction {maxjr_inverse} -> {maxjr_inverse_jr}')
+            print(f'Average joint reaction {avgjr_inverse} -> {avgjr_inverse_jr}')
             with open(os.path.join(root_dir, 'results/motion_prescribed_walking_'
                       'inverse_maxjr.txt'), 'w') as f:
                 f.write(f'{maxjr_inverse:.1f}')

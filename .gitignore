@@ -194,6 +194,7 @@ fabric.properties
 MocoTool_solution.sto
 *solution.sto
 *.png
+*.tiff
 *.pdf
 *.eps
 *.omoco
@@ -235,7 +236,16 @@ out.log
 !/figures/MocoDiagram.png
 !/figures/Moco*Diagram.png
 !/figures/MocoExampleCode.png
-!/figures/Fig*.png
+!/figures/Fig1.png
+!/figures/Fig2.png
+!/figures/Fig3.png
+!/figures/Fig4.png
+!/figures/Fig5.png
+!/figures/Fig1.tiff
+!/figures/Fig2.tiff
+!/figures/Fig3.tiff
+!/figures/Fig4.tiff
+!/figures/Fig5.tiff
 !/figures/OverviewOfMoco.*
 *.batch
 *.batch.sh
@@ -258,7 +268,6 @@ out.log
 /paper/MocoPaper.blg
 /paper/MocoPaper.synctex*
 /tracking_walking_tracked_markers.sto
-!/motion_tracking_visualization/weakpfs.png
 !/motion_tracking_visualization/weakabd.png
 !/motion_tracking_visualization/weakdfs.png
 /paper/MocoPaperAppendix.synctex.gz

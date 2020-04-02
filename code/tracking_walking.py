@@ -1362,7 +1362,7 @@ class MotionTrackingWalking(MocoPaperResult):
         title_fs = 8
         lw = 2
 
-        ax = fig.add_subplot(gs[0:6, 0:5])
+        ax = fig.add_subplot(gs[0:6, 0:2])
         # Convert BGR color ordering to RGB.
         image = cv2.imread(
             os.path.join(root_dir,

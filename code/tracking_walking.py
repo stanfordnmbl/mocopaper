@@ -317,6 +317,27 @@ class MotionTrackingWalking(MocoPaperResult):
 
         return outputs
 
+    def calc_negative_muscle_forces(self, root_dir, config, solution):
+        modelProcessor = self.create_model_processor(root_dir, config=config)
+        model = modelProcessor.process()
+        outputs = osim.analyze(model, solution, ['.*\|tendon_force'])
+        def min(simtkvec):
+            lowest = np.inf
+            for i in range(simtkvec.size()):
+                if simtkvec[i] < lowest:
+                    lowest = simtkvec[i]
+            return lowest
+
+        for imusc in range(model.getMuscles().getSize()):
+            musc = model.updMuscles().get(imusc)
+            max_iso = musc.get_max_isometric_force()
+            force = outputs.getDependentColumn(
+                musc.getAbsolutePathString() + "|tendon_force")
+            neg = min(force) / max_iso
+            if neg < 0:
+                print(f'Negative force for {musc.getName()}: {neg} F_iso')
+
+
     def run_inverse_problem(self, root_dir):
 
         modelProcessor = self.create_model_processor(root_dir,
@@ -733,7 +754,7 @@ class MotionTrackingWalking(MocoPaperResult):
                     self.get_solution_path_fullcycle(root_dir, config.name))
                 osim.visualize(model, solution.exportToStatesTable())
 
-        # inverse dynamics
+        # inverse dynamics and negative muscle forces.
         netgenforces = dict()
         coord_sto = osim.Storage(
             os.path.join(root_dir, 'resources',
@@ -744,6 +765,9 @@ class MotionTrackingWalking(MocoPaperResult):
             color = config.color
             full_path = self.get_solution_path_fullcycle(root_dir, config.name)
             full_traj = osim.MocoTrajectory(full_path)
+
+            # TODO
+            # self.calc_negative_muscle_forces(root_dir, config, full_traj)
 
             modelProcessor = self.create_model_processor(root_dir,
                                                          for_inverse=False,

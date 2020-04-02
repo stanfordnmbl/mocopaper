@@ -37,6 +37,7 @@ class MotionTrackingWalking(MocoPaperResult):
         self.half_time = 1.385
         self.final_time = 1.96
         self.mesh_interval = 0.035
+        self.passive_forces = False
         self.inverse_solution_relpath = \
             'results/motion_tracking_walking_inverse_solution.sto'
         self.tracking_solution_relpath_prefix = \
@@ -208,23 +209,16 @@ class MotionTrackingWalking(MocoPaperResult):
         # We will re-enable tendon compliance for the plantarflexors below.
         modelProcessor.append(osim.ModOpIgnoreTendonCompliance())
         modelProcessor.append(osim.ModOpFiberDampingDGF(0.01))
-        modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
+        if not self.passive_forces:
+            modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
 
         if for_inverse:
             ext_loads_xml = os.path.join(root_dir,
                     'resources/Rajagopal2016/grf_walk.xml')
             modelProcessor.append(osim.ModOpAddExternalLoads(ext_loads_xml))
 
-        # Update passive muscle force parameters so that muscle passive force
-        # doesn't exceed a maximum value, assuming a rigid tendon. Muscle-tendon
-        # length information was obtained from an OpenSim MuscleAnalysis using
-        # the reference coordinate data.
-        maxPassiveMultiplier = 0.02
-        print(f'Updating muscle passive force parameters...')
         model = modelProcessor.process()
         model.initSystem()
-        muscleTendonLengths = osim.TimeSeriesTable(os.path.join(root_dir,
-            'resources/Rajagopal2016/muscle_tendon_lengths.sto'))
         muscles = model.updMuscles()
         for imusc in np.arange(muscles.getSize()):
             muscle = osim.DeGrooteFregly2016Muscle.safeDownCast(
@@ -235,35 +229,48 @@ class MotionTrackingWalking(MocoPaperResult):
             if ('gas' in muscName) or ('soleus' in muscName):
                 muscle.set_ignore_tendon_compliance(False)
 
-            tendonSlackLength = muscle.getTendonSlackLength()
-            optimalFiberLength = muscle.getOptimalFiberLength()
-            maxIsometricForce = muscle.getMaxIsometricForce()
-            muscleTendonLength = \
-                muscleTendonLengths.getDependentColumn(muscName)
+        if self.passive_forces:
+            # Update passive muscle force parameters so that muscle passive force
+            # doesn't exceed a maximum value, assuming a rigid tendon. Muscle-tendon
+            # length information was obtained from an OpenSim MuscleAnalysis using
+            # the reference coordinate data.
+            print(f'Updating muscle passive force parameters...')
+            maxPassiveMultiplier = 0.02
+            muscleTendonLengths = osim.TimeSeriesTable(os.path.join(root_dir,
+                'resources/Rajagopal2016/muscle_tendon_lengths.sto'))
+            for imusc in np.arange(muscles.getSize()):
+                muscle = osim.DeGrooteFregly2016Muscle.safeDownCast(
+                    muscles.get(int(imusc)))
+                muscName = muscle.getName()
 
-            maxMuscleTendonLength = 0
-            for i in range(muscleTendonLengths.getNumRows()):
-                if muscleTendonLength[i] > maxMuscleTendonLength:
-                    maxMuscleTendonLength = muscleTendonLength[i]
+                tendonSlackLength = muscle.getTendonSlackLength()
+                optimalFiberLength = muscle.getOptimalFiberLength()
+                maxIsometricForce = muscle.getMaxIsometricForce()
+                muscleTendonLength = \
+                    muscleTendonLengths.getDependentColumn(muscName)
 
-            maxFiberLength = maxMuscleTendonLength - tendonSlackLength
-            maxNormFiberLength = maxFiberLength / optimalFiberLength
-            currStrain = muscle.get_passive_fiber_strain_at_one_norm_force()
-            currMultiplier = \
-                muscle.calcPassiveForceMultiplier(maxNormFiberLength)
+                maxMuscleTendonLength = 0
+                for i in range(muscleTendonLengths.getNumRows()):
+                    if muscleTendonLength[i] > maxMuscleTendonLength:
+                        maxMuscleTendonLength = muscleTendonLength[i]
 
-            if currMultiplier > maxPassiveMultiplier:
-                while currMultiplier > maxPassiveMultiplier:
-                    currStrain *= 1.05
-                    muscle.set_passive_fiber_strain_at_one_norm_force(currStrain)
-                    currMultiplier = \
-                        muscle.calcPassiveForceMultiplier(maxNormFiberLength)
+                maxFiberLength = maxMuscleTendonLength - tendonSlackLength
+                maxNormFiberLength = maxFiberLength / optimalFiberLength
+                currStrain = muscle.get_passive_fiber_strain_at_one_norm_force()
+                currMultiplier = \
+                    muscle.calcPassiveForceMultiplier(maxNormFiberLength)
 
-                print(f'  --> Updated {muscName} passive fiber strain at one '
-                      f'normalized force to {currStrain} with force '
-                      f'{currMultiplier*maxIsometricForce}')
+                if currMultiplier > maxPassiveMultiplier:
+                    while currMultiplier > maxPassiveMultiplier:
+                        currStrain *= 1.05
+                        muscle.set_passive_fiber_strain_at_one_norm_force(currStrain)
+                        currMultiplier = \
+                            muscle.calcPassiveForceMultiplier(maxNormFiberLength)
 
-        print('\n')
+                    print(f'  --> Updated {muscName} passive fiber strain at one '
+                          f'normalized force to {currStrain} with force '
+                          f'{currMultiplier*maxIsometricForce}')
+            print('\n')
 
         modelProcessorTendonCompliance = osim.ModelProcessor(model)
         modelProcessorTendonCompliance.append(
@@ -323,34 +330,7 @@ class MotionTrackingWalking(MocoPaperResult):
         modelProcessor = self.create_model_processor(root_dir, config=config)
         model = modelProcessor.process()
         model.initSystem()
-        outputs = osim.analyze(model, solution, ['.*\|tendon_force'])
-        def min(simtkvec):
-            lowest = np.inf
-            for i in range(simtkvec.size()):
-                if simtkvec[i] < lowest:
-                    lowest = simtkvec[i]
-            return lowest
-
-        negforces = list()
-        muscle_names = list()
-        for imusc in range(model.getMuscles().getSize()):
-            musc = model.updMuscles().get(imusc)
-            max_iso = musc.get_max_isometric_force()
-            force = outputs.getDependentColumn(
-                musc.getAbsolutePathString() + "|tendon_force")
-            neg = min(force) / max_iso
-            if neg < 0:
-                negforces.append(neg)
-                muscle_names.append(musc.getName())
-                print(f'  {musc.getName()}: {neg} F_iso')
-        if len(negforces) == 0:
-            print(f'No negative forces for {config.name}')
-        else:
-            imin = np.argmin(negforces)
-            print(f'Largest negative force: {muscle_names[imin]} '
-                  f'with {negforces[imin]} F_iso')
-        return min(negforces)
-
+        return self.calc_negative_muscle_forces_base(model, solution)
 
     def run_inverse_problem(self, root_dir):
 
@@ -782,7 +762,11 @@ class MotionTrackingWalking(MocoPaperResult):
             full_path = self.get_solution_path_fullcycle(root_dir, config.name)
             full_traj = osim.MocoTrajectory(full_path)
 
-            self.calc_negative_muscle_forces(root_dir, config, full_traj)
+            most_neg = self.calc_negative_muscle_forces(root_dir, config,
+                                                        full_traj)
+            if most_neg < -0.005:
+                raise Exception("Muscle forces are too negative! " +
+                                f"{config.name}")
 
             modelProcessor = self.create_model_processor(root_dir,
                                                          for_inverse=False,

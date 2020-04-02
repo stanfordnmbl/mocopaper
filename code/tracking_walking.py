@@ -1344,14 +1344,13 @@ class MotionTrackingWalking(MocoPaperResult):
 
         emg = self.load_electromyography(root_dir)
 
-        scale = 2
-        fig = plt.figure(figsize=(8.5*scale, 3.6*scale))
-        gs = gridspec.GridSpec(6, 24)
-        ax_ankle = fig.add_subplot(gs[0:2, 7:12])
-        ax_tibant = fig.add_subplot(gs[4:6, 7:12])
-        ax_iliacus = fig.add_subplot(gs[2:4, 7:12])
-        ax_add = fig.add_subplot(gs[0:2, 19:24])
-        ax_glmed = fig.add_subplot(gs[2:4, 19:24])
+        fig = plt.figure(figsize=(7.5, 3.3))
+        gs = gridspec.GridSpec(6, 8)
+        ax_ankle = fig.add_subplot(gs[0:2, 2:4])
+        ax_tibant = fig.add_subplot(gs[4:6, 2:4])
+        ax_iliacus = fig.add_subplot(gs[2:4, 2:4])
+        ax_add = fig.add_subplot(gs[0:2, 6:8])
+        ax_glmed = fig.add_subplot(gs[2:4, 6:8])
         # ax_lumbar = fig.add_subplot(gs[9:12, 1])
         ax_list = list()
         ax_list.append(ax_ankle)
@@ -1371,7 +1370,7 @@ class MotionTrackingWalking(MocoPaperResult):
                 ..., ::-1]
         ax.imshow(image)
         plt.axis('off')
-        ax = fig.add_subplot(gs[0:6, 13:16])
+        ax = fig.add_subplot(gs[0:6, 4:6])
         # Convert BGR color ordering to RGB.
         image = cv2.imread(
             os.path.join(root_dir,
@@ -1423,7 +1422,9 @@ class MotionTrackingWalking(MocoPaperResult):
                             toarray(tibant_force) / max_iso_forces['tibant_l'], 
                             color=color, lw=lw)
                 ax_tibant.set_ylabel('tibialis anteior\nforce ($F_{\mathrm{iso}}$)')
-                ax_tibant.set_ylim([0, 1])
+                ax_tibant.set_ylim(-0.05, 0.6)
+                ax_tibant.set_yticks([0, 0.5])
+                ax_tibant.set_yticklabels([0, 0.5])
                 ax_tibant.set_xlabel('time (% gait cycle)')
 
                 iliacus_force = muscle_mechanics[config.name].getDependentColumn(
@@ -1432,7 +1433,9 @@ class MotionTrackingWalking(MocoPaperResult):
                             toarray(iliacus_force) / max_iso_forces['iliacus_l'], 
                             color=color, lw=lw)
                 ax_iliacus.set_ylabel('iliacus\nforce ($F_{\mathrm{iso}}$)')
-                ax_iliacus.set_ylim([0, 1])
+                ax_iliacus.set_ylim(-0.05, 1.1)
+                ax_iliacus.set_yticks([0, 0.5, 1])
+                ax_iliacus.set_yticklabels([0, 0.5, 1])
                 ax_iliacus.set_xticklabels([])
 
             if config.name == 'weakhipabd' or config.name == 'track':
@@ -1443,7 +1446,9 @@ class MotionTrackingWalking(MocoPaperResult):
                               toarray(glmed1_force) / max_iso_forces['glmed1_l'], 
                               color=color, lw=lw)
                 ax_glmed.set_ylabel('gluteus medius\nforce ($F_{\mathrm{iso}}$)')
-                ax_glmed.set_ylim([0, 1])
+                ax_glmed.set_ylim(-0.05, 1.1)
+                ax_glmed.set_yticks([0, 0.5, 1])
+                ax_glmed.set_yticklabels([0, 0.5, 1])
                 ax_glmed.set_xlabel('time (% gait cycle)')
 
             # kinematics
@@ -1478,7 +1483,7 @@ class MotionTrackingWalking(MocoPaperResult):
         fig.align_ylabels([ax_ankle, ax_iliacus, ax_tibant])
         fig.align_ylabels([ax_add, ax_glmed])
 
-        fig.text(0.35, 0.95, 'WEAK DORSIFLEXORS', fontweight='bold',
+        fig.text(0.25, 0.95, 'WEAK DORSIFLEXORS', fontweight='bold',
                  horizontalalignment='center')
         fig.text(0.75, 0.95, 'WEAK HIP ABDUCTORS', fontweight='bold',
                  horizontalalignment='center')
@@ -1504,11 +1509,11 @@ class MotionTrackingWalking(MocoPaperResult):
         plt.figlegend(legend_handles, legend_labels,
                       frameon=False,
                       loc='center',
-                      bbox_to_anchor=(0.8, 0.15),
+                      bbox_to_anchor=(0.85, 0.15),
                       )
 
         # fig.tight_layout()
-        fig.tight_layout(h_pad=-2.0, rect=(0, 0, 1, 0.95))
+        fig.tight_layout(h_pad=-1.5, rect=(0, 0, 1, 0.95))
         self.savefig(fig, os.path.join(root_dir, 'figures/Fig9'))
 
         # TODO plot lumbar?

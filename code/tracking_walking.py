@@ -588,13 +588,13 @@ class MotionTrackingWalking(MocoPaperResult):
 
         # Contact tracking
         # ----------------
-        forceNamesRightFoot = ['forceset/contactSphereHeel_r',
+        forceNamesRightFoot = ['forceset/contactHeel_r',
                                'forceset/contactLateralRearfoot_r',
                                'forceset/contactLateralMidfoot_r',
                                'forceset/contactLateralToe_r',
                                'forceset/contactMedialToe_r',
                                'forceset/contactMedialMidfoot_r']
-        forceNamesLeftFoot = ['forceset/contactSphereHeel_l',
+        forceNamesLeftFoot = ['forceset/contactHeel_l',
                               'forceset/contactLateralRearfoot_l',
                               'forceset/contactLateralMidfoot_l',
                               'forceset/contactLateralToe_l',

@@ -6,6 +6,8 @@ from PIL import Image
 
 from abc import ABC, abstractmethod
 
+import opensim as osim
+
 import utilities
 
 class MocoPaperResult(ABC):
@@ -88,6 +90,36 @@ class MocoPaperResult(ABC):
                                           'PerryBurnfieldElectromyography.csv'),
                              names=True,
                              delimiter=',')
+
+    def calc_negative_muscle_forces_base(self, model, solution):
+        model.initSystem()
+        outputs = osim.analyze(model, solution, ['.*\|tendon_force'])
+        def simtkmin(simtkvec):
+            lowest = np.inf
+            for i in range(simtkvec.size()):
+                if simtkvec[i] < lowest:
+                    lowest = simtkvec[i]
+            return lowest
+
+        negforces = list()
+        muscle_names = list()
+        for imusc in range(model.getMuscles().getSize()):
+            musc = model.updMuscles().get(imusc)
+            max_iso = musc.get_max_isometric_force()
+            force = outputs.getDependentColumn(
+                musc.getAbsolutePathString() + "|tendon_force")
+            neg = simtkmin(force) / max_iso
+            if neg < 0:
+                negforces.append(neg)
+                muscle_names.append(musc.getName())
+                print(f'  {musc.getName()}: {neg} F_iso')
+        if len(negforces) == 0:
+            print('No negative forces')
+        else:
+            imin = np.argmin(negforces)
+            print(f'Largest negative force: {muscle_names[imin]} '
+                  f'with {negforces[imin]} F_iso')
+        return min(negforces)
 
     def savefig(self, fig, filename):
         fig.savefig(filename + ".png", format="png", dpi=600)

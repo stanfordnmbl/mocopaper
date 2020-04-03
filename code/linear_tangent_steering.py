@@ -95,4 +95,4 @@ class LinearTangentSteering(MocoPaperResult):
         with open(os.path.join(root_dir,
                                'results/linear_tangent_steering_rms.txt'),
                   'w') as f:
-            f.write(f'{rmse:.4f}')
+            f.write(f'{rmse:.1e}')

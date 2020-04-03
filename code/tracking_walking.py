@@ -5,6 +5,7 @@ import matplotlib.transforms as mtransforms
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import matplotlib.cm as cm
+import cv2
 
 import opensim as osim
 
@@ -36,6 +37,7 @@ class MotionTrackingWalking(MocoPaperResult):
         self.half_time = 1.385
         self.final_time = 1.96
         self.mesh_interval = 0.035
+        self.passive_forces = False
         self.inverse_solution_relpath = \
             'results/motion_tracking_walking_inverse_solution.sto'
         self.tracking_solution_relpath_prefix = \
@@ -207,23 +209,16 @@ class MotionTrackingWalking(MocoPaperResult):
         # We will re-enable tendon compliance for the plantarflexors below.
         modelProcessor.append(osim.ModOpIgnoreTendonCompliance())
         modelProcessor.append(osim.ModOpFiberDampingDGF(0.01))
-        modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
+        if not self.passive_forces:
+            modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
 
         if for_inverse:
             ext_loads_xml = os.path.join(root_dir,
                     'resources/Rajagopal2016/grf_walk.xml')
             modelProcessor.append(osim.ModOpAddExternalLoads(ext_loads_xml))
 
-        # Update passive muscle force parameters so that muscle passive force
-        # doesn't exceed a maximum value, assuming a rigid tendon. Muscle-tendon
-        # length information was obtained from an OpenSim MuscleAnalysis using
-        # the reference coordinate data.
-        maxPassiveMultiplier = 0.02
-        print(f'Updating muscle passive force parameters...')
         model = modelProcessor.process()
         model.initSystem()
-        muscleTendonLengths = osim.TimeSeriesTable(os.path.join(root_dir,
-            'resources/Rajagopal2016/muscle_tendon_lengths.sto'))
         muscles = model.updMuscles()
         for imusc in np.arange(muscles.getSize()):
             muscle = osim.DeGrooteFregly2016Muscle.safeDownCast(
@@ -234,35 +229,48 @@ class MotionTrackingWalking(MocoPaperResult):
             if ('gas' in muscName) or ('soleus' in muscName):
                 muscle.set_ignore_tendon_compliance(False)
 
-            tendonSlackLength = muscle.getTendonSlackLength()
-            optimalFiberLength = muscle.getOptimalFiberLength()
-            maxIsometricForce = muscle.getMaxIsometricForce()
-            muscleTendonLength = \
-                muscleTendonLengths.getDependentColumn(muscName)
+        if self.passive_forces:
+            # Update passive muscle force parameters so that muscle passive force
+            # doesn't exceed a maximum value, assuming a rigid tendon. Muscle-tendon
+            # length information was obtained from an OpenSim MuscleAnalysis using
+            # the reference coordinate data.
+            print(f'Updating muscle passive force parameters...')
+            maxPassiveMultiplier = 0.02
+            muscleTendonLengths = osim.TimeSeriesTable(os.path.join(root_dir,
+                'resources/Rajagopal2016/muscle_tendon_lengths.sto'))
+            for imusc in np.arange(muscles.getSize()):
+                muscle = osim.DeGrooteFregly2016Muscle.safeDownCast(
+                    muscles.get(int(imusc)))
+                muscName = muscle.getName()
 
-            maxMuscleTendonLength = 0
-            for i in range(muscleTendonLengths.getNumRows()):
-                if muscleTendonLength[i] > maxMuscleTendonLength:
-                    maxMuscleTendonLength = muscleTendonLength[i]
+                tendonSlackLength = muscle.getTendonSlackLength()
+                optimalFiberLength = muscle.getOptimalFiberLength()
+                maxIsometricForce = muscle.getMaxIsometricForce()
+                muscleTendonLength = \
+                    muscleTendonLengths.getDependentColumn(muscName)
 
-            maxFiberLength = maxMuscleTendonLength - tendonSlackLength
-            maxNormFiberLength = maxFiberLength / optimalFiberLength
-            currStrain = muscle.get_passive_fiber_strain_at_one_norm_force()
-            currMultiplier = \
-                muscle.calcPassiveForceMultiplier(maxNormFiberLength)
+                maxMuscleTendonLength = 0
+                for i in range(muscleTendonLengths.getNumRows()):
+                    if muscleTendonLength[i] > maxMuscleTendonLength:
+                        maxMuscleTendonLength = muscleTendonLength[i]
 
-            if currMultiplier > maxPassiveMultiplier:
-                while currMultiplier > maxPassiveMultiplier:
-                    currStrain *= 1.05
-                    muscle.set_passive_fiber_strain_at_one_norm_force(currStrain)
-                    currMultiplier = \
-                        muscle.calcPassiveForceMultiplier(maxNormFiberLength)
+                maxFiberLength = maxMuscleTendonLength - tendonSlackLength
+                maxNormFiberLength = maxFiberLength / optimalFiberLength
+                currStrain = muscle.get_passive_fiber_strain_at_one_norm_force()
+                currMultiplier = \
+                    muscle.calcPassiveForceMultiplier(maxNormFiberLength)
 
-                print(f'  --> Updated {muscName} passive fiber strain at one '
-                      f'normalized force to {currStrain} with force '
-                      f'{currMultiplier*maxIsometricForce}')
+                if currMultiplier > maxPassiveMultiplier:
+                    while currMultiplier > maxPassiveMultiplier:
+                        currStrain *= 1.05
+                        muscle.set_passive_fiber_strain_at_one_norm_force(currStrain)
+                        currMultiplier = \
+                            muscle.calcPassiveForceMultiplier(maxNormFiberLength)
 
-        print('\n')
+                    print(f'  --> Updated {muscName} passive fiber strain at one '
+                          f'normalized force to {currStrain} with force '
+                          f'{currMultiplier*maxIsometricForce}')
+            print('\n')
 
         modelProcessorTendonCompliance = osim.ModelProcessor(model)
         modelProcessorTendonCompliance.append(
@@ -308,7 +316,7 @@ class MotionTrackingWalking(MocoPaperResult):
         outputList = list()
 
         for output in ['normalized_fiber_length', 'normalized_fiber_velocity', 
-                       'passive_fiber_force']:
+                       'passive_fiber_force', 'tendon_force']:
             for imusc in range(model.getMuscles().getSize()):
                 musc = model.updMuscles().get(imusc)
                 outputList.append(f'.*{musc.getName()}.*\|{output}')
@@ -316,6 +324,13 @@ class MotionTrackingWalking(MocoPaperResult):
         outputs = osim.analyze(model, solution, outputList)
 
         return outputs
+
+    def calc_negative_muscle_forces(self, root_dir, config, solution):
+        print(f'Negative force report for {config.name}:')
+        modelProcessor = self.create_model_processor(root_dir, config=config)
+        model = modelProcessor.process()
+        model.initSystem()
+        return self.calc_negative_muscle_forces_base(model, solution)
 
     def run_inverse_problem(self, root_dir):
 
@@ -669,7 +684,7 @@ class MotionTrackingWalking(MocoPaperResult):
         self.coordinate_tracking = False
         self.contact_tracking = False
         self.visualize = False
-        self.plot_quick = True
+        self.plot_quick = False
         if len(args) == 0: return
         print('Received arguments {}'.format(args))
         if 'skip-inverse' in args:
@@ -733,29 +748,51 @@ class MotionTrackingWalking(MocoPaperResult):
                     self.get_solution_path_fullcycle(root_dir, config.name))
                 osim.visualize(model, solution.exportToStatesTable())
 
-        # inverse dynamics
+        # inverse dynamics and negative muscle forces.
         netgenforces = dict()
+        muscle_mechanics = dict()
         coord_sto = osim.Storage(
             os.path.join(root_dir, 'resources',
                          'Rajagopal2016', 'coordinates.mot'))
         netgenforces['experiment'] = utilities.calc_net_generalized_forces(
             model, coord_sto)
+
         for i, config in enumerate(self.configs):
             color = config.color
             full_path = self.get_solution_path_fullcycle(root_dir, config.name)
             full_traj = osim.MocoTrajectory(full_path)
 
+            most_neg = self.calc_negative_muscle_forces(root_dir, config,
+                                                        full_traj)
+            if most_neg < -0.005:
+                raise Exception("Muscle forces are too negative! " +
+                                f"{config.name}")
+
             modelProcessor = self.create_model_processor(root_dir,
                                                          for_inverse=False,
                                                          config=config)
             model = modelProcessor.process()
+            if config.name == 'track':
+                max_iso_forces = dict()
+                muscles = model.getMuscles()
+                for i in range(muscles.getSize()):
+                    muscle = muscles.get(i)
+                    max_iso_forces[muscle.getName()] = \
+                        muscle.getMaxIsometricForce()
+
             # TODO use sum of muscles instead of inverse dynamics? how can
             # muscles spike like this?
             netgenforces[config.name] = utilities.calc_net_generalized_forces(
                 model, full_traj)
 
+            muscle_mechanics[config.name] = self.calc_muscle_mechanics(
+                root_dir, config, full_traj)
+
+        
+
         self.plot_paper_figure_healthy(root_dir, mass, BW)
-        self.plot_paper_figure_weak(root_dir, mass, netgenforces)
+        self.plot_paper_figure_weak(root_dir, mass, netgenforces, 
+            muscle_mechanics, max_iso_forces)
 
         emg = self.load_electromyography(root_dir)
 
@@ -999,7 +1036,7 @@ class MotionTrackingWalking(MocoPaperResult):
 
 
         for config in self.configs:
-            print(f'reserves for config {config.name}:')
+            # print(f'reserves for config {config.name}:')
             sol_path = self.get_solution_path_fullcycle(root_dir, config.name)
             solution = osim.MocoTrajectory(sol_path)
             # reserves = self.calc_reserves(root_dir, config, solution)
@@ -1302,44 +1339,45 @@ class MotionTrackingWalking(MocoPaperResult):
         fig.tight_layout(h_pad=1, pad=0.4)
         self.savefig(fig, os.path.join(root_dir, 'figures/Fig8'))
 
-    def plot_paper_figure_weak(self, root_dir, mass, netgenforces):
+    def plot_paper_figure_weak(self, root_dir, mass, netgenforces, 
+                muscle_mechanics, max_iso_forces):
 
         emg = self.load_electromyography(root_dir)
 
-        fig = plt.figure(figsize=(7.5, 3.6))
-        gs = gridspec.GridSpec(6, 10)
-        ax_ankle = fig.add_subplot(gs[0:2, 2:5])
-        ax_anklemom = fig.add_subplot(gs[4:6, 2:5])
-        ax_hipmom = fig.add_subplot(gs[2:4, 2:5])
-        ax_add = fig.add_subplot(gs[0:2, 7:10])
-        ax_addmom = fig.add_subplot(gs[2:4, 7:10])
+        fig = plt.figure(figsize=(7.5, 3.3))
+        gs = gridspec.GridSpec(6, 8)
+        ax_ankle = fig.add_subplot(gs[0:2, 2:4])
+        ax_tibant = fig.add_subplot(gs[4:6, 2:4])
+        ax_iliacus = fig.add_subplot(gs[2:4, 2:4])
+        ax_add = fig.add_subplot(gs[0:2, 6:8])
+        ax_glmed = fig.add_subplot(gs[2:4, 6:8])
         # ax_lumbar = fig.add_subplot(gs[9:12, 1])
         ax_list = list()
         ax_list.append(ax_ankle)
-        ax_list.append(ax_anklemom)
-        ax_list.append(ax_hipmom)
+        ax_list.append(ax_tibant)
+        ax_list.append(ax_iliacus)
         ax_list.append(ax_add)
-        ax_list.append(ax_addmom)
+        ax_list.append(ax_glmed)
         # ax_list.append(ax_lumbar)
         title_fs = 8
         lw = 2
 
         ax = fig.add_subplot(gs[0:6, 0:2])
-        import cv2
         # Convert BGR color ordering to RGB.
         image = cv2.imread(
             os.path.join(root_dir,
-                         'motion_tracking_visualization/weakpfs.png'))[
+                         'motion_tracking_visualization/weakdfs.png'))[
                 ..., ::-1]
         ax.imshow(image)
         plt.axis('off')
-        ax = fig.add_subplot(gs[0:6, 5:7])
+        ax = fig.add_subplot(gs[0:6, 4:6])
         # Convert BGR color ordering to RGB.
         image = cv2.imread(
             os.path.join(root_dir,
                          'motion_tracking_visualization/weakabd.png'))[
                 ..., ::-1]
         ax.imshow(image)
+
         plt.axis('off')
 
         exp_color = 'gray'
@@ -1364,9 +1402,7 @@ class MotionTrackingWalking(MocoPaperResult):
         # ax_lumbar.plot(pgc_coords,
         #               coordinates['lumbar_bending'][coords_start:coords_end],
         #               color=exp_color, lw=lw + 1.0)
-
-        legend_handles_and_labels = []
-
+                     
         # simulation results
         for i, config in enumerate(self.configs):
             color = config.color
@@ -1377,29 +1413,43 @@ class MotionTrackingWalking(MocoPaperResult):
             pgc = 100.0 * (time - time[0]) / (time[-1] - time[0])
 
             if config.name == 'weakdfs' or config.name == 'track':
-                ankle_moment = netgenforces[config.name].getDependentColumn(
-                    'ankle_angle_l_moment')
-                ax_anklemom.plot(pgc, -toarray(ankle_moment) / mass,
-                                 color=color, lw=lw)
-                ax_anklemom.set_ylabel('ankle plantarflexion\nmoment (Nm/kg)')
-                ax_anklemom.set_xlabel('time (% gait cycle)')
+                # import pdb
+                # pdb.set_trace()
 
-                hip_moment = netgenforces[config.name].getDependentColumn(
-                    'hip_flexion_l_moment')
-                ax_hipmom.plot(pgc, toarray(hip_moment) / mass,
-                               color=color, lw=lw)
-                ax_hipmom.axhline(0, color='gray', zorder=0, linewidth=0.75)
-                ax_hipmom.set_ylabel('hip flexion\nmoment (Nm/kg)')
-                ax_hipmom.set_xticklabels([])
+                tibant_force = muscle_mechanics[config.name].getDependentColumn(
+                    '/forceset/tibant_l|tendon_force')
+                ax_tibant.plot(pgc, 
+                            toarray(tibant_force) / max_iso_forces['tibant_l'], 
+                            color=color, lw=lw)
+                ax_tibant.set_ylabel('tibialis anteior\nforce ($F_{\mathrm{iso}}$)')
+                ax_tibant.set_ylim(-0.05, 0.6)
+                ax_tibant.set_yticks([0, 0.5])
+                ax_tibant.set_yticklabels([0, 0.5])
+                ax_tibant.set_xlabel('time (% gait cycle)')
+
+                iliacus_force = muscle_mechanics[config.name].getDependentColumn(
+                    '/forceset/iliacus_l|tendon_force')
+                ax_iliacus.plot(pgc, 
+                            toarray(iliacus_force) / max_iso_forces['iliacus_l'], 
+                            color=color, lw=lw)
+                ax_iliacus.set_ylabel('iliacus\nforce ($F_{\mathrm{iso}}$)')
+                ax_iliacus.set_ylim(-0.05, 1.1)
+                ax_iliacus.set_yticks([0, 0.5, 1])
+                ax_iliacus.set_yticklabels([0, 0.5, 1])
+                ax_iliacus.set_xticklabels([])
+
             if config.name == 'weakhipabd' or config.name == 'track':
-                hipadd_moment = netgenforces[config.name].getDependentColumn(
-                    'hip_adduction_l_moment')
-                handle, = ax_addmom.plot(pgc, -toarray(hipadd_moment) / mass,
-                               color=color, lw=lw)
-                legend_handles_and_labels.append((handle, config.legend_entry))
-                ax_addmom.axhline(0, color='gray', zorder=0, linewidth=0.75)
-                ax_addmom.set_ylabel('hip abduction\nmoment (Nm/kg)')
-                ax_addmom.set_xlabel('time (% gait cycle)')
+                
+                glmed1_force = muscle_mechanics[config.name].getDependentColumn(
+                    '/forceset/glmed1_l|tendon_force')
+                ax_glmed.plot(pgc, 
+                              toarray(glmed1_force) / max_iso_forces['glmed1_l'], 
+                              color=color, lw=lw)
+                ax_glmed.set_ylabel('gluteus medius\nforce ($F_{\mathrm{iso}}$)')
+                ax_glmed.set_ylim(-0.05, 1.1)
+                ax_glmed.set_yticks([0, 0.5, 1])
+                ax_glmed.set_yticklabels([0, 0.5, 1])
+                ax_glmed.set_xlabel('time (% gait cycle)')
 
             # kinematics
             rad2deg = 180 / np.pi
@@ -1430,20 +1480,30 @@ class MotionTrackingWalking(MocoPaperResult):
             ax.set_xlim(0, 100)
             ax.set_xticks([0, 50, 100])
 
-        fig.align_ylabels([ax_ankle, ax_hipmom, ax_anklemom])
-        fig.align_ylabels([ax_add, ax_addmom])
+        fig.align_ylabels([ax_ankle, ax_iliacus, ax_tibant])
+        fig.align_ylabels([ax_add, ax_glmed])
 
         fig.text(0.25, 0.95, 'WEAK DORSIFLEXORS', fontweight='bold',
                  horizontalalignment='center')
         fig.text(0.75, 0.95, 'WEAK HIP ABDUCTORS', fontweight='bold',
                  horizontalalignment='center')
 
+        # Create legend
+        legend_handles_and_labels = []
+
+        handle, = ax_add.plot([0], [0], color=self.config_track.color,
+                              label=self.config_track.legend_entry)
+        legend_handles_and_labels.append(
+            (handle, self.config_track.legend_entry))
         handle, = ax_add.plot([0], [0], color=self.config_weakdfs.color,
                               label=self.config_weakdfs.legend_entry)
-        legend_handles_and_labels.insert(1,
-            (handle, self.config_weakdfs.legend_entry))
         legend_handles_and_labels.append(
-            (exp_handle, 'experiment'))
+            (handle, self.config_weakdfs.legend_entry))
+        handle, = ax_add.plot([0], [0], color=self.config_weakhipabd.color,
+                              label=self.config_weakhipabd.legend_entry)
+        legend_handles_and_labels.append(
+            (handle, self.config_weakhipabd.legend_entry))
+        legend_handles_and_labels.append((exp_handle, 'experiment'))
 
         legend_handles, legend_labels = zip(*legend_handles_and_labels)
         plt.figlegend(legend_handles, legend_labels,
@@ -1452,7 +1512,8 @@ class MotionTrackingWalking(MocoPaperResult):
                       bbox_to_anchor=(0.85, 0.15),
                       )
 
-        fig.tight_layout(h_pad=-2.0, rect=(0, 0, 1, 0.95))
+        # fig.tight_layout()
+        fig.tight_layout(h_pad=-1.5, rect=(0, 0, 1, 0.95))
         self.savefig(fig, os.path.join(root_dir, 'figures/Fig9'))
 
         # TODO plot lumbar?

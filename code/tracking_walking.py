@@ -15,8 +15,6 @@ import utilities
 from utilities import plot_joint_moment_breakdown
 from utilities import toarray
 
-# TODO: mass of subject should be 85.0668.
-
 class MocoTrackConfig:
     def __init__(self, name, legend_entry, tracking_weight, effort_weight,
                  color, guess=None, flags=[]):
@@ -1512,14 +1510,8 @@ class MotionTrackingWalking(MocoPaperResult):
                       bbox_to_anchor=(0.85, 0.15),
                       )
 
-        # fig.tight_layout()
         fig.tight_layout(h_pad=-1.5, rect=(0, 0, 1, 0.95))
         self.savefig(fig, os.path.join(root_dir, 'figures/Fig9'))
 
-        # TODO plot lumbar?
-        # TODO colors
-        # TODO update images
-        # TODO add inverse dynamics using coordinates data.
         # TODO debug inverse dynamics
-        # TODO scale EMG in a consistent manner. GMAX and PSOAS EMG from PerryBurnfield.
-        # TODO still getting negative muscle forces
+        # TODO combine negative force calculation with calc_muscle_mechanics().

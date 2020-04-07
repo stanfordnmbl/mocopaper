@@ -191,6 +191,10 @@ fabric.properties
 # Editor-based Rest Client
 .idea/httpRequests
 
+# Vim
+.*.swo
+.*.swp
+
 MocoTool_solution.sto
 *solution.sto
 *.png

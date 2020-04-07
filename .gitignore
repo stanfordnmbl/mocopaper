@@ -215,17 +215,6 @@ out.log
 /MocoPaper.blg
 /results
 !/results/README.txt
-!/results/motion_prescribed_walking_cmc_results/README.md
-/results/motion_prescribed_walking_cmc_results/motion_prescribed_walking_cmc_Actuation_force.sto
-/results/motion_prescribed_walking_cmc_results/motion_prescribed_walking_cmc_Actuation_power.sto
-/results/motion_prescribed_walking_cmc_results/motion_prescribed_walking_cmc_Actuation_speed.sto
-/results/motion_prescribed_walking_cmc_results/motion_prescribed_walking_cmc_controls.sto
-/results/motion_prescribed_walking_cmc_results/motion_prescribed_walking_cmc_controls.xml
-/results/motion_prescribed_walking_cmc_results/motion_prescribed_walking_cmc_Kinematics_dudt.sto
-/results/motion_prescribed_walking_cmc_results/motion_prescribed_walking_cmc_Kinematics_q.sto
-/results/motion_prescribed_walking_cmc_results/motion_prescribed_walking_cmc_Kinematics_u.sto
-/results/motion_prescribed_walking_cmc_results/motion_prescribed_walking_cmc_pErr.sto
-/results/motion_prescribed_walking_cmc_results/motion_prescribed_walking_cmc_states.sto
 /archive
 /subject_armless_for_cmc.osim
 /muscle_outputs.sto
@@ -257,12 +246,10 @@ out.log
 /resources/Rajagopal2016/ground_reaction_before_and_after_processing.svg
 /resources/Rajagopal2016/grf_walk.mot
 /resources/Rajagopal2016/subject_walk_armless_for_cmc.osim
-/motion_prescribed_walking_cmc_tasks.xml
 
 !/figures/motion_prescribed_walking_inverse_model.png
 /resources/squat_to_stand_4dof9musc_dgf.osim
 /MocoPaper.dvi
-/code/motion_prescribed_walking_cmc_tasks.xml
 /paper/MocoPaper.aux
 /paper/MocoPaper.bbl
 /paper/MocoPaper.blg

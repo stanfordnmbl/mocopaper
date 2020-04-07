@@ -377,9 +377,30 @@ class MotionTrackingWalking(MocoPaperResult):
         track.setName('tracking_walking')
         track.setModel(modelProcessor)
         
-        if self.coordinate_tracking:
-            tableProcessor = osim.TableProcessor(os.path.join(root_dir,
-                    'resources/Rajagopal2016/coordinates.mot'))
+        if self.marker_tracking:
+            track.setMarkersReferenceFromTRC(
+                os.path.join(root_dir,
+                             'resources/Rajagopal2016/markers.trc'))
+            track.set_markers_global_tracking_weight(
+                config.tracking_weight / (2 * model.getNumMarkers()))
+            iktool = osim.InverseKinematicsTool(
+                os.path.join(root_dir,
+                             'resources/Rajagopal2016/ik_setup_walk.xml'))
+            iktasks = iktool.getIKTaskSet()
+            markerWeights = osim.MocoWeightSet()
+            for marker in model.getComponentsList():
+                if not type(marker) is osim.Marker: continue
+                for i in np.arange(iktasks.getSize()):
+                    iktask = iktasks.get(int(i))
+                    if iktask.getName() == marker.getName():
+                        weight = osim.MocoWeight(iktask.getName(),
+                                                 iktask.getWeight())
+                        markerWeights.cloneAndAppend(weight)
+            track.set_markers_weight_set(markerWeights)
+        else:
+            tableProcessor = osim.TableProcessor(
+                os.path.join(root_dir,
+                             'resources/Rajagopal2016/coordinates.mot'))
             tableProcessor.append(osim.TabOpLowPassFilter(6))
             tableProcessor.append(osim.TabOpUseAbsoluteStateNames())
             track.setStatesReference(tableProcessor)
@@ -397,31 +418,13 @@ class MotionTrackingWalking(MocoPaperResult):
             weightList.append(('/jointset/hip_r/hip_rotation_r', 0))
             weightList.append(('/jointset/hip_l/hip_rotation_l', 0))
             for weight in weightList:
-                stateWeights.cloneAndAppend(osim.MocoWeight(weight[0] + '/value', 
-                    weight[1]))
-                stateWeights.cloneAndAppend(osim.MocoWeight(weight[0] + '/speed', 
-                    weight[1]))
+                stateWeights.cloneAndAppend(osim.MocoWeight(weight[0] + '/value',
+                                                            weight[1]))
+                stateWeights.cloneAndAppend(osim.MocoWeight(weight[0] + '/speed',
+                                                            weight[1]))
 
             track.set_states_weight_set(stateWeights)
             track.set_apply_tracked_states_to_guess(True)
-        else:
-            track.setMarkersReferenceFromTRC(os.path.join(root_dir,
-                    'resources/Rajagopal2016/markers.trc'))
-            track.set_markers_global_tracking_weight(
-                config.tracking_weight / (2 * model.getNumMarkers()))
-            iktool = osim.InverseKinematicsTool(os.path.join(root_dir,
-                    'resources/Rajagopal2016/ik_setup_walk.xml'))
-            iktasks = iktool.getIKTaskSet()
-            markerWeights = osim.MocoWeightSet()
-            for marker in model.getComponentsList():
-                if not type(marker) is osim.Marker: continue
-                for i in np.arange(iktasks.getSize()):
-                    iktask = iktasks.get(int(i))
-                    if iktask.getName() == marker.getName():
-                        weight = osim.MocoWeight(iktask.getName(), 
-                            iktask.getWeight())
-                        markerWeights.cloneAndAppend(weight)
-            track.set_markers_weight_set(markerWeights)
 
         track.set_allow_unused_references(True)
         track.set_track_reference_position_derivatives(True)
@@ -491,7 +494,7 @@ class MotionTrackingWalking(MocoPaperResult):
 
         # MocoFrameDistanceConstraint
         # ---------------------------
-        if self.coordinate_tracking:
+        if not self.marker_tracking:
             distanceConstraint = osim.MocoFrameDistanceConstraint()
             distanceConstraint.setName('distance_constraint')
             # Step width is 0.13 * leg_length
@@ -679,7 +682,7 @@ class MotionTrackingWalking(MocoPaperResult):
 
     def parse_args(self, args):
         self.skip_inverse = False
-        self.coordinate_tracking = False
+        self.marker_tracking = False
         self.contact_tracking = False
         self.visualize = False
         self.plot_quick = False
@@ -687,8 +690,8 @@ class MotionTrackingWalking(MocoPaperResult):
         print('Received arguments {}'.format(args))
         if 'skip-inverse' in args:
             self.skip_inverse = True
-        if 'coordinate-tracking' in args:
-            self.coordinate_tracking = True
+        if 'marker-tracking' in args:
+            self.marker_tracking = True
         if 'contact-tracking' in args:
             self.contact_tracking = True
         if 'visualize' in args:
@@ -881,12 +884,12 @@ class MotionTrackingWalking(MocoPaperResult):
             sol_table = osim.TimeSeriesTable(sol_path)
             trackingCost = 0
             if config.tracking_weight:
-                if self.coordinate_tracking:
+                if self.marker_tracking:
                     trackingCostStr = sol_table.getTableMetaDataString(
-                        'objective_state_tracking')
+                        'objective_marker_tracking')
                 else:
                     trackingCostStr = sol_table.getTableMetaDataString(
-                            'objective_marker_tracking')
+                        'objective_state_tracking')
                 trackingCost = float(trackingCostStr) / config.tracking_weight
 
             effortCost = 0

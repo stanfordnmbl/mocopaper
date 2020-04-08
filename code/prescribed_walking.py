@@ -358,7 +358,7 @@ class MotionPrescribedWalking(MocoPaperResult):
         fig = plt.figure(figsize=(7.5, 3.3))
         gs = gridspec.GridSpec(3, 4) # , width_ratios=[0.8, 1, 1, 1])
 
-        ax = fig.add_subplot(gs[0:3, 0])
+        ax = fig.add_subplot(gs[0:2, 0])
         import cv2
         # Convert BGR color ordering to RGB.
         image = cv2.imread(
@@ -412,15 +412,7 @@ class MotionPrescribedWalking(MocoPaperResult):
                                        emg[muscle[4]] * np.max(inverse_activ),
                               shift=False, fill=True, color='lightgray',
                               label='experiment')
-                # handle = self.plot(ax, emg['time'],
-                #                    emg[muscle[3]] * np.max(inverse_activ),
-                #                    shift=False,
-                #                    fill=True,
-                #                    color='lightgray',
-                #                    label='electromyography')
-                legend_musc.append((handle,
-                                    'electromyography (normalized; peak '
-                                    'matches the peak from MocoInverse)'))
+                legend_musc.append((handle, 'electromyography'))
             if im == 0:
                 legend_handles_and_labels = legend_musc
             ax.set_ylim(0, 1)
@@ -445,11 +437,10 @@ class MotionPrescribedWalking(MocoPaperResult):
         # if self.inverse and self.knee:
         legend_handles, legend_labels = zip(*legend_handles_and_labels)
         plt.figlegend(legend_handles, legend_labels,
-            frameon=False,
-            ncol=5,
-            loc='lower center',
+                      frameon=False,
+                      loc=(0.025, 0.15),
         )
-        fig.tight_layout(h_pad=1, rect=(0, 0.07, 1, 1), pad=0.4)
+        fig.tight_layout(h_pad=1, pad=0.4)
 
         self.savefig(fig, os.path.join(root_dir, 'figures/Fig7'))
 

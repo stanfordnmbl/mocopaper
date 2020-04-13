@@ -444,34 +444,83 @@ class MotionPrescribedWalking(MocoPaperResult):
 
         self.savefig(fig, os.path.join(root_dir, 'figures/Fig7'))
 
+        res_to_genforce_labels = dict()
         if self.inverse:
+            genforces = utilities.calc_net_generalized_forces(
+                model, sol_inverse)
+            genforce_labels = genforces.getColumnLabels()
             res_inverse = self.calc_reserves(root_dir, sol_inverse)
             column_labels = res_inverse.getColumnLabels()
+            for orig_gen_label in genforce_labels: 
+                gen_label = orig_gen_label.replace('_moment', '')
+                gen_label = gen_label.replace('_force', '')
+                for res_label in column_labels:
+                    if gen_label in res_label:
+                        res_to_genforce_labels[res_label] = orig_gen_label
             max_res_inverse = -np.inf
+            max_res_inverse_percent_genforce = -np.inf
+            max_label = ''
             for icol in range(res_inverse.getNumColumns()):
+                label = column_labels[icol]
+                if (('arm' in label) or 
+                        ('elbow' in label) or 
+                        ('pro_sup' in label)):
+                    continue
                 column = utilities.toarray(
                     res_inverse.getDependentColumnAtIndex(icol))
                 max = np.max(np.abs(column))
-                max_res_inverse = np.max([max_res_inverse, max])
-                print(f'inverse max abs {column_labels[icol]}: {max}')
+                genforce_label = res_to_genforce_labels[label]
+                genforce = utilities.toarray(
+                    genforces.getDependentColumn(genforce_label))
+                max_genforce = np.max(np.abs(genforce))
+                max_percent_genforce = 100.0 * (max / max_genforce) 
+                if max_percent_genforce > max_res_inverse_percent_genforce:
+                    max_res_inverse = max
+                    max_label = label
+                    max_res_inverse_percent_genforce = max_percent_genforce
+                print(f'inverse max abs {label}: {max:.2f} '
+                      f'({max_percent_genforce:.2f}% peak generalized force)')
             with open(os.path.join(root_dir, 'results/motion_prescribed_walking_'
                       'inverse_max_reserve.txt'), 'w') as f:
-                f.write(f'{max_res_inverse:.1f}')
+                f.write(f'{max_res_inverse:.2f} N-m in reserve {max_label}\n')
+                f.write(f'{max_res_inverse_percent_genforce:.2f}% of peak '
+                        f'generalized force')
 
         if self.knee and self.inverse:
+            genforces = utilities.calc_net_generalized_forces(
+                model, sol_inverse_jointreaction)
+            genforce_labels = genforces.getColumnLabels()
             res_inverse_jr = self.calc_reserves(root_dir,
                                                 sol_inverse_jointreaction)
             column_labels = res_inverse_jr.getColumnLabels()
             max_res_inverse_jr = -np.inf
-            for icol in range(res_inverse_jr.getNumColumns()):
+            max_res_inverse_jr_percent_genforce = -np.inf
+            max_label = ''
+            for icol in range(res_inverse.getNumColumns()):
+                label = column_labels[icol]
+                if (('arm' in label) or 
+                        ('elbow' in label) or 
+                        ('pro_sup' in label)):
+                    continue
                 column = utilities.toarray(
                     res_inverse_jr.getDependentColumnAtIndex(icol))
                 max = np.max(np.abs(column))
-                max_res_inverse_jr = np.max([max_res_inverse_jr, max])
-                print(f'inverse_jr max abs {column_labels[icol]}: {max}')
+                genforce_label = res_to_genforce_labels[label]
+                genforce = utilities.toarray(
+                    genforces.getDependentColumn(genforce_label))
+                max_genforce = np.max(np.abs(genforce))
+                max_percent_genforce = 100.0 * (max / max_genforce) 
+                if max_percent_genforce > max_res_inverse_jr_percent_genforce:
+                    max_res_inverse_jr = max
+                    max_label = label
+                    max_res_inverse_jr_percent_genforce = max_percent_genforce
+                print(f'inverse_jr max abs {label}: {max:.2f} '
+                      f'({max_percent_genforce:.2f}% peak generalized force)')
             with open(os.path.join(root_dir, 'results/motion_prescribed_walking_'
                       'inverse_jr_max_reserve.txt'), 'w') as f:
-                f.write(f'{max_res_inverse_jr:.3f}')
+                f.write(f'{max_res_inverse_jr:.2f} N-m in reserve {max_label}\n')
+                f.write(f'{max_res_inverse_jr_percent_genforce:.2f}% of peak '
+                        f'generalized force')
 
             maxjr_inverse, avgjr_inverse = \
                 self.calc_knee_reaction_force(root_dir, sol_inverse)

@@ -68,6 +68,8 @@ class MotionPrescribedWalking(MocoPaperResult):
             add_reserve(model, f'arm_rot{side}', 5)
             add_reserve(model, f'elbow_flex{side}', 5)
             add_reserve(model, f'pro_sup{side}', 1)
+            add_reserve(model, f'hip_rotation{side}', 0.5)
+
         add_reserve(model, 'pelvis_tilt', 60)
         add_reserve(model, 'pelvis_list', 30)
         add_reserve(model, 'pelvis_rotation', 15)
@@ -83,7 +85,7 @@ class MotionPrescribedWalking(MocoPaperResult):
         modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
         modelProcessor.append(osim.ModOpIgnoreTendonCompliance())
         modelProcessor.append(osim.ModOpFiberDampingDGF(0.01))
-        modelProcessor.append(osim.ModOpAddReserves(1, 15, True))
+        modelProcessor.append(osim.ModOpAddReserves(1, 2.5, True))
         baseModel = modelProcessor.process()
 
         # Create direct collocation model:
@@ -150,7 +152,6 @@ class MotionPrescribedWalking(MocoPaperResult):
         inverse.set_mesh_interval(0.05)
         inverse.set_kinematics_allow_extra_columns(True)
         inverse.set_convergence_tolerance(1e-2)
-        inverse.set_reserves_weight(10.0)
   
         # 8 minutes
         if self.inverse:
@@ -161,10 +162,10 @@ class MotionPrescribedWalking(MocoPaperResult):
         # -------------------------------------
         study = inverse.initialize()
         problem = study.updProblem()
-        reaction_r = osim.MocoJointReactionGoal('reaction_r', 0.05)
+        reaction_r = osim.MocoJointReactionGoal('reaction_r', 0.005)
         reaction_r.setJointPath('/jointset/walker_knee_r')
         reaction_r.setReactionMeasures(['force-x', 'force-y'])
-        reaction_l = osim.MocoJointReactionGoal('reaction_l', 0.05)
+        reaction_l = osim.MocoJointReactionGoal('reaction_l', 0.005)
         reaction_l.setJointPath('/jointset/walker_knee_l')
         reaction_l.setReactionMeasures(['force-x', 'force-y'])
         problem.addGoal(reaction_r)

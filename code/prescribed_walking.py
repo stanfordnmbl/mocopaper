@@ -68,6 +68,8 @@ class MotionPrescribedWalking(MocoPaperResult):
             add_reserve(model, f'arm_rot{side}', 5)
             add_reserve(model, f'elbow_flex{side}', 5)
             add_reserve(model, f'pro_sup{side}', 1)
+            add_reserve(model, f'hip_rotation{side}', 0.5)
+
         add_reserve(model, 'pelvis_tilt', 60)
         add_reserve(model, 'pelvis_list', 30)
         add_reserve(model, 'pelvis_rotation', 15)
@@ -83,7 +85,7 @@ class MotionPrescribedWalking(MocoPaperResult):
         modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
         modelProcessor.append(osim.ModOpIgnoreTendonCompliance())
         modelProcessor.append(osim.ModOpFiberDampingDGF(0.01))
-        modelProcessor.append(osim.ModOpAddReserves(1, 15, True))
+        modelProcessor.append(osim.ModOpAddReserves(1, 2.5, True))
         baseModel = modelProcessor.process()
 
         # Create direct collocation model:
@@ -150,7 +152,6 @@ class MotionPrescribedWalking(MocoPaperResult):
         inverse.set_mesh_interval(0.05)
         inverse.set_kinematics_allow_extra_columns(True)
         inverse.set_convergence_tolerance(1e-2)
-        inverse.set_reserves_weight(10.0)
   
         # 8 minutes
         if self.inverse:
@@ -161,10 +162,10 @@ class MotionPrescribedWalking(MocoPaperResult):
         # -------------------------------------
         study = inverse.initialize()
         problem = study.updProblem()
-        reaction_r = osim.MocoJointReactionGoal('reaction_r', 0.05)
+        reaction_r = osim.MocoJointReactionGoal('reaction_r', 0.005)
         reaction_r.setJointPath('/jointset/walker_knee_r')
         reaction_r.setReactionMeasures(['force-x', 'force-y'])
-        reaction_l = osim.MocoJointReactionGoal('reaction_l', 0.05)
+        reaction_l = osim.MocoJointReactionGoal('reaction_l', 0.005)
         reaction_l.setJointPath('/jointset/walker_knee_l')
         reaction_l.setReactionMeasures(['force-x', 'force-y'])
         problem.addGoal(reaction_r)
@@ -358,7 +359,7 @@ class MotionPrescribedWalking(MocoPaperResult):
         fig = plt.figure(figsize=(7.5, 3.3))
         gs = gridspec.GridSpec(3, 4) # , width_ratios=[0.8, 1, 1, 1])
 
-        ax = fig.add_subplot(gs[0:3, 0])
+        ax = fig.add_subplot(gs[0:2, 0])
         import cv2
         # Convert BGR color ordering to RGB.
         image = cv2.imread(
@@ -412,15 +413,7 @@ class MotionPrescribedWalking(MocoPaperResult):
                                        emg[muscle[4]] * np.max(inverse_activ),
                               shift=False, fill=True, color='lightgray',
                               label='experiment')
-                # handle = self.plot(ax, emg['time'],
-                #                    emg[muscle[3]] * np.max(inverse_activ),
-                #                    shift=False,
-                #                    fill=True,
-                #                    color='lightgray',
-                #                    label='electromyography')
-                legend_musc.append((handle,
-                                    'electromyography (normalized; peak '
-                                    'matches the peak from MocoInverse)'))
+                legend_musc.append((handle, 'electromyography'))
             if im == 0:
                 legend_handles_and_labels = legend_musc
             ax.set_ylim(0, 1)
@@ -445,42 +438,90 @@ class MotionPrescribedWalking(MocoPaperResult):
         # if self.inverse and self.knee:
         legend_handles, legend_labels = zip(*legend_handles_and_labels)
         plt.figlegend(legend_handles, legend_labels,
-            frameon=False,
-            ncol=5,
-            loc='lower center',
+                      frameon=False,
+                      loc=(0.025, 0.15),
         )
-        fig.tight_layout(h_pad=1, rect=(0, 0.07, 1, 1), pad=0.4)
+        fig.tight_layout(h_pad=1, pad=0.4)
 
         self.savefig(fig, os.path.join(root_dir, 'figures/Fig7'))
 
+        res_to_genforce_labels = dict()
         if self.inverse:
+            genforces = utilities.calc_net_generalized_forces(
+                model, sol_inverse)
+            genforce_labels = genforces.getColumnLabels()
             res_inverse = self.calc_reserves(root_dir, sol_inverse)
             column_labels = res_inverse.getColumnLabels()
+            for orig_gen_label in genforce_labels: 
+                gen_label = orig_gen_label.replace('_moment', '')
+                gen_label = gen_label.replace('_force', '')
+                for res_label in column_labels:
+                    if gen_label in res_label:
+                        res_to_genforce_labels[res_label] = orig_gen_label
             max_res_inverse = -np.inf
+            max_res_inverse_percent_genforce = -np.inf
+            max_label = ''
             for icol in range(res_inverse.getNumColumns()):
+                label = column_labels[icol]
+                if (('arm' in label) or 
+                        ('elbow' in label) or 
+                        ('pro_sup' in label)):
+                    continue
                 column = utilities.toarray(
                     res_inverse.getDependentColumnAtIndex(icol))
                 max = np.max(np.abs(column))
-                max_res_inverse = np.max([max_res_inverse, max])
-                print(f'inverse max abs {column_labels[icol]}: {max}')
+                genforce_label = res_to_genforce_labels[label]
+                genforce = utilities.toarray(
+                    genforces.getDependentColumn(genforce_label))
+                max_genforce = np.max(np.abs(genforce))
+                max_percent_genforce = 100.0 * (max / max_genforce) 
+                if max_percent_genforce > max_res_inverse_percent_genforce:
+                    max_res_inverse = max
+                    max_label = label
+                    max_res_inverse_percent_genforce = max_percent_genforce
+                print(f'inverse max abs {label}: {max:.2f} '
+                      f'({max_percent_genforce:.2f}% peak generalized force)')
             with open(os.path.join(root_dir, 'results/motion_prescribed_walking_'
                       'inverse_max_reserve.txt'), 'w') as f:
-                f.write(f'{max_res_inverse:.1f}')
+                f.write(f'{max_res_inverse:.2f} N-m in reserve {max_label}\n')
+                f.write(f'{max_res_inverse_percent_genforce:.2f}% of peak '
+                        f'generalized force')
 
         if self.knee and self.inverse:
+            genforces = utilities.calc_net_generalized_forces(
+                model, sol_inverse_jointreaction)
+            genforce_labels = genforces.getColumnLabels()
             res_inverse_jr = self.calc_reserves(root_dir,
                                                 sol_inverse_jointreaction)
             column_labels = res_inverse_jr.getColumnLabels()
             max_res_inverse_jr = -np.inf
-            for icol in range(res_inverse_jr.getNumColumns()):
+            max_res_inverse_jr_percent_genforce = -np.inf
+            max_label = ''
+            for icol in range(res_inverse.getNumColumns()):
+                label = column_labels[icol]
+                if (('arm' in label) or 
+                        ('elbow' in label) or 
+                        ('pro_sup' in label)):
+                    continue
                 column = utilities.toarray(
                     res_inverse_jr.getDependentColumnAtIndex(icol))
                 max = np.max(np.abs(column))
-                max_res_inverse_jr = np.max([max_res_inverse_jr, max])
-                print(f'inverse_jr max abs {column_labels[icol]}: {max}')
+                genforce_label = res_to_genforce_labels[label]
+                genforce = utilities.toarray(
+                    genforces.getDependentColumn(genforce_label))
+                max_genforce = np.max(np.abs(genforce))
+                max_percent_genforce = 100.0 * (max / max_genforce) 
+                if max_percent_genforce > max_res_inverse_jr_percent_genforce:
+                    max_res_inverse_jr = max
+                    max_label = label
+                    max_res_inverse_jr_percent_genforce = max_percent_genforce
+                print(f'inverse_jr max abs {label}: {max:.2f} '
+                      f'({max_percent_genforce:.2f}% peak generalized force)')
             with open(os.path.join(root_dir, 'results/motion_prescribed_walking_'
                       'inverse_jr_max_reserve.txt'), 'w') as f:
-                f.write(f'{max_res_inverse_jr:.3f}')
+                f.write(f'{max_res_inverse_jr:.2f} N-m in reserve {max_label}\n')
+                f.write(f'{max_res_inverse_jr_percent_genforce:.2f}% of peak '
+                        f'generalized force')
 
             maxjr_inverse, avgjr_inverse = \
                 self.calc_knee_reaction_force(root_dir, sol_inverse)

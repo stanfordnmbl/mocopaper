@@ -313,8 +313,8 @@
 
 \newcommand{\hermitesimpsonfuncs}{
 \begin{align}
-    \textrm{hermite}_i(\eta, F(\eta, p)) &= \frac{1}{2} (\eta_{i-1} + \eta_i) + \frac{h_i}{8} (F(\eta_{i-1}, p) - F(\eta_i, p)), \\
-    \textrm{simpson}_i(F(\eta, p)) &= \frac{h_i}{6} (F(\eta_{i-1}, p) + 4 F(\bar{\eta}_i, p) + F(\eta_i, p)),
+    \textrm{hermite}_i(\eta, F(\eta, p)) &= \frac{1}{2} (\eta_{i-1} + \eta_i) + \frac{h_i}{8} \big(F(\eta_{i-1}, p) - F(\eta_i, p)\big), \\
+    \textrm{simpson}_i(F(\eta, p)) &= \frac{h_i}{6} \big(F(\eta_{i-1}, p) + 4 F(\bar{\eta}_i, p) + F(\eta_i, p)\big),
 \end{align}
 }
 
@@ -355,13 +355,14 @@
          & \bar{\gamma}_i \in [\bar{\gamma}_L, \bar{\gamma}_U] &&&& i = 1, \ldots, n \\
          & p \in [p_{L}, p_{U}].
     \end{aligned}
+    \label{hermitesimpsonnlp}
 \end{align}
 }
 
 \newcommand{\hermitesimpsonkincon}{
     \begin{align}
          0 &= \dot{\phi}(q, u, p) = G(q, p) u,\\
-         0 &= \ddot{\phi}(t, y, x, \lambda, p) = G(q, p) f_{\dot{u}}(t, y, x, \lambda, p) + \dot{G}(q, p) u.
+         0 &= \ddot{\phi}(t, y, x, \lambda, p) = G(q, p) \dot{u} + \dot{G}(q, p) u = G(q, p) f_{\dot{u}}(t, y, x, \lambda, p) + \dot{G}(q, p) u.
     \end{align}
 }
 
@@ -542,19 +543,8 @@ Eq~\ref{hermitesimpsonnlp} includes the first and second time derivatives of the
 
 \hermitesimpsonkincon
 
-Including these constraints reduces the index of the differential-algebraic equations from 3 to 1. To prevent the problem from being overconstrained, we introduce variables for Lagrange multipliers, $\bar{\lambda}_i$, and velocity corrections, $\bar{\gamma}_i$, at the mesh interval midpoints. When combined with the transpose of the kinematic constraint Jacobian, $G^T$, to obtain $Lagrange multipliers supply forces $G
-
-Both the Lagrange multipliers and the velocity corrections are perpendicular to the 
-
-This method for handling kinematic constraints with the Hermite-Simpson transcription was introduced by Posa and colleagues~\cite{Posa:2016}. Although Simbody supports non-holonomic and acceleration-level constraints, Moco only supports holonomic (position-level) constraints.
-
-The Hermite cubic spline cannot satisfy both the differential equation
-The $G(\bar{q}_i, p)^T \bar{\gamma}_i$ term is a velocity correction that is necessary when enforcing derivatives of kinematic constraints in the nonlinear program. The additional variables $\bar{\gamma}_i$ are velocity corrections (TODO) in the directions of the kinematic constraints (in the same space as the Lagrange multipliers $\lambda$) and prevent the kinematics from being overconstrained. The kinematic constraint Jacobian transpose operator $G(\bar{q}_i, p)^T$ restricts the velocity correction to the tangent plane of the constraint manifold. :
-
-
-The explicit multibody dynamics function is used here where $\dot{u}$ would appear if it were a continuous variable in the problem (as in implicit mode, see below).
-
-Algebraic constraints are not enforced at the midpoints of the mesh intervals, but exhibit fourth-order accuracy at these points~\cite{Posa:2016}.
+Including these constraints reduces the index of the differential-algebraic equations from 3 to 1, which provides numerical benefits~\cite{Hairer:1996,Campbell:2016,Betts:2010}. To avoid overconstraining the problem, we introduce variables for Lagrange multipliers, $\bar{\lambda}_i$, and velocity corrections, $\bar{\gamma}_i$, at the mesh interval midpoints; the length of these vectors is the number of kinematic constraints. The product of the transpose of the kinematic constraint Jacobian and the velocity corrections, $G(\bar{q}_i, p)^T \bar{\gamma}_i$, yields a correction to the generalized speeds that is perpendicular to the constraint manifold $\phi = 0$. This correction is necessary because the Hermite splines cannot simultaneously satisfy the differential equations in addition to the kinematic constraints. This method for handling kinematic constraints with the Hermite-Simpson transcription was introduced by Posa and colleagues~\cite{Posa:2016}. Although Simbody supports non-holonomic and acceleration-level constraints, Moco only supports holonomic (position-level) constraints.
+% TODO (We are planning to enforce algebraic constraints at the midpoints). Algebraic constraints are not enforced at the midpoints of the mesh intervals, but exhibit fourth-order accuracy at these points~\cite{Posa:2016}.
 
 For implicit multibody dynamics, we again remove the constraints involving $f_{\dot{u}}$ and introduce generalized accelerations as algebraic variables $\upsilon$ to enforce multibody dynamics in “inverse dynamics” form:
 

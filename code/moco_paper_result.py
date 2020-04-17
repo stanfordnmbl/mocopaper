@@ -119,7 +119,7 @@ class MocoPaperResult(ABC):
             imin = np.argmin(negforces)
             print(f'Largest negative force: {muscle_names[imin]} '
                   f'with {negforces[imin]} F_iso')
-        return min(negforces)
+        return min([0] + negforces)
 
     def savefig(self, fig, filename):
         fig.savefig(filename + ".png", format="png", dpi=600)

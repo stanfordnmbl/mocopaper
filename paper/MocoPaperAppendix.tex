@@ -326,8 +326,8 @@
          + w_{\lambda} \sum_{i=1}^{n} \textrm{simpson}_i(\|\lambda\|_2^2)}  \\
          & \quad\quad \mathrlap{S_{c,j} = \sum_{i=1}^{n} \textrm{simpson}_i(s_{c,j}(t, y, x, \lambda, p))} \\
         \mbox{subject to} \quad
-         & \mathrlap{\bar{q}_i = \textrm{hermite}_i(q, u) + G(\bar{q}_i, p)^T \bar{\gamma}_i} &&&& i = 1, \ldots, n \\
-         & \mathrlap{q_i = q_{i-1} + \textrm{simpson}_i(u)} &&&& i = 1, \ldots, n \\
+         & \mathrlap{\bar{q}_i = \textrm{hermite}_i(q, u)} &&&& i = 1, \ldots, n \\
+         & \mathrlap{q_i = q_{i-1} + \textrm{simpson}_i(u + G(q, p)^T \gamma)} &&&& i = 1, \ldots, n \\
          & \mathrlap{\bar{u}_i = \textrm{hermite}_i(u, f_{\dot{u}}(t, y, x, \lambda, p))} &&&& i = 1, \ldots, n \\
          & \mathrlap{u_i = u_{i-1} + \textrm{simpson}_i(f_{\dot{u}}(t, y, x, \lambda, p))}  &&&& i = 1, \ldots, n \\
          & \mathrlap{\bar{z}_{\textrm{ex},i} = \textrm{hermite}_i(z_{\textrm{ex}}, f_{\dot{z},\textrm{ex}}(t, y, x, \lambda, p))} &&&& i = 1, \ldots, n \\
@@ -352,6 +352,7 @@
          & \bar{x}_i \in [x_{L}, x_{U}] &&&& i = 1, \ldots, n \\
          & \lambda_i \in [\lambda_L, \lambda_U] &&&& i = 0, \ldots, n \\
          & \bar{\lambda}_i \in [\lambda_L, \lambda_U] &&&& i = 1, \ldots, n \\
+         & \gamma_i = 0 &&&& i = 1, \ldots, n \\
          & \bar{\gamma}_i \in [\bar{\gamma}_L, \bar{\gamma}_U] &&&& i = 1, \ldots, n \\
          & p \in [p_{L}, p_{U}].
     \end{aligned}
@@ -537,13 +538,13 @@ Using the explicit multibody dynamics function $f_{\dot{u}}$ defined previously,
 
 \hermitesimpsonnlp
 
-The variables $\bar{y}_i$ (including $\bar{q}_i$, $\bar{u}_i$, $\bar{z}_{\mathrm{ex},i}$, $\bar{z}_{\mathrm{im},i}$), $\bar{x}_i$, and $\bar{\zeta}_i$ are associated with the midpoint of mesh interval $i$.
+The variables $\bar{y}_i$ (including $\bar{q}_i$, $\bar{u}_i$, $\bar{z}_{\mathrm{ex},i}$, $\bar{z}_{\mathrm{im},i}$), $\bar{x}_i$, $\bar{\zeta}_i$, $\bar{\lambda}_i$, and $\bar{\gamma}_i$ are associated with the midpoint of mesh interval $i$.
 
 Eq~\ref{hermitesimpsonnlp} includes the first and second time derivatives of the kinematic constraints:
 
 \hermitesimpsonkincon
 
-Including these constraints reduces the index of the differential-algebraic equations from 3 to 1, which provides numerical benefits~\cite{Hairer:1996,Campbell:2016,Betts:2010}. To avoid overconstraining the problem, we introduce variables for Lagrange multipliers, $\bar{\lambda}_i$, and velocity corrections, $\bar{\gamma}_i$, at the mesh interval midpoints; the length of these vectors is the number of kinematic constraints. The product of the transpose of the kinematic constraint Jacobian and the velocity corrections, $G(\bar{q}_i, p)^T \bar{\gamma}_i$, yields a correction to the generalized speeds that is perpendicular to the constraint manifold $\phi = 0$. This correction is necessary because the Hermite splines cannot simultaneously satisfy the differential equations in addition to the kinematic constraints. This method for handling kinematic constraints with the Hermite-Simpson transcription was introduced by Posa and colleagues~\cite{Posa:2016}. Although Simbody supports non-holonomic and acceleration-level constraints, Moco only supports holonomic (position-level) constraints.
+Including these constraints reduces the index of the differential-algebraic equations from 3 to 1, which provides numerical benefits~\cite{Hairer:1996,Campbell:2016,Betts:2010}. However, simply appending the kinematic constraints would overconstrain the resulting non-linear program, so we use the method for handling kinematic constraints with the Hermite-Simpson transcription was introduced by Posa and colleagues~\cite{Posa:2016}. In this method, variables for Lagrange multipliers, $\lambda$, are introduced as explicit continuous variables, rather than computed by Simbody in a typical forward simulation. In addition, we introduce velocity correction variables, $\gamma$, whose multiplication with the transpose of the kinematic constraint Jacobian, $G(q, p)^T \gamma$, yields a correction to the generalized speeds that is perpendicular to the constraint manifold $\phi = 0$. This correction is necessary because the Hermite splines cannot simultaneously satisfy the differential equations at the mesh interval midpoints in addition to the kinematic constraints at the mesh points. Since kinematic constraints are already enforced the mesh points, this correction term only appears at the mesh interval midpoints (i.e., $G(\bar{q}_i, p)^T \bar{\gamma}_i$), and velocity corrections at the mesh points are simply zero (i.e., $\gamma_i = 0 in Equation 11). Although Simbody supports non-holonomic and acceleration-level constraints, Moco only supports holonomic (position-level) constraints.
 % TODO (We are planning to enforce algebraic constraints at the midpoints). Algebraic constraints are not enforced at the midpoints of the mesh intervals, but exhibit fourth-order accuracy at these points~\cite{Posa:2016}.
 
 For implicit multibody dynamics, we again remove the constraints involving $f_{\dot{u}}$ and introduce generalized accelerations as algebraic variables $\upsilon$ to enforce multibody dynamics in “inverse dynamics” form:
@@ -572,7 +573,7 @@ Gradient-based nonlinear program solvers require the gradient of the objective, 
 % step-by-step instructions.
 %
 
-\bibliography{MocoPaper.bib}
+\bibliography{MocoPaper}
 
 \end{document}
 

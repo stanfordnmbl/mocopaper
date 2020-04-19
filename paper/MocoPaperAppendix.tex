@@ -362,8 +362,8 @@
 
 \newcommand{\hermitesimpsonkincon}{
     \begin{align}
-         0 &= \dot{\phi}(q, u, p) = G(q, p) u,\\
-         0 &= \ddot{\phi}(t, y, x, \lambda, p) = G(q, p) \dot{u} + \dot{G}(q, p) u = G(q, p) f_{\dot{u}}(t, y, x, \lambda, p) + \dot{G}(q, p) u.
+        0 &= \dot{\phi}(q, u, p) = G(q, p) u, \label{hermitesimpsonkincon} \\
+        0 &= \ddot{\phi}(t, y, x, \lambda, p) = G(q, p) \dot{u} + \dot{G}(q, p) u = G(q, p) f_{\dot{u}}(t, y, x, \lambda, p) + \dot{G}(q, p) u.
     \end{align}
 }
 
@@ -550,7 +550,7 @@ Including these constraints reduces the index of the differential-algebraic equa
 f_{\dot{q}}(q, u, \gamma, p) = u + G(q, p)^T \gamma
 \end{equation}
 
-Without this correction, the Hermite splines cannot simultaneously satisfy both the differential equations at the mesh interval midpoints and the kinematic constraints at the mesh points. Since kinematic constraints are already enforced at the mesh points, this correction term only appears at the mesh interval midpoints (i.e., $G(\bar{q}_i, p)^T \bar{\gamma}_i$); therefore, velocity corrections at the mesh points are zero and do not appear in Eq~\ref{hermitesimpsonnlp}. Although Simbody supports non-holonomic and acceleration-level constraints, Moco only supports holonomic (position-level) constraints.
+Without this correction, the Hermite splines cannot simultaneously satisfy both the differential equations at the mesh interval midpoints and the kinematic constraints at the mesh points. Since velocity-level kinematic constraints (Eq~\ref{hermitesimpsonkincon}) are already enforced at the mesh points, this correction term only appears at the mesh interval midpoints (i.e., $G(\bar{q}_i, p)^T \bar{\gamma}_i$); therefore, velocity corrections at the mesh points are zero and do not appear in Eq~\ref{hermitesimpsonnlp}. Although Simbody supports non-holonomic and acceleration-level constraints, Moco only supports holonomic (position-level) constraints.
 % TODO (We are planning to enforce algebraic constraints at the midpoints). Algebraic constraints are not enforced at the midpoints of the mesh intervals, but exhibit fourth-order accuracy at these points~\cite{Posa:2016}.
 
 For implicit multibody dynamics, we remove the constraints involving $f_{\dot{u}}$ and introduce generalized accelerations as algebraic variables $\upsilon$ to enforce multibody dynamics in “inverse dynamics” form:

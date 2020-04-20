@@ -274,10 +274,10 @@
          \mbox{with respect to} \quad
          & t_0 \in [t_{0,L}, t_{0,U}] && t_n \in [t_{f,L}, t_{f,U}] \\
          & y_0 \in [y_{0,L}, y_{0,U}] && y_n \in [y_{f,L}, y_{f,U}] \\
-         & y_i \in [y_{L}, y_{U}] &&&& i = 1, \ldots, n - 1\\
-         & \zeta_i \in [\zeta_{L}, \zeta_{U}] &&&& i = 0, \ldots, n \\
          & x_0 \in [x_{0,L}, x_{0,U}] && x_n \in [x_{f,L}, x_{f,U}] \\
+         & y_i \in [y_{L}, y_{U}] &&&& i = 1, \ldots, n - 1\\
          & x_i \in [x_{L}, x_{U}] &&&& i = 1, \ldots, n - 1\\
+         & \zeta_i \in [\zeta_{L}, \zeta_{U}] &&&& i = 0, \ldots, n \\
          & \lambda_i \in [\lambda_L, \lambda_U] &&&& i = 0, \ldots, n \\
          & p \in [p_{L}, p_{U}].
     \end{aligned}
@@ -323,7 +323,7 @@
 \begin{align}
     \begin{aligned}
         \mbox{minimize} \quad
-         & \sum_j w_j J_{c,j}(t_0, t_f, \mathrlap{y_0, y_n, x_{0}, x_{n}, \lambda_0, \lambda_n, p, S_{c,j})
+         & \sum_j w_j J_j(t_0, t_f, \mathrlap{y_0, y_n, x_{0}, x_{n}, \lambda_0, \lambda_n, p, S_{c,j})
          + w_{\lambda} \sum_{i=1}^{n} \textrm{simpson}_i(\|\lambda\|_2^2)}  \\
          & \quad\quad \mathrlap{S_{c,j} = \sum_{i=1}^{n} \textrm{simpson}_i(s_{c,j}(t, y, x, \lambda, p))} \\
         \mbox{subject to} \quad
@@ -344,13 +344,13 @@
          \mbox{with respect to} \quad
          & t_0 \in [t_{0,L}, t_{0,U}] && t_n \in [t_{f,L}, t_{f,U}] \\
          & y_0 \in [y_{0,L}, y_{0,U}] && y_n \in [y_{f,L}, y_{f,U}] \\
+         & x_0 \in [x_{0,L}, x_{0,U}] && x_n \in [x_{f,L}, x_{f,U}] \\
          & y_i \in [y_{L}, y_{U}] &&&& i = 1, \ldots, n - 1 \\
          & \bar{y}_i \in [y_{L}, y_{U}] &&&& i = 1, \ldots, n \\
-         & \zeta_i \in [\zeta_{L}, \zeta_{U}] &&&& i = 0, \ldots, n \\
-         & \bar{\zeta}_i \in [\zeta_{L}, \zeta_{U}] &&&& i = 1, \ldots, n \\
-         & x_0 \in [x_{0,L}, x_{0,U}] && x_n \in [x_{f,L}, x_{f,U}] \\
          & x_i \in [x_{L}, x_{U}] &&&& i = 1, \ldots, n - 1 \\
          & \bar{x}_i \in [x_{L}, x_{U}] &&&& i = 1, \ldots, n \\
+         & \zeta_i \in [\zeta_{L}, \zeta_{U}] &&&& i = 0, \ldots, n \\
+         & \bar{\zeta}_i \in [\zeta_{L}, \zeta_{U}] &&&& i = 1, \ldots, n \\
          & \lambda_i \in [\lambda_L, \lambda_U] &&&& i = 0, \ldots, n \\
          & \bar{\lambda}_i \in [\lambda_L, \lambda_U] &&&& i = 1, \ldots, n \\
          & \bar{\gamma}_i \in [\bar{\gamma}_L, \bar{\gamma}_U] &&&& i = 1, \ldots, n \\
@@ -460,11 +460,11 @@ Moco poses the optimal control problem shown in Eq~\ref{ocp}. We seek the time-d
 
 The problem contains constraints for the system's multibody dynamics (involving the mass matrix $M$; applied forces $f_\mathrm{app}$ from gravity, muscles, etc.; and centripetal and Coriolis terms $f_\mathrm{inertial}$) and any auxiliary dynamics. The auxiliary dynamics may be expressed as explicit ($f_{\dot{z},\mathrm{ex}}$) or implicit ($f_{\dot{z},\mathrm{im}}$) differential equations; the auxiliary state variables $z$ are partitioned according to whether they are integrated using explicit differential equations ($z_{\mathrm{ex}}$) or implicit differential equations ($z_{\mathrm{im}}$). The system may contain position-level (holonomic) kinematic constraints to, for example, weld a foot to a bicycle pedal. Each constraint is enforced by forces exerted by tissue, bones, bodies, or other parts of the modeled system. These generalized constraint forces are applied in the constrained directions (e.g., the six degrees of freedom between the foot and pedal), and we introduce time-varying Lagrange multiplier variables $\lambda$ to solve for these forces. The derivatives of the kinematic constraints $\phi$ with respect to the generalized coordinates yields the kinematic constraint Jacobian $G$; the transpose of this matrix converts the Lagrange multipliers into generalized forces along the system's degrees of freedom. See below for details on how Moco handles kinematic constraints.
 
-Additionally, the problem contains boundary constraints $V_k$ (with bounds $V_{L,k}$ and $V_{U,k}$) and algebraic path constraints $g$ over the motion (with time-invariant bounds $g_L$ and $g_U$). The cost terms and boundary constraints may depend on initial and final time; states; controls; kinematic constraint multipliers (required for joint reactions); time-invariant parameters; and an integral, $S_{c,j}$ or $S_{b,k}$, over the motion.
+Additionally, the problem contains $K$ boundary constraints $V_k$ (with bounds $V_{L,k}$ and $V_{U,k}$) and algebraic path constraints $g$ over the motion (with time-invariant bounds $g_L$ and $g_U$). The cost terms and boundary constraints may depend on initial and final time; states; controls; kinematic constraint multipliers (required for joint reactions); time-invariant parameters; and an integral, $S_{c,j}$ or $S_{b,k}$, over the motion.
 
 \subsection*{Kinematic constraints}
 
-Support for kinematic constraints is a key feature of Moco. Understanding how kinematic constraints are handled in multibody dynamics is valuable for understanding how Moco handles such problems. Consider a two-dimensional point mass system with coordinates $q_x$ and $q_y$ constrained to a parabola $0 = q_y - q_x^2$. To prevent the point mass from violating the constraint, we must apply a force perpendicular to the parabola. Each constraint has a corresponding scalar force variable, called a Lagrange multiplier $\lambda$. We must solve for the required magnitudes of these constraint forces, but the direction in which we apply each of these forces is determined by the derivative of the constraint equations. We gather the derivatives of the constraint equations in the kinematic constraint Jacobian matrix $G$. Each row in this matrix contains the derivative of a single constraint equation with respect to each degree of freedom, and the matrix has a column for each degree of freedom. For the parabola example, the Jacobian is $( -2q_x, 1)$. The transpose of this matrix, $G^T$, contains columns that are vectors in the state space which are perpendicular to each constraint. For our single constraint, the vector $(-2q_x, 1)^T$ is perpendicular to the parabola. The matrix-vector product between the Jacobian transpose and the Lagrange multipliers, $G^T \lambda$, yields the vector of generalized forces (whose length is the number of degrees of freedom) necessary for enforcing the kinematic constraints. For our point mass example, the generalized forces yielded by the vector-scalar product  $(-2q_x, 1)^T \lambda$ keep the point mass on the parabola. To apply these forces to the multibody system, we include the $G^T \lambda$ term in the multibody dynamics equations of motion.
+Support for problems incorporating kinematic constraints is a key feature of Moco. Understanding how kinematic constraints are handled in multibody dynamics is valuable for understanding how Moco handles such problems. Consider a two-dimensional point mass system with coordinates $q_x$ and $q_y$ constrained to a parabola $0 = q_y - q_x^2$. To prevent the point mass from violating the constraint, we must apply a force perpendicular to the parabola. Each constraint has a corresponding scalar force variable, called a Lagrange multiplier $\lambda$. We must solve for the required magnitudes of these constraint forces, but the direction in which we apply each of these forces is determined by the derivative of the constraint equations. We gather the derivatives of the constraint equations in the kinematic constraint Jacobian matrix $G$. Each row in this matrix contains the derivative of a single constraint equation with respect to each degree of freedom, and the matrix has a column for each degree of freedom. For the parabola example, the Jacobian is $( -2q_x, 1)$. The transpose of this matrix, $G^T$, contains columns that are vectors in the state space which are perpendicular to each constraint. For our single constraint, the vector $(-2q_x, 1)^T$ is perpendicular to the parabola. The matrix-vector product between the Jacobian transpose and the Lagrange multipliers, $G^T \lambda$, yields the vector of generalized forces (whose length is the number of degrees of freedom) necessary for enforcing the kinematic constraints. For our point mass example, the generalized forces yielded by the vector-scalar product  $(-2q_x, 1)^T \lambda$ keep the point mass on the parabola. To apply these forces to the multibody system, we include the $G^T \lambda$ term in the multibody dynamics equations of motion.
 
 When simulating a multibody system with time-stepping forward integration, we first ensure the initial generalized coordinates and speeds satisfy the kinematic constraints $\phi(q) = 0$ and their first derivative $\dot{\phi}(q, u) = 0$ via a root-solve. During the integration, we solve for generalized accelerations and Lagrange multipliers that obey the multibody dynamics equations of motion and the second derivative of the kinematic constraints, $\ddot{\phi}(q, u, \dot{u}) = 0$. Numerically integrating the resulting generalized accelerations yields generalized coordinates and speeds that approximately lie on the constraint manifold defined by $\phi(q) = 0$; to fix any errors in the constraints caused by numerical integration error, we project the generalized coordinates and speeds back onto the constraint manifold~\cite{Sherman:2011byc}.
 
@@ -496,6 +496,7 @@ For conciseness, we define the following function:
 
 \trapfunc
 
+\noindent 
 where $\mathrm{trap}_i(F(\eta, p)))$ is a trapezoidal rule approximation of the area under the function $F$ for mesh interval $i$, and $\eta$ represents any subset of continuous variables. We define the kinematic and dynamic explicit differential equations as:
 
 \explicitmultibody
@@ -532,7 +533,8 @@ where $ \bar{\tau}_i $ denote mesh interval midpoints. For conciseness, we defin
 
 \hermitesimpsonfuncs
 
-where $\mathrm{hermite}_i()$ represents the Hermite interpolant, which yields the value of the midpoint of a segment in a Hermite spline, and $\mathrm{simpson}_i()$ represents the Simpson integration rule. Again, $F$ is a function for mesh interval $i$, and $\eta$ represents any subset of continuous variables.
+\noindent
+where $\mathrm{hermite}_i()$ represents the Hermite interpolant, which yields the value of the midpoint of a segment in a Hermite spline, and $\mathrm{simpson}_i()$ represents the Simpson integration rule. Again, $F$ is a function for mesh interval $i$, and $\eta$ represents any subset of continuous variables. $\bar{\eta}$ represents variables at the mesh interval midpoint, including state variables since here we are using the separated form of Hermite-Simpson transcription~\cite{Betts:2010}.
 
 Using the explicit multibody dynamics function $f_{\dot{u}}$ defined previously, Hermite-Simpson transcription results in the following nonlinear program:
 

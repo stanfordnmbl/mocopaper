@@ -186,11 +186,11 @@
          & V_{L,k} \leq V_k(t_0, t_f, y_0, y_f, x_{0}, x_{f}, \lambda_0, \lambda_f, p, S_{b,k}) \leq V_{U,k} && \textrm{boundary constraints} \\
          & \quad\quad S_{b,k} = \int_{t_0}^{t_f} s_{b,k}(t, y, x, \lambda, p)\,dt \quad k = 1, \ldots, K\\
          & g_{L} \leq g(t, y, x, \lambda, p) \leq g_{U} && \textrm{path constraints} \\
-         & y_{0,L} \leq y_0 \leq y_{0,U} \quad\quad y_{f,L} \leq y_f \leq y_{f,U} && \textrm{initial and final states} \\
-         & x_{0,L} \leq x_0 \leq x_{0,U} \quad\quad x_{f,L} \leq x_f \leq x_{f,U} && \textrm{initial and final controls} \\
          \mbox{with respect to} \quad
          & t_0 \in [t_{0,L}, t_{0,U}] && \textrm{initial time} \\
          & t_f \in [t_{f,L}, t_{f,U}] && \textrm{final time} \\
+         & y_0 \in [y_{0,L}, y_{0,U}] \quad\quad y_f \in [y_{f,L}, y_{f,U}] && \textrm{initial and final states} \\
+         & x_0 \in [x_{0,L}, x_{0,U}] \quad\quad x_f \in [x_{f,L}, x_{f,U}] && \textrm{initial and final controls} \\  
          & y(t) = (q(t), u(t), z(t)) \in [y_{L}, y_{U}] && \textrm{states} \\
          & x(t) \in [x_{L}, x_{U}] && \textrm{controls} \\
          & \lambda(t) && \textrm{Lagrange multipliers} \\
@@ -205,7 +205,7 @@
 \begin{adjustwidth}{-1.125in}{-1.125in} % Comment out/remove adjustwidth environment if table fits in text column.
 \begin{align}
     \begin{aligned}
-        \mbox{minimize} \quad & \mathrlap{\sum_j w_j J_{j}(t_0, t_f, \hat{q}_0, \hat{q}_f, \hat{u}_0, \hat{u}_f, z_0, z_f, x_{0}, x_{f}, \lambda_0, \lambda_f, p, S_{c,j})} &&&\hspace{6em}& \textrm{costs} \\
+        \mbox{minimize} \quad & \mathrlap{\sum_j w_j J_{j}(t_0, t_f, \hat{q}_0, \hat{q}_f, \hat{u}_0, \hat{u}_f, z_0, z_f, x_{0}, x_{f}, \lambda_0, \lambda_f, p, S_{c,j})} &&&& \textrm{costs} \\
         & \quad\quad \mathrlap{S_{c,j} = \int_{t_0}^{t_f} s_{c,j}(t, \hat{q}, \hat{u}, z, x, \lambda, p)~dt} \\
         \mbox{subject to} \quad &
          M(\hat{q}, p)\hat{\dot{u}} + \mathrlap{G(\hat{q}, p)^T \lambda = f_{\textrm{app}}(t, \hat{q}, \hat{u}, z, x, p) - f_{\textrm{inertial}}(\hat{q}, \hat{u}, p)} &&&& \textrm{multibody dynamics} \\
@@ -214,11 +214,11 @@
         & V_{L,k} \leq V_k(t_0, t_f, \hat{q}_0, \mathrlap{\hat{q}_f, \hat{u}_0, \hat{u}_f, z_0, z_f, x_{0}, x_{f}, \lambda_0, \lambda_f, p, S_{b,k}) \leq V_{U,k}}  &&&& \textrm{boundary constraints} \\
         & \quad\quad \mathrlap{S_{b,k} = \int_{t_0}^{t_f} s_{b,k}(t, \hat{q}, \hat{u}, z, x, \lambda, p)~dt \quad k = 1, \ldots, K} \\
         & \mathrlap{g_{L} \leq g(t, \hat{q}, \hat{u}, z, x, \lambda, p) \leq g_{U}} &&&& \textrm{path constraints} \\
-        & z_{0,L} \leq z_0 \leq z_{0,U} && z_{f,L} \leq z_f \leq z_{f,U} && \textrm{initial and final states} \\
-        & x_{0,L} \leq x_0 \leq x_{0,U} && x_{f,L} \leq x_f \leq x_{f,U} && \textrm{initial and final controls} \\
         \mbox{with respect to} \quad
         & t_0 \in [t_{0,L}, t_{0,U}] && \textrm{initial time} \\
         & t_f \in [t_{f,L}, t_{f,U}] && \textrm{final time} \\
+        & z_0 \in [z_{0,L}, z_{0,U}] \quad\quad z_f \in [z_{f,L}, z_{f,U}] && \textrm{initial and final states} \\
+        & x_0 \in [x_{0,L}, x_{0,U}] \quad\mkern9mu x_f \in [x_{f,L}, x_{f,U}] && \textrm{initial and final controls} \\
         & z(t) \in [z_{L}, z_{U}] && \textrm{auxiliary states} \\
         & x(t) \in [x_{L}, x_{U}] && \textrm{controls} \\
         & \lambda(t) && \textrm{Lagrange multipliers} \\

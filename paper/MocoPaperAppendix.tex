@@ -521,11 +521,11 @@ where $ \bar{\tau}_i $ denote mesh interval midpoints.
 
 For conciseness, we define the following functions:
 \hermitesimpsonfuncs
-where $\mathrm{hermite}_i()$ represents the Hermite interpolant, which yields the value of the midpoint of a segment in a Hermite spline, and $\mathrm{simpson}_i()$ represents the Simpson integration rule. Again, $F$ is a function for mesh interval $i$, and $\eta$ represents any subset of continuous variables. The symbols $\bar{\eta}_i$ represent continuous variables evaluated at the mesh interval midpoints, including state variables since here we are using the separated form of Hermite-Simpson transcription~\cite{Betts:2010}.
+where $\mathrm{hermite}_i()$ represents the Hermite interpolant, which yields the value of the midpoint of a segment in a Hermite spline, and $\mathrm{simpson}_i()$ represents the Simpson integration rule. Again, $F$ is a function for mesh interval $i$, and $\eta$ represents any subset of continuous variables. The symbols $\bar{\eta}_i$ represent continuous variables evaluated at the mesh interval midpoints.
 
 Using the explicit multibody dynamics function $f_{\dot{u}}$ defined previously, Hermite-Simpson transcription results in the following nonlinear program:
 \hermitesimpsonnlp
-The variables $\bar{y}_i$ (including $\bar{q}_i$, $\bar{u}_i$, $\bar{z}_{\mathrm{ex},i}$, $\bar{z}_{\mathrm{im},i}$), $\bar{x}_i$, $\bar{\zeta}_i$, $\bar{\lambda}_i$, and $\bar{\gamma}_i$ are associated with the midpoint of mesh interval $i$.
+The variables $\bar{y}_i$ (including $\bar{q}_i$, $\bar{u}_i$, $\bar{z}_{\mathrm{ex},i}$, $\bar{z}_{\mathrm{im},i}$), $\bar{x}_i$, $\bar{\zeta}_i$, $\bar{\lambda}_i$, and $\bar{\gamma}_i$ are associated with the midpoint of mesh interval $i$. The midpoint states are included as explicit optimization variables $\bar{y}_i$ since we are using the separated form of Hermite-Simpson transcription~\cite{Betts:2010}
 
 Eq~\ref{hermitesimpsonnlp} includes the first and second time derivatives of the kinematic constraints:
 \hermitesimpsonkincon

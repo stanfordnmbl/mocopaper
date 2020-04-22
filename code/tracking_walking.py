@@ -1231,23 +1231,6 @@ class MotionTrackingWalking(MocoPaperResult):
         title_fs = 8
         lw = 2
 
-        # experimental ground reactions
-        grf_table = self.load_table(
-            os.path.join(root_dir,
-                         'resources', 'Rajagopal2016', 'grf_walk.mot'))
-        grf_start = np.argmin(abs(grf_table['time']-self.initial_time))
-        grf_end = np.argmin(abs(grf_table['time']-self.final_time))
-
-        time_grfs = grf_table['time'][grf_start:grf_end]
-        pgc_grfs = np.linspace(0, 100, len(time_grfs))
-        exp_color = 'gray'
-        ax_grf_x.plot(pgc_grfs,
-                      grf_table['ground_force_l_vx'][grf_start:grf_end]/BW,
-                      color=exp_color, lw=lw)
-        ax_grf_y.plot(pgc_grfs,
-                      grf_table['ground_force_l_vy'][grf_start:grf_end]/BW,
-                      color=exp_color, lw=lw)
-
         # simulation results
         config = self.config_track
         color = config.color
@@ -1267,7 +1250,7 @@ class MotionTrackingWalking(MocoPaperResult):
             grf_path = self.get_solution_path_grfs(root_dir, config.name)
             grf_table = self.load_table(grf_path)
             ax_grf_x.plot(pgc, grf_table['ground_force_l_vx']/BW, color=color,
-                          lw=lw)
+                          lw=lw, label='MocoTrack')
             ax_grf_x.set_ylabel('horizontal force (BW)')
             ax_grf_x.axhline(0, color='gray', zorder=0, linewidth=0.75)
             ax_grf_x.set_ylim(-0.35, 0.35)
@@ -1282,6 +1265,25 @@ class MotionTrackingWalking(MocoPaperResult):
             ax_grf_y.set_xticklabels([])
             ax_grf_y.set_title('GROUND REACTIONS\n', weight='bold',
                                size=title_fs)
+
+        # experimental ground reactions
+        grf_table = self.load_table(
+            os.path.join(root_dir,
+                         'resources', 'Rajagopal2016', 'grf_walk.mot'))
+        grf_start = np.argmin(abs(grf_table['time']-self.initial_time))
+        grf_end = np.argmin(abs(grf_table['time']-self.final_time))
+
+        time_grfs = grf_table['time'][grf_start:grf_end]
+        pgc_grfs = np.linspace(0, 100, len(time_grfs))
+        exp_color = 'gray'
+        ax_grf_x.plot(pgc_grfs,
+                      grf_table['ground_force_l_vx'][grf_start:grf_end]/BW,
+                      color=exp_color, lw=lw, label='experiment', zorder=0)
+        ax_grf_y.plot(pgc_grfs,
+                      grf_table['ground_force_l_vy'][grf_start:grf_end]/BW,
+                      color=exp_color, lw=lw, zorder=0)
+
+        ax_grf_x.legend(frameon=False)
 
         for ax in ax_list:
             utilities.publication_spines(ax)
@@ -1515,6 +1517,3 @@ class MotionTrackingWalking(MocoPaperResult):
 
         fig.tight_layout(h_pad=-1.5, rect=(0, 0, 1, 0.95))
         self.savefig(fig, os.path.join(root_dir, 'figures/Fig9'))
-
-        # TODO debug inverse dynamics
-        # TODO combine negative force calculation with calc_muscle_mechanics().

@@ -1348,24 +1348,21 @@ class MotionTrackingWalking(MocoPaperResult):
         emg = self.load_electromyography(root_dir)
 
         fig = plt.figure(figsize=(7.5, 3.3))
-        gs = gridspec.GridSpec(6, 8)
+        height_ratios = [1, 1, 1, 1, 0.3]
+        gs = gridspec.GridSpec(5, 8)
         ax_ankle = fig.add_subplot(gs[0:2, 2:4])
-        ax_tibant = fig.add_subplot(gs[4:6, 2:4])
-        ax_iliacus = fig.add_subplot(gs[2:4, 2:4])
+        ax_tibant = fig.add_subplot(gs[2:4, 2:4])
         ax_add = fig.add_subplot(gs[0:2, 6:8])
         ax_glmed = fig.add_subplot(gs[2:4, 6:8])
-        # ax_lumbar = fig.add_subplot(gs[9:12, 1])
         ax_list = list()
         ax_list.append(ax_ankle)
         ax_list.append(ax_tibant)
-        ax_list.append(ax_iliacus)
         ax_list.append(ax_add)
         ax_list.append(ax_glmed)
-        # ax_list.append(ax_lumbar)
         title_fs = 8
         lw = 2
 
-        ax = fig.add_subplot(gs[0:6, 0:2])
+        ax = fig.add_subplot(gs[0:4, 0:2])
         # Convert BGR color ordering to RGB.
         image = cv2.imread(
             os.path.join(root_dir,
@@ -1373,7 +1370,7 @@ class MotionTrackingWalking(MocoPaperResult):
                 ..., ::-1]
         ax.imshow(image)
         plt.axis('off')
-        ax = fig.add_subplot(gs[0:6, 4:6])
+        ax = fig.add_subplot(gs[0:4, 4:6])
         # Convert BGR color ordering to RGB.
         image = cv2.imread(
             os.path.join(root_dir,
@@ -1402,9 +1399,6 @@ class MotionTrackingWalking(MocoPaperResult):
                       coordinates['ankle_angle_l'][coords_start:coords_end],
                       color=exp_color, lw=lw,
                       label='exp.')
-        # ax_lumbar.plot(pgc_coords,
-        #               coordinates['lumbar_bending'][coords_start:coords_end],
-        #               color=exp_color, lw=lw + 1.0)
                      
         # simulation results
         for i, config in enumerate(self.configs):
@@ -1416,8 +1410,6 @@ class MotionTrackingWalking(MocoPaperResult):
             pgc = 100.0 * (time - time[0]) / (time[-1] - time[0])
 
             if config.name == 'weakdfs' or config.name == 'track':
-                # import pdb
-                # pdb.set_trace()
 
                 tibant_force = muscle_mechanics[config.name].getDependentColumn(
                     '/forceset/tibant_l|tendon_force')
@@ -1425,21 +1417,10 @@ class MotionTrackingWalking(MocoPaperResult):
                             toarray(tibant_force) / max_iso_forces['tibant_l'], 
                             color=color, lw=lw)
                 ax_tibant.set_ylabel('tibialis anteior\nforce ($F_{\mathrm{iso}}$)')
-                ax_tibant.set_ylim(-0.05, 0.6)
+                ax_tibant.set_ylim(-0.025, 0.6)
                 ax_tibant.set_yticks([0, 0.5])
                 ax_tibant.set_yticklabels([0, 0.5])
                 ax_tibant.set_xlabel('time (% gait cycle)')
-
-                iliacus_force = muscle_mechanics[config.name].getDependentColumn(
-                    '/forceset/iliacus_l|tendon_force')
-                ax_iliacus.plot(pgc, 
-                            toarray(iliacus_force) / max_iso_forces['iliacus_l'], 
-                            color=color, lw=lw)
-                ax_iliacus.set_ylabel('iliacus\nforce ($F_{\mathrm{iso}}$)')
-                ax_iliacus.set_ylim(-0.05, 1.1)
-                ax_iliacus.set_yticks([0, 0.5, 1])
-                ax_iliacus.set_yticklabels([0, 0.5, 1])
-                ax_iliacus.set_xticklabels([])
 
             if config.name == 'weakhipabd' or config.name == 'track':
                 
@@ -1472,18 +1453,12 @@ class MotionTrackingWalking(MocoPaperResult):
                 ax_add.set_ylabel('hip adduction\nangle (degrees)')
                 ax_add.set_xticklabels([])
 
-                # ax_lumbar.plot(pgc, rad2deg*full_traj.getStateMat(
-                #     '/jointset/back/lumbar_bending/value'), color=color, lw=lw)
-                # ax_lumbar.set_title('lumbar bending angle\n(degrees)')
-                # ax_lumbar.set_xlabel('time (% gait cycle)')
-
-
         for ax in ax_list:
             utilities.publication_spines(ax)
             ax.set_xlim(0, 100)
             ax.set_xticks([0, 50, 100])
 
-        fig.align_ylabels([ax_ankle, ax_iliacus, ax_tibant])
+        fig.align_ylabels([ax_ankle, ax_tibant])
         fig.align_ylabels([ax_add, ax_glmed])
 
         fig.text(0.25, 0.95, 'WEAK DORSIFLEXORS', fontweight='bold',
@@ -1493,6 +1468,9 @@ class MotionTrackingWalking(MocoPaperResult):
 
         # Create legend
         legend_handles_and_labels = []
+
+        
+        legend_handles_and_labels.append((exp_handle, 'experiment'))
 
         handle, = ax_add.plot([0], [0], color=self.config_track.color,
                               label=self.config_track.legend_entry)
@@ -1506,14 +1484,14 @@ class MotionTrackingWalking(MocoPaperResult):
                               label=self.config_weakhipabd.legend_entry)
         legend_handles_and_labels.append(
             (handle, self.config_weakhipabd.legend_entry))
-        legend_handles_and_labels.append((exp_handle, 'experiment'))
 
         legend_handles, legend_labels = zip(*legend_handles_and_labels)
         plt.figlegend(legend_handles, legend_labels,
                       frameon=False,
                       loc='center',
-                      bbox_to_anchor=(0.85, 0.15),
+                      ncol=4,
+                      bbox_to_anchor=(0.52, 0.06),
                       )
 
-        fig.tight_layout(h_pad=-1.5, rect=(0, 0, 1, 0.95))
+        fig.tight_layout(rect=(0, 0, 1, 0.95))
         self.savefig(fig, os.path.join(root_dir, 'figures/Fig9'))

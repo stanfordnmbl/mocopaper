@@ -24,10 +24,9 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
         swig \
         python3 python3-dev python3-numpy python3-setuptools
 
-# Must be careful to not embed the GitHub token in the image.
 RUN git clone https://github.com/opensim-org/opensim-moco.git /opensim-moco \
         && cd /opensim-moco \
-        && git checkout master
+        && git checkout 0.4.0
 
 RUN cd /opensim-moco \
         && git submodule update --init \

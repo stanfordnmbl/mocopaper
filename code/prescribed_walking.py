@@ -243,7 +243,7 @@ class MotionPrescribedWalking(MocoPaperResult):
         if self.inverse:
             sol_inverse = osim.MocoTrajectory(self.mocoinverse_solution_file % root_dir)
             time_inverse = sol_inverse.getTimeMat()
-            most_neg = self.calc_negative_muscle_forces_base(model, sol_inverse)
+            most_neg, = self.calc_negative_muscle_forces_base(model, sol_inverse)
             if most_neg < -0.005:
                 raise Exception("Muscle forces are too negative! sol_inverse")
 
@@ -253,7 +253,7 @@ class MotionPrescribedWalking(MocoPaperResult):
             sol_inverse_jointreaction.insertStatesTrajectory(
                 sol_inverse.exportToStatesTable(), False)
 
-            most_neg = self.calc_negative_muscle_forces_base(
+            most_neg, = self.calc_negative_muscle_forces_base(
                 model, sol_inverse_jointreaction)
             if most_neg < -0.005:
                 raise Exception(

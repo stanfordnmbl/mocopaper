@@ -763,8 +763,13 @@ class MotionTrackingWalking(MocoPaperResult):
             full_path = self.get_solution_path_fullcycle(root_dir, config.name)
             full_traj = osim.MocoTrajectory(full_path)
 
-            most_neg = self.calc_negative_muscle_forces(root_dir, config,
-                                                        full_traj)
+            most_neg, debug_outputs = self.calc_negative_muscle_forces(
+                root_dir, config, full_traj)
+            osim.STOFileAdapter.write(
+                debug_outputs,
+                os.path.join(root_dir, 'results',
+                             f'motion_tracking_walking_{config.name}_negative_debug.sto'))
+
             if most_neg < -0.005:
                 raise Exception("Muscle forces are too negative! " +
                                 f"{config.name}")
@@ -789,7 +794,7 @@ class MotionTrackingWalking(MocoPaperResult):
             muscle_mechanics[config.name] = self.calc_muscle_mechanics(
                 root_dir, config, full_traj)
 
-        
+        return  # TODO
 
         self.plot_paper_figure_healthy(root_dir, mass, BW)
         self.plot_paper_figure_weak(root_dir, mass, netgenforces, 

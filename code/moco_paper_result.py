@@ -119,7 +119,28 @@ class MocoPaperResult(ABC):
             imin = np.argmin(negforces)
             print(f'Largest negative force: {muscle_names[imin]} '
                   f'with {negforces[imin]} F_iso')
-        return min([0] + negforces)
+
+        output_patterns = list()
+        for muscle_name in muscle_names:
+            output_patterns.append(
+                f'.*{muscle_name}\|activation')
+            output_patterns.append(
+                f'.*{muscle_name}\|normalized_fiber_length')
+            output_patterns.append(
+                f'.*{muscle_name}\|tendon_force')
+            output_patterns.append(
+                f'.*{muscle_name}\|active_fiber_force_along_tendon')
+            output_patterns.append(
+                f'.*{muscle_name}\|passive_fiber_force_along_tendon')
+            output_patterns.append(
+                f'.*{muscle_name}\|passive_fiber_elastic_force_along_tendon')
+            output_patterns.append(
+                f'.*{muscle_name}\|passive_fiber_damping_force_along_tendon')
+            output_patterns.append(
+                f'.*{muscle_name}\|normalized_fiber_velocity')
+        debug_outputs = osim.analyze(model, solution, output_patterns)
+
+        return min([0] + negforces), debug_outputs
 
     def savefig(self, fig, filename):
         fig.savefig(filename + ".png", format="png", dpi=600)

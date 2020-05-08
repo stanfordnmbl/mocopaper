@@ -26,9 +26,9 @@ classes = [
 with open('MocoPaper.tex', 'r') as old:
     with open('MocoPaper_formatted.tex', 'w') as new:
         for line in old:
-            if 'includegraphics' in line:
-                new.write(this_line)
-                continue
+            # if 'includegraphics' in line:
+            #     new.write(this_line)
+            #     continue
             this_line = line
             for c in classes:
                 this_line = this_line.replace(c, '\\textit{%s}' % c)

@@ -8,6 +8,7 @@ classes = [
     'PositionMotion',
     'MocoSolution',
     'MocoTrajectory',
+    'MocoControlGoal',
     'MocoControlBoundConstraint',
     'Model',
     'MocoTrajectories',

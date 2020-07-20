@@ -550,11 +550,23 @@ class MotionPrescribedWalking(MocoPaperResult):
             print(f'Average speed: {avg_speed}')
 
         if self.inverse:
-            report = osim.report.Report(model, self.mocoinverse_solution_file % root_dir)
+            output_fpath = os.path.join(
+                root_dir, 'results',
+                'motion_prescribed_walking_inverse_solution_report.pdf')
+            report = osim.report.Report(
+                model,
+                self.mocoinverse_solution_file % root_dir,
+                output=output_fpath)
             report.generate()
 
         if self.knee and self.inverse:
-            report = osim.report.Report(model,
-                                        mocoinverse_jr_solution_file % root_dir)
+            output_fpath = os.path.join(
+                root_dir, 'results',
+                'motion_prescribed_walking_inverse_jointreaction_solution_'
+                'report.pdf')
+            report = osim.report.Report(
+                model,
+                mocoinverse_jr_solution_file % root_dir,
+                output=output_fpath)
             report.generate()
 

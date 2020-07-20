@@ -677,8 +677,8 @@ class MotionTrackingWalking(MocoPaperResult):
         # full gait cycle trajectory.
         externalLoads = osim.createExternalLoadsTableForGait(
                 model, fullTraj, forceNamesRightFoot, forceNamesLeftFoot)
-        osim.writeTableToFile(externalLoads,
-                              self.get_solution_path_grfs(root_dir, config.name))
+        osim.STOFileAdapter.write(externalLoads,
+                            self.get_solution_path_grfs(root_dir, config.name))
 
     def parse_args(self, args):
         self.skip_inverse = False
@@ -1086,7 +1086,9 @@ class MotionTrackingWalking(MocoPaperResult):
             report_suffix += '_' + config.name
         report_suffix += '_' + self.configs[-1].name
 
-        report_output = f'motion_tracking_walking{report_suffix}_report.pdf'
+        report_output = os.path.join(
+            root_dir, 'results',
+            f'motion_tracking_walking{report_suffix}_report.pdf')
         report = osim.report.Report(model=model,
                                     trajectory_filepath=trajectory_filepath,
                                     ref_files=ref_files, bilateral=False,

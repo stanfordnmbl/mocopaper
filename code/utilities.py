@@ -3,6 +3,7 @@ import copy
 import numpy as np
 import pylab as pl
 from scipy.signal import butter, filtfilt
+from PIL import Image
 
 import opensim as osim
 
@@ -766,3 +767,12 @@ def filter_critically_damped(data, sampling_rate, lowpass_cutoff_frequency,
         temp_filtered = np.zeros(num_rows)
 
     return data
+
+def savefig(fig, filename):
+    fig.savefig(filename + ".png", format="png", dpi=600)
+
+    # Load this image into PIL
+    png2 = Image.open(filename + ".png")
+
+    # Save as TIFF
+    png2.save(filename + ".tiff", compression='tiff_lzw')

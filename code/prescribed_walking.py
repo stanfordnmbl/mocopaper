@@ -570,3 +570,8 @@ class MotionPrescribedWalking(MocoPaperResult):
                 output=output_fpath)
             report.generate()
 
+    def convergence_metadata(self):
+        pass
+
+    def generate_convergence_results(self):
+        pass

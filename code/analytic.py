@@ -73,4 +73,3 @@ class Analytic(MocoPaperResult):
         print(f'root-mean-square error in states: {rms}')
         with open(os.path.join(root_dir, 'results/analytic_rms.txt'), 'w') as f:
             f.write(f'{rms:.4f}')
-

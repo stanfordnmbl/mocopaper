@@ -1634,3 +1634,9 @@ class MotionTrackingWalking(MocoPaperResult):
 
         fig.tight_layout(rect=(0, 0, 1, 0.95))
         self.savefig(fig, os.path.join(root_dir, 'figures/Fig9'))
+
+    def convergence_metadata(self):
+        pass
+
+    def generate_convergence_results(self):
+        pass

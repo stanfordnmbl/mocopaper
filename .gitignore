@@ -146,6 +146,7 @@ venv.bak/
 .idea/**/tasks.xml
 .idea/**/dictionaries
 .idea/**/shelf
+.idea/misc.xml
 
 # Sensitive or high-churn files
 .idea/**/dataSources/
@@ -219,6 +220,7 @@ out.log
 /MocoPaper.blg
 /results
 !/results/README.txt
+!/results/convergence/README.txt
 /archive
 /subject_armless_for_cmc.osim
 /muscle_outputs.sto

@@ -2,7 +2,6 @@ import os
 import io
 import numpy as np
 import matplotlib.pyplot as plt
-from PIL import Image
 
 from abc import ABC, abstractmethod
 
@@ -17,6 +16,15 @@ class MocoPaperResult(ABC):
 
     @abstractmethod
     def generate_results(self):
+        pass
+
+    def convergence_metadata(self):
+        """Obtain a dict() where the TODO"""
+        pass
+
+    def generate_convergence_results(self):
+        """Run convergence analysis for the mesh intervals returned by
+        convergence_metadata()."""
         pass
 
     @abstractmethod
@@ -122,10 +130,4 @@ class MocoPaperResult(ABC):
         return min([0] + negforces)
 
     def savefig(self, fig, filename):
-        fig.savefig(filename + ".png", format="png", dpi=600)
-
-        # Load this image into PIL
-        png2 = Image.open(filename + ".png")
-
-        # Save as TIFF
-        png2.save(filename + ".tiff", compression='tiff_lzw')
+        utilities.savefig(fig, filename)

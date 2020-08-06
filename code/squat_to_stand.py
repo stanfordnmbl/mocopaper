@@ -18,7 +18,7 @@ class SquatToStand(MocoPaperResult):
         self.predict_assisted_solution_file = \
             '%s/results/squat_to_stand_predict_assisted_solution.sto'
 
-    def create_study(self, model):
+    def create_study(self, model, num_mesh_intervals=None):
         moco = osim.MocoStudy()
         moco.set_write_solution("results/")
         solver = moco.initCasADiSolver()
@@ -27,7 +27,9 @@ class SquatToStand(MocoPaperResult):
         solver.set_implicit_multibody_accelerations_weight(0.001)
         solver.set_minimize_implicit_auxiliary_derivatives(True)
         solver.set_implicit_auxiliary_derivatives_weight(0.001)
-        solver.set_num_mesh_intervals(50)
+        if not num_mesh_intervals:
+            num_mesh_intervals = 50
+        solver.set_num_mesh_intervals(num_mesh_intervals)
         solver.set_optim_convergence_tolerance(1e-3)
         solver.set_optim_constraint_tolerance(1e-3)
         solver.set_optim_finite_difference_scheme('forward')
@@ -77,9 +79,10 @@ class SquatToStand(MocoPaperResult):
                                       "resources/squat_to_stand_4dof9musc_dgf.osim"))
         return model
 
-    def predict(self, root_dir):
+    def predict(self, root_dir, num_mesh_intervals=None, guess_file=None,
+                solution_fpath=None):
         model = self.muscle_driven_model(root_dir)
-        moco = self.create_study(model)
+        moco = self.create_study(model, num_mesh_intervals=num_mesh_intervals)
         problem = moco.updProblem()
         problem.addGoal(osim.MocoControlGoal('effort'))
         problem.addGoal(osim.MocoInitialActivationGoal('init_activation'))
@@ -88,24 +91,30 @@ class SquatToStand(MocoPaperResult):
         solver = osim.MocoCasADiSolver.safeDownCast(moco.updSolver())
         solver.resetProblem(problem)
 
-        guess = solver.createGuess()
+        if guess_file:
+            solver.setGuessFile(guess_file)
+        else:
+            guess = solver.createGuess()
 
-        N = guess.getNumTimes()
-        for muscle in model.getMuscles():
-            dgf = osim.DeGrooteFregly2016Muscle.safeDownCast(muscle)
-            if not dgf.get_ignore_tendon_compliance():
+            N = guess.getNumTimes()
+            for muscle in model.getMuscles():
+                dgf = osim.DeGrooteFregly2016Muscle.safeDownCast(muscle)
+                if not dgf.get_ignore_tendon_compliance():
+                    guess.setState(
+                        '%s/normalized_tendon_force' % muscle.getAbsolutePathString(),
+                        osim.createVectorLinspace(N, 0.1, 0.1))
                 guess.setState(
-                    '%s/normalized_tendon_force' % muscle.getAbsolutePathString(),
-                    osim.createVectorLinspace(N, 0.1, 0.1))
-            guess.setState(
-                '%s/activation' % muscle.getAbsolutePathString(),
-                osim.createVectorLinspace(N, 0.05, 0.05))
-            guess.setControl(muscle.getAbsolutePathString(),
-                osim.createVectorLinspace(N, 0.05, 0.05))
-        solver.setGuess(guess)
+                    '%s/activation' % muscle.getAbsolutePathString(),
+                    osim.createVectorLinspace(N, 0.05, 0.05))
+                guess.setControl(muscle.getAbsolutePathString(),
+                    osim.createVectorLinspace(N, 0.05, 0.05))
+            solver.setGuess(guess)
 
         solution = moco.solve()
-        solution.write(self.predict_solution_file % root_dir)
+
+        if not solution_fpath:
+            solution_fpath = self.predict_solution_file % root_dir
+        solution.write(solution_fpath)
         # moco.visualize(solution)
 
         return solution
@@ -176,6 +185,39 @@ class SquatToStand(MocoPaperResult):
             self.predict(root_dir)
         if self.assisted:
             self.predict_assisted(root_dir)
+
+    def convergence_metadata(self):
+        return [
+            {'num_mesh_intervals': 5,
+             'solution_file': 'squat_to_stand_predict_5_solution.sto'},
+            {'num_mesh_intervals': 10,
+             'solution_file': 'squat_to_stand_predict_10_solution.sto'},
+            {'num_mesh_intervals': 20,
+             'solution_file': 'squat_to_stand_predict_20_solution.sto'},
+            {'num_mesh_intervals': 40,
+             'solution_file': 'squat_to_stand_predict_40_solution.sto'},
+            {'num_mesh_intervals': 80,
+             'solution_file': 'squat_to_stand_predict_80_solution.sto'},
+            {'num_mesh_intervals': 160,
+             'solution_file': 'squat_to_stand_predict_160_solution.sto'},
+            {'num_mesh_intervals': 320,
+             'solution_file': 'squat_to_stand_predict_320_solution.sto'},
+        ]
+
+    def generate_convergence_results(self, root_dir, args):
+        self.parse_args(args)
+        if args:
+            raise Exception("squat-to-stand: args not valid with "
+                            "--convergence.")
+        guess_file = None
+        for md in self.convergence_metadata():
+            solution_fpath = os.path.join(
+                root_dir, 'results', 'convergence', md['solution_file'])
+            self.predict(root_dir, num_mesh_intervals=md['num_mesh_intervals'],
+                         guess_file=guess_file,
+                         solution_fpath=solution_fpath)
+            # Use current solution as guess for the next problem.
+            guess_file = solution_fpath
 
     def plot_joint_moment_breakdown(self, model, moco_traj,
                                     coord_paths, muscle_paths=None,

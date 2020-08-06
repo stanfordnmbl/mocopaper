@@ -33,6 +33,10 @@ if __name__ == "__main__":
                                                  "OpenSim Moco publication.")
     parser.add_argument('--no-generate', dest='generate', action='store_false',
                         help='Skip generating the results; only report.')
+    parser.add_argument('--convergence', dest='convergence',
+                        action='store_true',
+                        help='Run and plot convergence analysis instead of '
+                             'regular results.')
 
     results_help = 'Names of results to generate or report ('
     for i, result_name in enumerate(results.keys()):
@@ -62,9 +66,23 @@ if __name__ == "__main__":
                 raise RuntimeError(f"Result {requested} not recognized.")
     for result_name, result_object in results.items():
         if args.results is None or result_name in args.results:
-            if args.generate:
-                print(f'Generating {result_name} results.')
-                result_object.generate_results(root_dir, args.args)
-            print(f'Reporting {result_name} results.')
-            result_object.report_results(root_dir, args.args)
+            if args.convergence:
+                if args.generate:
+                    print(f'Generating {result_name} convergence results.')
+                    result_object.generate_convergence_results(root_dir,
+                                                               args.args)
+            else:
+                if args.generate:
+                    print(f'Generating {result_name} results.')
+                    result_object.generate_results(root_dir, args.args)
+                print(f'Reporting {result_name} results.')
+                result_object.report_results(root_dir, args.args)
+    if args.convergence:
+        if not args.generate and not (args.results is None):
+            raise Exception("If passing --convergence, cannot pass both "
+                            "--no-generate and --results")
+        import report_convergence
+        report_convergence.report_convergence(root_dir)
+
+
 

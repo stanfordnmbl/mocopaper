@@ -16,8 +16,10 @@ class MotionPrescribedWalking(MocoPaperResult):
         self.initial_time = 0.83 # 0.450
         self.final_time = 2.0 # 1.565
         # self.footstrike = 0.836 # 1.424
-        self.mocoinverse_solution_file = \
+        self.mocoinverse_coarse_solution_file = \
             '%s/results/motion_prescribed_walking_inverse_solution.sto'
+        self.mocoinverse_fine_solution_file = \
+            '%s/results/motion_prescribed_walking_inverse_fine_solution.sto'
         self.mocoinverse_jointreaction_solution_file = \
             '%s/results/motion_prescribed_walking_inverse_jointreaction_solution.sto'
         self.side = 'l'
@@ -46,6 +48,44 @@ class MotionPrescribedWalking(MocoPaperResult):
                     contactsRemoved += 1
                     break
 
+        modelProcessor = osim.ModelProcessor(model)
+        modelProcessor.append(osim.ModOpReplaceJointsWithWelds(
+            ['subtalar_r', 'mtp_r', 'subtalar_l', 'mtp_l', 'radius_hand_r',
+             'radius_hand_l']))
+        modelProcessor.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())
+        modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
+        modelProcessor.append(osim.ModOpIgnoreTendonCompliance())
+        modelProcessor.append(osim.ModOpFiberDampingDGF(0))
+        baseModel = modelProcessor.process()
+
+        # Create model for CMC
+        modelProcessorCMC = osim.ModelProcessor(baseModel)
+        modelProcessorCMC.append(osim.ModOpAddReserves(1))
+        cmcModel = modelProcessorCMC.process()
+
+        tasks = osim.CMC_TaskSet()
+        for coord in cmcModel.getCoordinateSet():
+            cname = coord.getName()
+            if cname.endswith('_beta'):
+                continue
+            task = osim.CMC_Joint()
+            task.setName(cname)
+            task.setCoordinateName(cname)
+            task.setKP(100, 1, 1)
+            task.setKV(20, 1, 1)
+            task.setActive(True, False, False)
+            tasks.cloneAndAppend(task)
+        tasks.printToXML(
+            os.path.join(root_dir, 'code',
+                         'motion_prescribed_walking_cmc_tasks.xml'))
+
+        cmcModel.printToXML(os.path.join(root_dir, 'resources/Rajagopal2016/'
+                                         'subject_walk_for_cmc.osim'))
+
+        # Create direct collocation model:
+        #   - TODO reserves
+        #   - implicit tendon compliance mode
+        #   - add external loads
         def add_reserve(model, coord, max_control):
             actu = osim.CoordinateActuator(coord)
             if coord.startswith('lumbar'):
@@ -59,38 +99,23 @@ class MotionPrescribedWalking(MocoPaperResult):
             actu.setMaxControl(1)
             actu.setOptimalForce(max_control)
             model.addForce(actu)
-        add_reserve(model, 'lumbar_extension', 50)
-        add_reserve(model, 'lumbar_bending', 50)
-        add_reserve(model, 'lumbar_rotation', 20)
+        add_reserve(baseModel, 'lumbar_extension', 50)
+        add_reserve(baseModel, 'lumbar_bending', 50)
+        add_reserve(baseModel, 'lumbar_rotation', 20)
         for side in ['_l', '_r']:
-            add_reserve(model, f'arm_flex{side}', 15)
-            add_reserve(model, f'arm_add{side}', 15)
-            add_reserve(model, f'arm_rot{side}', 5)
-            add_reserve(model, f'elbow_flex{side}', 5)
-            add_reserve(model, f'pro_sup{side}', 1)
-            add_reserve(model, f'hip_rotation{side}', 0.5)
+            add_reserve(baseModel, f'arm_flex{side}', 15)
+            add_reserve(baseModel, f'arm_add{side}', 15)
+            add_reserve(baseModel, f'arm_rot{side}', 5)
+            add_reserve(baseModel, f'elbow_flex{side}', 5)
+            add_reserve(baseModel, f'pro_sup{side}', 1)
+            add_reserve(baseModel, f'hip_rotation{side}', 0.5)
 
-        add_reserve(model, 'pelvis_tilt', 60)
-        add_reserve(model, 'pelvis_list', 30)
-        add_reserve(model, 'pelvis_rotation', 15)
-        add_reserve(model, 'pelvis_tx', 100)
-        add_reserve(model, 'pelvis_ty', 200)
-        add_reserve(model, 'pelvis_tz', 35)
-
-        modelProcessor = osim.ModelProcessor(model)
-        modelProcessor.append(osim.ModOpReplaceJointsWithWelds(
-            ['subtalar_r', 'mtp_r', 'subtalar_l', 'mtp_l', 'radius_hand_r',
-             'radius_hand_l']))
-        modelProcessor.append(osim.ModOpReplaceMusclesWithDeGrooteFregly2016())
-        modelProcessor.append(osim.ModOpIgnorePassiveFiberForcesDGF())
-        modelProcessor.append(osim.ModOpIgnoreTendonCompliance())
-        modelProcessor.append(osim.ModOpFiberDampingDGF(0.01))
-        modelProcessor.append(osim.ModOpAddReserves(1, 2.5, True))
-        baseModel = modelProcessor.process()
-
-        # Create direct collocation model:
-        #   - implicit tendon compliance mode
-        #   - add external loads
+        add_reserve(baseModel, 'pelvis_tilt', 60)
+        add_reserve(baseModel, 'pelvis_list', 30)
+        add_reserve(baseModel, 'pelvis_rotation', 15)
+        add_reserve(baseModel, 'pelvis_tx', 100)
+        add_reserve(baseModel, 'pelvis_ty', 200)
+        add_reserve(baseModel, 'pelvis_tz', 35)
         baseModel.initSystem()
         muscles = baseModel.updMuscles()
         for imusc in np.arange(muscles.getSize()):
@@ -99,6 +124,8 @@ class MotionPrescribedWalking(MocoPaperResult):
                 muscle.set_ignore_tendon_compliance(False)
 
         modelProcessorDC = osim.ModelProcessor(baseModel)
+        modelProcessorDC.append(osim.ModOpFiberDampingDGF(0.01))
+        modelProcessorDC.append(osim.ModOpAddReserves(1, 2.5, True))
         modelProcessorDC.append(
             osim.ModOpTendonComplianceDynamicsModeDGF('implicit'))
 
@@ -109,13 +136,17 @@ class MotionPrescribedWalking(MocoPaperResult):
         return modelProcessorDC
 
     def parse_args(self, args):
+        self.cmc = False
         self.inverse = False
         self.knee = False
         if len(args) == 0:
+            self.cmc = True
             self.inverse = True
             self.knee = True
             return
         print('Received arguments {}'.format(args))
+        if 'cmc' in args:
+            self.cmc = True
         if 'inverse' in args:
             self.inverse = True
         if 'knee' in args:
@@ -137,6 +168,17 @@ class MotionPrescribedWalking(MocoPaperResult):
 
         modelProcessor = self.create_model_processor(root_dir)
 
+        cmc = osim.CMCTool(
+            os.path.join(root_dir,
+                         'code/motion_prescribed_walking_cmc_setup.xml'))
+        analyze = osim.AnalyzeTool(
+            os.path.join(root_dir,
+                         'code/motion_prescribed_walking_analyze_setup.xml'))
+        # 2.5 minute
+        if self.cmc:
+            cmc.run()
+            analyze.run()
+
         coordinates = osim.TableProcessor(
             os.path.join(root_dir, "resources/Rajagopal2016/coordinates.mot"))
         coordinates.append(osim.TabOpLowPassFilter(6))
@@ -152,11 +194,19 @@ class MotionPrescribedWalking(MocoPaperResult):
         inverse.set_mesh_interval(0.05)
         inverse.set_kinematics_allow_extra_columns(True)
         inverse.set_convergence_tolerance(1e-2)
+        # inverse.set_max_iterations(200)
   
         # 8 minutes
         if self.inverse:
+            inverse.set_mesh_interval(0.03)
             solution = inverse.solve()
-            solution.getMocoSolution().write(self.mocoinverse_solution_file % root_dir)
+            solution.getMocoSolution().write(self.mocoinverse_coarse_solution_file % root_dir)
+
+            # 0.04 and 0.03 work
+            inverse.set_mesh_interval(0.01)
+            # inverse.set_convergence_tolerance(1e-4)
+            solution = inverse.solve()
+            solution.getMocoSolution().write(self.mocoinverse_fine_solution_file % root_dir)
 
         # MocoInverse, minimize joint reactions
         # -------------------------------------
@@ -215,7 +265,7 @@ class MotionPrescribedWalking(MocoPaperResult):
         self.parse_args(args)
 
         if self.inverse:
-            sol_inverse_table = osim.TimeSeriesTable(self.mocoinverse_solution_file % root_dir)
+            sol_inverse_table = osim.TimeSeriesTable(self.mocoinverse_coarse_solution_file % root_dir)
             inverse_duration = sol_inverse_table.getTableMetaDataString('solver_duration')
             inverse_duration = float(inverse_duration) / 60.0
             print('inverse duration ', inverse_duration)
@@ -238,14 +288,25 @@ class MotionPrescribedWalking(MocoPaperResult):
         modelProcessor = self.create_model_processor(root_dir)
         model = modelProcessor.process()
         model.initSystem()
-        print(f'Degrees of freedom: {model.getCoordinateSet().getSize()}')
+        numConstraints = 2
+        numDOFs = model.getCoordinateSet().getSize() - numConstraints
+        print(f'Degrees of freedom: {numDOFs}')
 
         if self.inverse:
-            sol_inverse = osim.MocoTrajectory(self.mocoinverse_solution_file % root_dir)
+            sol_inverse = osim.MocoTrajectory(
+                self.mocoinverse_coarse_solution_file % root_dir)
             time_inverse = sol_inverse.getTimeMat()
             most_neg = self.calc_negative_muscle_forces_base(model, sol_inverse)
             if most_neg < -0.005:
                 raise Exception("Muscle forces are too negative! sol_inverse")
+            sol_inverse_fine = osim.MocoTrajectory(
+                self.mocoinverse_fine_solution_file % root_dir)
+            time_inverse_fine = sol_inverse_fine.getTimeMat()
+            most_neg = self.calc_negative_muscle_forces_base(model,
+                                                             sol_inverse_fine)
+            if most_neg < -0.005:
+                raise Exception("Muscle forces are too negative! "
+                                "sol_inverse_fine")
 
         if self.knee and self.inverse:
             sol_inverse_jointreaction = \
@@ -266,16 +327,17 @@ class MotionPrescribedWalking(MocoPaperResult):
             sol_inverse_jointreaction.write(mocoinverse_jr_solution_file % root_dir)
             time_inverse_jointreaction = sol_inverse_jointreaction.getTimeMat()
 
-        plot_breakdown = True
+        plot_breakdown = False
 
-        if plot_breakdown:
+        coords = ['/jointset/hip_l/hip_flexion_l',
+                  '/jointset/hip_l/hip_adduction_l',
+                  '/jointset/hip_l/hip_rotation_l',
+                  '/jointset/walker_knee_l/knee_angle_l',
+                  '/jointset/ankle_l/ankle_angle_l']
+        if plot_breakdown and self.inverse:
             fig = utilities.plot_joint_moment_breakdown(model,
                                                         sol_inverse,
-                                                        ['/jointset/hip_l/hip_flexion_l',
-                                                         '/jointset/hip_l/hip_adduction_l',
-                                                         '/jointset/hip_l/hip_rotation_l',
-                                                         '/jointset/walker_knee_l/knee_angle_l',
-                                                         '/jointset/ankle_l/ankle_angle_l'],
+                                                        coords
                                                         )
             fig.savefig(os.path.join(root_dir, 'results/motion_prescribed_walking_inverse_'
                         'joint_moment_breakdown.png'),
@@ -284,14 +346,10 @@ class MotionPrescribedWalking(MocoPaperResult):
         # report = osim.report.Report(model, mocoinverse_jr_solution_file % root_dir)
         # report.generate()
 
-        if plot_breakdown:
+        if plot_breakdown and self.knee:
             fig = utilities.plot_joint_moment_breakdown(model,
                                                         sol_inverse_jointreaction,
-                                                        ['/jointset/hip_l/hip_flexion_l',
-                                                         '/jointset/hip_l/hip_adduction_l',
-                                                         '/jointset/hip_l/hip_rotation_l',
-                                                         '/jointset/walker_knee_l/knee_angle_l',
-                                                         '/jointset/ankle_l/ankle_angle_l'],
+                                                        coords
                                                         )
             fig.savefig(os.path.join(root_dir,
                                      'results/motion_prescribed_walking_inverse_'
@@ -355,7 +413,8 @@ class MotionPrescribedWalking(MocoPaperResult):
                                  'figures/motion_prescribed_walking_kinematics.png'),
                     dpi=600)
 
-
+        # Fig7
+        # ----
         fig = plt.figure(figsize=(7.5, 3.3))
         gs = gridspec.GridSpec(3, 4) # , width_ratios=[0.8, 1, 1, 1])
 
@@ -369,7 +428,6 @@ class MotionPrescribedWalking(MocoPaperResult):
                 ..., ::-1]
         ax.imshow(image)
         plt.axis('off')
-
 
         muscles = [
             ((0, 0), 'glmax2', 'gluteus maximus', 'Perry', 'GluteusMaximusUpper'),
@@ -385,17 +443,28 @@ class MotionPrescribedWalking(MocoPaperResult):
         legend_handles_and_labels = []
         for im, muscle in enumerate(muscles):
             ax = plt.subplot(gs[muscle[0][0], muscle[0][1] + 1])
+            # excitation_path = f'/forceset/{muscle[1]}_{self.side}'
             activation_path = f'/forceset/{muscle[1]}_{self.side}/activation'
             legend_musc = []
             if self.inverse:
                 inverse_activ = sol_inverse.getStateMat(activation_path)
+                # inverse_excit = sol_inverse.getControlMat(excitation_path)
                 handle, = self.plot(ax, time_inverse, inverse_activ,
                           label='MocoInverse',
                           color='black',
                           linewidth=2, zorder=2)
                 legend_musc.append((handle, 'MocoInverse'))
+
+                # inverse_fine_activ = sol_inverse_fine.getStateMat(activation_path)
+                # handle, = self.plot(ax, time_inverse_fine, inverse_fine_activ,
+                #                     label='MocoInverse, fine',
+                #                     color='gray',
+                #                     linestyle=':',
+                #                     linewidth=2, zorder=2)
+                # legend_musc.append((handle, 'MocoInverse, fine'))
             if self.knee and self.inverse:
                 handle, = self.plot(ax, time_inverse_jointreaction,
+                                    # sol_inverse_jointreaction.getControlMat(excitation_path),
                           sol_inverse_jointreaction.getStateMat(activation_path),
                           label='MocoInverse, knee',
                           linewidth=2, zorder=3)
@@ -444,6 +513,109 @@ class MotionPrescribedWalking(MocoPaperResult):
         fig.tight_layout(h_pad=1, pad=0.4)
 
         self.savefig(fig, os.path.join(root_dir, 'figures/Fig7'))
+
+        # Supplementary CMC comparison.
+        # -----------------------------
+        if self.cmc:
+            sol_cmc = osim.TimeSeriesTable(
+                os.path.join(root_dir, 'results',
+                             'motion_prescribed_walking_cmc_results',
+                             'motion_prescribed_walking_cmc_states.sto'))
+            time_cmc = np.array(sol_cmc.getIndependentColumn())
+            sol_so = osim.TimeSeriesTable(
+                os.path.join(root_dir, 'results',
+                             'motion_prescribed_walking_analyze_results',
+                             'motion_prescribed_walking_analyze_'
+                             'StaticOptimization_activation.sto'))
+            time_so = np.array(sol_so.getIndependentColumn())
+            # exc_cmc = osim.TimeSeriesTable(
+            #     os.path.join(root_dir, 'results',
+            #                  'motion_prescribed_walking_cmc_results',
+            #                  'motion_prescribed_walking_cmc_controls.sto'))
+            # time_exc_cmc = np.array(exc_cmc.getIndependentColumn())
+
+        fig = plt.figure(figsize=(5.2, 3.3))
+        gs = gridspec.GridSpec(3, 3)
+
+        legend_handles_and_labels = []
+        for im, muscle in enumerate(muscles):
+            ax = plt.subplot(gs[muscle[0][0], muscle[0][1]])
+            activation_path = f'/forceset/{muscle[1]}_{self.side}/activation'
+            legend_musc = []
+            if self.inverse:
+                inverse_activ = sol_inverse.getStateMat(activation_path)
+                handle, = self.plot(ax, time_inverse, inverse_activ,
+                                    label='MocoInverse',
+                                    color='black',
+                                    linewidth=2.5, zorder=2)
+                legend_musc.append((handle, 'MocoInverse'))
+            if self.cmc:
+                so_activ = toarray(
+                    sol_so.getDependentColumn(f'{muscle[1]}_{self.side}'))
+                handle, = self.plot(ax, time_so, so_activ,
+                                    label='Static Optimization',
+                                    linewidth=1.5,
+                                    zorder=2)
+                legend_musc.append((handle, 'Static Optimization'))
+                # cmc_excit = toarray(
+                #     exc_cmc.getDependentColumn(f'{muscle[1]}_{self.side}'))
+                # handle, = self.plot(ax, time_exc_cmc, cmc_excit,
+                #                     label='CMC excitation',
+                #                     linewidth=2,
+                #                     zorder=2)
+                # legend_musc.append((handle, 'CMC excitation'))
+                cmc_activ = toarray(sol_cmc.getDependentColumn(activation_path))
+                handle, = self.plot(ax, time_cmc, cmc_activ,
+                                    label='CMC',
+                                    linewidth=1.5,
+                                    zorder=2)
+                legend_musc.append((handle, 'CMC'))
+            # if self.inverse:
+            #     if muscle[3] == 'Perry':
+            #         handle = ax.fill_between(emgPerry['percent_gait_cycle'],
+            #                                  emgPerry[muscle[4]] / 100.0,
+            #                                  np.zeros_like(emgPerry[muscle[4]]),
+            #                                  clip_on=False,
+            #                                  color='lightgray',
+            #                                  label='electromyography')
+            #     else:
+            #         handle = self.plot(ax, emg['time'],
+            #                            emg[muscle[4]] * np.max(inverse_activ),
+            #                            shift=False, fill=True, color='lightgray',
+            #                            label='experiment')
+            #     legend_musc.append((handle, 'electromyography'))
+            if im == 0:
+                legend_handles_and_labels = legend_musc
+            ax.set_ylim(0, 1)
+            ax.set_xlim(0, 100)
+            ax.set_xticks([0, 50, 100])
+            if muscle[0][0] < 2:
+                ax.set_xticklabels([])
+            else:
+                ax.set_xlabel('time (% gait cycle)')
+            if muscle[0][1] == 0:
+                ax.set_ylabel('activation')
+
+            title = f'  {muscle[2]}'
+            plt.text(0.5, 1.20, title,
+                     horizontalalignment='center',
+                     verticalalignment='top',
+                     transform=ax.transAxes)
+            ax.set_yticks([0, 1])
+
+            utilities.publication_spines(ax)
+
+        # if self.inverse and self.knee:
+        legend_handles, legend_labels = zip(*legend_handles_and_labels)
+        plt.figlegend(legend_handles, legend_labels,
+                      frameon=False,
+                      loc=(0.09, 0.47),
+                      handlelength=1,
+                      fontsize=8,
+                      )
+        fig.tight_layout(h_pad=1, pad=0.4)
+
+        self.savefig(fig, os.path.join(root_dir, 'figures/S2_Fig'))
 
         res_to_genforce_labels = dict()
         if self.inverse:
@@ -555,7 +727,7 @@ class MotionPrescribedWalking(MocoPaperResult):
                 'motion_prescribed_walking_inverse_solution_report.pdf')
             report = osim.report.Report(
                 model,
-                self.mocoinverse_solution_file % root_dir,
+                self.mocoinverse_coarse_solution_file % root_dir,
                 output=output_fpath)
             report.generate()
 

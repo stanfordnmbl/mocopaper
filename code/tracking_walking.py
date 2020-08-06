@@ -788,17 +788,32 @@ class MotionTrackingWalking(MocoPaperResult):
 
             # TODO use sum of muscles instead of inverse dynamics? how can
             # muscles spike like this?
-            netgenforces[config.name] = utilities.calc_net_generalized_forces(
-                model, full_traj)
+            if not self.plot_quick:
+                netgenforces[config.name] = \
+                    utilities.calc_net_generalized_forces(model, full_traj)
 
             muscle_mechanics[config.name] = self.calc_muscle_mechanics(
                 root_dir, config, full_traj)
 
-        
+            # Check velocity correction
+            print('Checking velocity correction...')
+            table = osim.TimeSeriesTable(
+                self.get_solution_path(root_dir, config.name))
+            for label in table.getColumnLabels():
+                if label.startswith('gamma'):
+                    column = toarray(table.getDependentColumn(label))
+                    maxabs = np.max(np.abs(column))
+                    print(f'config {config.name} column {label} '
+                          f'max abs: {maxabs}')
+                    if maxabs > 1e-8:
+                        raise Exception("Large velocity correction.")
 
-        self.plot_paper_figure_healthy(root_dir, mass, BW)
-        self.plot_paper_figure_weak(root_dir, mass, netgenforces, 
-            muscle_mechanics, max_iso_forces)
+        self.plot_paper_figure_normal(root_dir, mass, BW)
+        self.plot_paper_figure_weak(root_dir, mass, muscle_mechanics,
+                                    max_iso_forces)
+
+        # Detailed plot
+        # -------------
 
         emg = self.load_electromyography(root_dir)
 
@@ -1441,8 +1456,8 @@ class MotionTrackingWalking(MocoPaperResult):
         # fig.tight_layout(h_pad=0.3, pad=0.4, rect=(0, 0, 1, 0.95))
         self.savefig(fig, os.path.join(root_dir, 'figures/Fig8'))
 
-    def plot_paper_figure_weak(self, root_dir, mass, netgenforces, 
-                muscle_mechanics, max_iso_forces):
+    def plot_paper_figure_weak(self, root_dir, mass, muscle_mechanics,
+                               max_iso_forces):
 
         emg = self.load_electromyography(root_dir)
 

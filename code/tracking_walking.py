@@ -115,6 +115,9 @@ class MotionTrackingWalking(MocoPaperResult):
             flags=['moongravity'])
         self.configs = [
             self.config_track,
+            # self.config_fine_020,
+            # self.config_fine_015,
+            # self.config_fine_010,
             self.config_weakhipabd,
             # self.config_weakpfs,
             self.config_weakdfs,

@@ -46,7 +46,7 @@ class MotionTrackingWalking(MocoPaperResult):
         self.cmap = cm.get_cmap('nipy_spectral')
         self.config_track = MocoTrackConfig(
             name='track',
-            legend_entry='healthy',
+            legend_entry='normal',
             tracking_weight=10,
             effort_weight=10,
             # guess='track',`

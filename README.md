@@ -49,3 +49,11 @@ https://hub.docker.com/repository/docker/stanfordnmbl/mocopaper.
 
 It is possible to run these files on Windows and Mac, but we do not provide 
 instructions.
+
+Required Python packages
+------------------------
+- matplotlib
+- numpy
+- scipy
+- pillow
+- opencv-python

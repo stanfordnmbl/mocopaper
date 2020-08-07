@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import copy
 import re
 import matplotlib.transforms as mtransforms
 import matplotlib.pyplot as plt
@@ -29,6 +30,23 @@ class MocoTrackConfig:
         # If guess is 'None', we use the solution from the inverse problem.
         self.guess = guess
         self.flags = flags
+        self.tracking_solution_relpath_prefix = \
+            'results/motion_tracking_walking_solution'
+
+    def get_solution_path(self, root_dir):
+        return os.path.join(root_dir,
+                            f'{self.tracking_solution_relpath_prefix}_'
+                            f'{self.name}.sto')
+
+    def get_solution_path_fullcycle(self, root_dir):
+        return os.path.join(root_dir,
+                            f'{self.tracking_solution_relpath_prefix}_'
+                            f'{self.name}_fullcycle.sto')
+
+    def get_solution_path_grfs(self, root_dir):
+        return os.path.join(root_dir,
+                            f'{self.tracking_solution_relpath_prefix}_'
+                            f'{self.name}_fullcycle_grfs.sto')
 
 
 class MotionTrackingWalking(MocoPaperResult):
@@ -40,8 +58,6 @@ class MotionTrackingWalking(MocoPaperResult):
         self.passive_forces = False
         self.inverse_solution_relpath = \
             'results/motion_tracking_walking_inverse_solution.sto'
-        self.tracking_solution_relpath_prefix = \
-            'results/motion_tracking_walking_solution'
         self.cmap = cm.get_cmap('nipy_spectral')
         self.config_track = MocoTrackConfig(
             name='track',
@@ -49,30 +65,6 @@ class MotionTrackingWalking(MocoPaperResult):
             tracking_weight=10,
             effort_weight=10,
             color='black')
-        self.config_fine_020 = MocoTrackConfig(
-            name='0.020',
-            legend_entry='normal 0.020',
-            tracking_weight=10,
-            effort_weight=10,
-            guess='track',
-            mesh_interval=0.02,
-            color='red')
-        self.config_fine_015 = MocoTrackConfig(
-            name='0.015',
-            legend_entry='normal 0.015',
-            tracking_weight=10,
-            effort_weight=10,
-            guess='0.015',
-            mesh_interval=0.015,
-            color='blue')
-        self.config_fine_010 = MocoTrackConfig(
-            name='0.010',
-            legend_entry='normal 0.010',
-            tracking_weight=10,
-            effort_weight=10,
-            guess='0.010',
-            mesh_interval=0.010,
-            color='green')
         self.config_weakhipabd = MocoTrackConfig(
             name='weakhipabd',
             legend_entry='weak hip abductors',
@@ -115,14 +107,12 @@ class MotionTrackingWalking(MocoPaperResult):
             flags=['moongravity'])
         self.configs = [
             self.config_track,
-            # self.config_fine_020,
-            # self.config_fine_015,
-            # self.config_fine_010,
             self.config_weakhipabd,
             # self.config_weakpfs,
             self.config_weakdfs,
             # self.config_moongravity,
         ]
+        self.config_map = {config.name: config for config in self.configs}
 
     def create_model_processor(self, root_dir, for_inverse=False, config=None):
 
@@ -303,21 +293,6 @@ class MotionTrackingWalking(MocoPaperResult):
                 osim.ModOpUseImplicitTendonComplianceDynamicsDGF())
 
         return modelProcessorTendonCompliance
-
-    def get_solution_path(self, root_dir, name):
-        return os.path.join(root_dir,
-                            f'{self.tracking_solution_relpath_prefix}_'
-                            f'{name}.sto')
-
-    def get_solution_path_fullcycle(self, root_dir, name):
-        return os.path.join(root_dir,
-                            f'{self.tracking_solution_relpath_prefix}_'
-                            f'{name}_fullcycle.sto')
-
-    def get_solution_path_grfs(self, root_dir, name):
-        return os.path.join(root_dir,
-                            f'{self.tracking_solution_relpath_prefix}_'
-                            f'{name}_fullcycle_grfs.sto')
 
     def load_table(self, table_path):
         num_header_rows = 1
@@ -661,7 +636,10 @@ class MotionTrackingWalking(MocoPaperResult):
         # Set the guess
         # -------------
         if config.guess:
-            solver.setGuessFile(self.get_solution_path(root_dir, config.guess))
+            guess_file = self.config_map[config.guess].get_solution_path(
+                root_dir)
+            print(f'Using guess file {guess_file}')
+            solver.setGuessFile(guess_file)
         else:
             # Create a guess compatible with this problem.
             guess = solver.createGuess()
@@ -687,7 +665,7 @@ class MotionTrackingWalking(MocoPaperResult):
         # Solve and print solution.
         # -------------------------
         solution = study.solve()
-        solution.write(self.get_solution_path(root_dir, config.name))
+        solution.write(config.get_solution_path(root_dir))
 
         # Create a full gait cycle trajectory from the periodic solution.
         addPatterns = [".*pelvis_tx/value"]
@@ -701,14 +679,14 @@ class MotionTrackingWalking(MocoPaperResult):
                                   ".*lumbar_bending/value"]
         fullTraj = osim.createPeriodicTrajectory(solution, addPatterns,
             negatePatterns, negateAndShiftPatterns)
-        fullTraj.write(self.get_solution_path_fullcycle(root_dir, config.name))
+        fullTraj.write(config.get_solution_path_fullcycle(root_dir))
 
         # Compute ground reaction forces generated by contact sphere from the 
         # full gait cycle trajectory.
         externalLoads = osim.createExternalLoadsTableForGait(
                 model, fullTraj, forceNamesRightFoot, forceNamesLeftFoot)
         osim.STOFileAdapter.write(externalLoads,
-                            self.get_solution_path_grfs(root_dir, config.name))
+                            config.get_solution_path_grfs(root_dir))
 
     def parse_args(self, args):
         self.skip_inverse = False
@@ -776,7 +754,7 @@ class MotionTrackingWalking(MocoPaperResult):
         if self.visualize:
             for config in self.configs:
                 solution = osim.MocoTrajectory(
-                    self.get_solution_path_fullcycle(root_dir, config.name))
+                    config.get_solution_path_fullcycle(root_dir))
                 osim.visualize(model, solution.exportToStatesTable())
 
         # inverse dynamics and negative muscle forces.
@@ -790,7 +768,7 @@ class MotionTrackingWalking(MocoPaperResult):
 
         for i, config in enumerate(self.configs):
             color = config.color
-            full_path = self.get_solution_path_fullcycle(root_dir, config.name)
+            full_path = config.get_solution_path_fullcycle(root_dir)
             full_traj = osim.MocoTrajectory(full_path)
 
             most_neg = self.calc_negative_muscle_forces(root_dir, config,
@@ -822,8 +800,7 @@ class MotionTrackingWalking(MocoPaperResult):
 
             # Check velocity correction
             print('Checking velocity correction...')
-            table = osim.TimeSeriesTable(
-                self.get_solution_path(root_dir, config.name))
+            table = osim.TimeSeriesTable(config.get_solution_path(root_dir))
             for label in table.getColumnLabels():
                 if label.startswith('gamma'):
                     column = toarray(table.getDependentColumn(label))
@@ -922,11 +899,10 @@ class MotionTrackingWalking(MocoPaperResult):
         for i, config in enumerate(self.configs):
             color = config.color
             linestyle = config.linestyle
-            full_path = self.get_solution_path_fullcycle(root_dir, config.name)
+            full_path = config.get_solution_path_fullcycle(root_dir)
             full_traj = osim.MocoTrajectory(full_path)
 
-
-            sol_path = self.get_solution_path(root_dir, config.name)
+            sol_path = config.get_solution_path(root_dir)
             sol_table = osim.TimeSeriesTable(sol_path)
             trackingCost = 0
             if config.tracking_weight:
@@ -946,9 +922,8 @@ class MotionTrackingWalking(MocoPaperResult):
             print(f'effort and tracking costs (config: {config.name}): ',
                   effortCost, trackingCost)
 
-            grf_path = self.get_solution_path_grfs(root_dir, config.name)
+            grf_path = config.get_solution_path_grfs(root_dir)
             grf_table = self.load_table(grf_path)
-
 
             time = full_traj.getTimeMat()
             pgc = 100.0 * (time - time[0]) / (time[-1] - time[0])
@@ -1081,7 +1056,7 @@ class MotionTrackingWalking(MocoPaperResult):
         with open(os.path.join(root_dir, 'results/'
                 'motion_tracking_walking_durations.txt'), 'w') as f:
             for config in self.configs:
-                sol_path = self.get_solution_path(root_dir, config.name)
+                sol_path = config.get_solution_path(root_dir)
                 sol_table = osim.TimeSeriesTable(sol_path)
                 duration = sol_table.getTableMetaDataString('solver_duration')
                 # Convert duration from seconds to hours.
@@ -1096,7 +1071,7 @@ class MotionTrackingWalking(MocoPaperResult):
 
         for config in self.configs:
             # print(f'reserves for config {config.name}:')
-            sol_path = self.get_solution_path_fullcycle(root_dir, config.name)
+            sol_path = config.get_solution_path_fullcycle(root_dir)
             solution = osim.MocoTrajectory(sol_path)
             # reserves = self.calc_reserves(root_dir, config, solution)
             # column_labels = reserves.getColumnLabels()
@@ -1133,14 +1108,13 @@ class MotionTrackingWalking(MocoPaperResult):
 
         # Generate PDF report.
         # --------------------
-        trajectory_filepath = self.get_solution_path_fullcycle(
-                root_dir, self.configs[-1].name)
+        trajectory_filepath = self.configs[-1].get_solution_path_fullcycle(
+            root_dir)
         ref_files = list()
         ref_files.append('tracking_walking_tracked_states.sto')
         report_suffix = ''
         for config in self.configs[:-1]:
-            ref_files.append(
-                self.get_solution_path_fullcycle(root_dir, config.name))
+            ref_files.append(config.get_solution_path_fullcycle(root_dir))
             report_suffix += '_' + config.name
         report_suffix += '_' + self.configs[-1].name
 
@@ -1305,7 +1279,7 @@ class MotionTrackingWalking(MocoPaperResult):
         color = config.color
         linestyle = config.linestyle
         handlelength = 1.0
-        full_path = self.get_solution_path_fullcycle(root_dir, config.name)
+        full_path = config.get_solution_path_fullcycle(root_dir)
         full_traj = osim.MocoTrajectory(full_path)
 
         modelProcessor = self.create_model_processor(root_dir,
@@ -1377,7 +1351,7 @@ class MotionTrackingWalking(MocoPaperResult):
 
         # ground reaction forces
         if config.name == 'track':
-            grf_path = self.get_solution_path_grfs(root_dir, config.name)
+            grf_path = config.get_solution_path_grfs(root_dir)
             grf_table = self.load_table(grf_path)
             ax_grf_x.plot(pgc, grf_table['ground_force_l_vx']/BW, color=color,
                           linestyle=linestyle,
@@ -1542,7 +1516,7 @@ class MotionTrackingWalking(MocoPaperResult):
         # simulation results
         for i, config in enumerate(self.configs):
             color = config.color
-            full_path = self.get_solution_path_fullcycle(root_dir, config.name)
+            full_path = config.get_solution_path_fullcycle(root_dir)
             full_traj = osim.MocoTrajectory(full_path)
 
             time = full_traj.getTimeMat()
@@ -1636,7 +1610,44 @@ class MotionTrackingWalking(MocoPaperResult):
         self.savefig(fig, os.path.join(root_dir, 'figures/Fig9'))
 
     def convergence_metadata(self):
-        pass
+        return [
+            {'num_mesh_intervals': 5,
+             'solution_file': 'motion_tracking_walking_solution_5.sto'},
+            {'num_mesh_intervals': 10,
+             'solution_file': 'motion_tracking_walking_solution_10.sto'},
+            {'num_mesh_intervals': 20,
+             'solution_file': 'motion_tracking_walking_solution_20.sto'},
+            {'num_mesh_intervals': 40,
+             'solution_file': 'motion_tracking_walking_solution_40.sto'},
+            {'num_mesh_intervals': 80, # takes 6 hours
+             'solution_file': 'motion_tracking_walking_solution_80.sto'},
+            {'num_mesh_intervals': 160,
+             'solution_file': 'motion_tracking_walking_solution_160.sto'},
+        ]
 
-    def generate_convergence_results(self):
-        pass
+    def generate_convergence_results(self, root_dir, args):
+        # TODO: convergence_tolerance?
+        self.parse_args(args)
+        if args:
+            raise Exception("tracking-walking: args not valid with "
+                            "--convergence.")
+
+        # Run inverse problem to generate first initial guess.
+        self.run_inverse_problem(root_dir)
+
+        config = copy.deepcopy(self.config_track)
+        config.tracking_solution_relpath_prefix = \
+            'results/convergence/motion_tracking_walking_solution'
+
+        duration = self.half_time - self.initial_time
+        for md in self.convergence_metadata():
+            num_mesh_intervals = md['num_mesh_intervals']
+            print(f'Convergence analysis: using {num_mesh_intervals} mesh '
+                  'intervals.')
+            # TODO: We could still get off-by-one mesh intervals.
+            mesh_interval = duration / num_mesh_intervals
+            config.name = str(num_mesh_intervals)
+            config.mesh_interval = mesh_interval
+            self.config_map[config.name] = copy.deepcopy(config)
+            self.run_tracking_problem(root_dir, config)
+            config.guess = config.name

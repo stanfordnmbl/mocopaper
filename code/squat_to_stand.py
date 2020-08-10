@@ -460,9 +460,14 @@ class SquatToStand(MocoPaperResult):
         # osim.STOFileAdapter.write(table,
         #                           'squat_to_stand_norm_fiber_length.sto')
 
-        report = osim.report.Report(assisted_model,
-                                    self.predict_assisted_solution_file % root_dir,
-                                    ref_files=[self.predict_solution_file % root_dir])
+        report_output = os.path.join(
+            root_dir, 'results',
+            f'squat_to_stand_predict_assist_solution.pdf')
+        report = osim.report.Report(
+            assisted_model,
+            self.predict_assisted_solution_file % root_dir,
+            ref_files=[self.predict_solution_file % root_dir],
+            output=report_output)
         report.generate()
 
         self.create_ground_reaction_file(model, predict_solution,

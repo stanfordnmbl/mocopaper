@@ -16,10 +16,8 @@ class MotionPrescribedWalking(MocoPaperResult):
         self.initial_time = 0.83 # 0.450
         self.final_time = 2.0 # 1.565
         # self.footstrike = 0.836 # 1.424
-        self.mocoinverse_coarse_solution_file = \
+        self.mocoinverse_solution_file = \
             '%s/results/motion_prescribed_walking_inverse_solution.sto'
-        self.mocoinverse_fine_solution_file = \
-            '%s/results/motion_prescribed_walking_inverse_fine_solution.sto'
         self.mocoinverse_jointreaction_solution_file = \
             '%s/results/motion_prescribed_walking_inverse_jointreaction_solution.sto'
         self.side = 'l'
@@ -152,6 +150,28 @@ class MotionPrescribedWalking(MocoPaperResult):
         if 'knee' in args:
             self.knee = True
 
+    def create_inverse(self, root_dir, modelProcessor, mesh_interval):
+        coordinates = osim.TableProcessor(
+            os.path.join(root_dir, "resources/Rajagopal2016/coordinates.mot"))
+        coordinates.append(osim.TabOpLowPassFilter(6))
+        coordinates.append(osim.TabOpUseAbsoluteStateNames())
+        inverse = osim.MocoInverse()
+        inverse.setModel(modelProcessor)
+        inverse.setKinematics(coordinates)
+        inverse.set_initial_time(self.initial_time)
+        inverse.set_final_time(self.final_time)
+        inverse.set_mesh_interval(mesh_interval)
+        inverse.set_kinematics_allow_extra_columns(True)
+        inverse.set_convergence_tolerance(1e-2) # TODO
+        inverse.set_mesh_interval(mesh_interval)
+        return inverse
+
+    def solve_inverse(self, root_dir, modelProcessor, mesh_interval,
+                      solution_filepath):
+        inverse = self.create_inverse(root_dir, modelProcessor, mesh_interval)
+        solution = inverse.solve()
+        solution.getMocoSolution().write(solution_filepath)
+
     def generate_results(self, root_dir, args):
         self.parse_args(args)
 
@@ -179,37 +199,23 @@ class MotionPrescribedWalking(MocoPaperResult):
             cmc.run()
             analyze.run()
 
-        coordinates = osim.TableProcessor(
-            os.path.join(root_dir, "resources/Rajagopal2016/coordinates.mot"))
-        coordinates.append(osim.TabOpLowPassFilter(6))
-        coordinates.append(osim.TabOpUseAbsoluteStateNames())
+        mesh_interval = 0.03
 
-        # MocoInverse
-        # -----------
-        inverse = osim.MocoInverse()
-        inverse.setModel(modelProcessor)
-        inverse.setKinematics(coordinates)
-        inverse.set_initial_time(self.initial_time)
-        inverse.set_final_time(self.final_time)
-        inverse.set_mesh_interval(0.05)
-        inverse.set_kinematics_allow_extra_columns(True)
-        inverse.set_convergence_tolerance(1e-2)
-        # inverse.set_max_iterations(200)
-  
         # 8 minutes
         if self.inverse:
-            inverse.set_mesh_interval(0.03)
-            solution = inverse.solve()
-            solution.getMocoSolution().write(self.mocoinverse_coarse_solution_file % root_dir)
-
-            # 0.04 and 0.03 work
-            inverse.set_mesh_interval(0.01)
-            # inverse.set_convergence_tolerance(1e-4)
-            solution = inverse.solve()
-            solution.getMocoSolution().write(self.mocoinverse_fine_solution_file % root_dir)
+            solution_filepath = self.mocoinverse_solution_file % root_dir
+            self.solve_inverse(root_dir, modelProcessor, mesh_interval,
+                               solution_filepath)
+            # TODO
+            # # 0.04 and 0.03 work
+            # inverse.set_mesh_interval(0.01)
+            # # inverse.set_convergence_tolerance(1e-4)
+            # solution = inverse.solve()
+            # solution.getMocoSolution().write(self.mocoinverse_fine_solution_file % root_dir)
 
         # MocoInverse, minimize joint reactions
         # -------------------------------------
+        inverse = self.create_inverse(root_dir, modelProcessor, mesh_interval)
         study = inverse.initialize()
         problem = study.updProblem()
         reaction_r = osim.MocoJointReactionGoal('reaction_r', 0.005)
@@ -265,7 +271,7 @@ class MotionPrescribedWalking(MocoPaperResult):
         self.parse_args(args)
 
         if self.inverse:
-            sol_inverse_table = osim.TimeSeriesTable(self.mocoinverse_coarse_solution_file % root_dir)
+            sol_inverse_table = osim.TimeSeriesTable(self.mocoinverse_solution_file % root_dir)
             inverse_duration = sol_inverse_table.getTableMetaDataString('solver_duration')
             inverse_duration = float(inverse_duration) / 60.0
             print('inverse duration ', inverse_duration)
@@ -294,19 +300,11 @@ class MotionPrescribedWalking(MocoPaperResult):
 
         if self.inverse:
             sol_inverse = osim.MocoTrajectory(
-                self.mocoinverse_coarse_solution_file % root_dir)
+                self.mocoinverse_solution_file % root_dir)
             time_inverse = sol_inverse.getTimeMat()
             most_neg = self.calc_negative_muscle_forces_base(model, sol_inverse)
             if most_neg < -0.005:
                 raise Exception("Muscle forces are too negative! sol_inverse")
-            sol_inverse_fine = osim.MocoTrajectory(
-                self.mocoinverse_fine_solution_file % root_dir)
-            time_inverse_fine = sol_inverse_fine.getTimeMat()
-            most_neg = self.calc_negative_muscle_forces_base(model,
-                                                             sol_inverse_fine)
-            if most_neg < -0.005:
-                raise Exception("Muscle forces are too negative! "
-                                "sol_inverse_fine")
 
         if self.knee and self.inverse:
             sol_inverse_jointreaction = \
@@ -727,7 +725,7 @@ class MotionPrescribedWalking(MocoPaperResult):
                 'motion_prescribed_walking_inverse_solution_report.pdf')
             report = osim.report.Report(
                 model,
-                self.mocoinverse_coarse_solution_file % root_dir,
+                self.mocoinverse_solution_file % root_dir,
                 output=output_fpath)
             report.generate()
 
@@ -743,7 +741,47 @@ class MotionPrescribedWalking(MocoPaperResult):
             report.generate()
 
     def convergence_metadata(self):
-        pass
+        return [
+            {'num_mesh_intervals': 5,
+             'solution_file': 'motion_prescribed_walking_solution_5.sto'},
+            {'num_mesh_intervals': 10,
+             'solution_file': 'motion_prescribed_walking_solution_10.sto'},
+            {'num_mesh_intervals': 20,
+             'solution_file': 'motion_prescribed_walking_solution_20.sto'},
+            {'num_mesh_intervals': 40,
+             'solution_file': 'motion_prescribed_walking_solution_40.sto'},
+            {'num_mesh_intervals': 80,
+             'solution_file': 'motion_prescribed_walking_solution_80.sto'},
+        ]
 
-    def generate_convergence_results(self):
-        pass
+    def generate_convergence_results(self, root_dir, args):
+        # TODO: convergence_tolerance?
+        self.parse_args(args)
+        if args:
+            raise Exception("prescribed-walking: args not valid with "
+                            "--convergence.")
+
+        modelProcessor = self.create_model_processor(root_dir)
+
+        duration = self.half_time - self.initial_time
+        for md in self.convergence_metadata():
+            num_mesh_intervals = md['num_mesh_intervals']
+            print(f'Convergence analysis: using {num_mesh_intervals} mesh '
+                  'intervals.')
+            # TODO: We could still get off-by-one mesh intervals.
+            mesh_interval = duration / num_mesh_intervals
+            solution_filepath = os.path.join(root_dir, 'results',
+                                              'convergence',
+                                              md['solution_file'])
+            self.solve_inverse(root_dir, modelProcessor, mesh_interval,
+                               solution_filepath)
+
+            # TODO
+            # sol_inverse_fine = osim.MocoTrajectory(
+            #     self.mocoinverse_fine_solution_file % root_dir)
+            # time_inverse_fine = sol_inverse_fine.getTimeMat()
+            # most_neg = self.calc_negative_muscle_forces_base(model,
+            #                                                  sol_inverse_fine)
+            # if most_neg < -0.005:
+            #     raise Exception("Muscle forces are too negative! "
+            #                     "sol_inverse_fine")

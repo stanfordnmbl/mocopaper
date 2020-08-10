@@ -29,8 +29,32 @@ if __name__ == "__main__":
     # 'predicting-walking': MotionPredictionAndAssistanceWalking(),
     results['squat-to-stand'] = SquatToStand()
 
+    examples = """
+    Examples
+    --------
+    
+    Generate and report all results except convergence analysis:
+      mocopaper.py
+    
+    Generate and report squat-to-stand results:
+      mocopaper.py --results squat-to-stand
+    
+    Report squat-to-stand results without generating them:
+      mocopaper.py --no-generate --results squat-to-stand
+    
+    Run and report convergence analysis on all results:
+      mocopaper.py --convergence
+    
+    Run convergence analysis on squat-to-stand result:
+      mocopaper.py --convergence --results squat-to-stand
+    
+    Report convergence analysis across results:
+      mocopaper.py --no-generate --convergence
+    """
+
     parser = argparse.ArgumentParser(description="Generate results for the"
-                                                 "OpenSim Moco publication.")
+                                                 "OpenSim Moco publication.",
+                                     epilog=examples)
     parser.add_argument('--no-generate', dest='generate', action='store_false',
                         help='Skip generating the results; only report.')
     parser.add_argument('--convergence', dest='convergence',
@@ -81,8 +105,10 @@ if __name__ == "__main__":
         if not args.generate and not (args.results is None):
             raise Exception("If passing --convergence, cannot pass both "
                             "--no-generate and --results")
-        import report_convergence
-        report_convergence.report_convergence(root_dir)
+        # Only report convergence if `--results` was not passed.
+        if args.results is None:
+            import report_convergence
+            report_convergence.report_convergence(root_dir)
 
 
 

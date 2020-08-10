@@ -213,7 +213,10 @@ class SquatToStand(MocoPaperResult):
         for md in self.convergence_metadata():
             solution_fpath = os.path.join(
                 root_dir, 'results', 'convergence', md['solution_file'])
-            self.predict(root_dir, num_mesh_intervals=md['num_mesh_intervals'],
+            num_mesh_intervals = md['num_mesh_intervals']
+            print(f'Convergence analysis: using {num_mesh_intervals} mesh '
+                  'intervals.')
+            self.predict(root_dir, num_mesh_intervals=num_mesh_intervals,
                          guess_file=guess_file,
                          solution_fpath=solution_fpath)
             # Use current solution as guess for the next problem.

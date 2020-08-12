@@ -199,7 +199,7 @@ class MotionPrescribedWalking(MocoPaperResult):
             cmc.run()
             analyze.run()
 
-        mesh_interval = 0.03
+        mesh_interval = (self.final_time - self.initial_time) / 25.0
 
         # 8 minutes
         if self.inverse:
@@ -750,8 +750,12 @@ class MotionPrescribedWalking(MocoPaperResult):
              'solution_file': 'motion_prescribed_walking_solution_20.sto'},
             {'num_mesh_intervals': 40,
              'solution_file': 'motion_prescribed_walking_solution_40.sto'},
-            {'num_mesh_intervals': 80,
-             'solution_file': 'motion_prescribed_walking_solution_80.sto'},
+            {'num_mesh_intervals': 90,
+             'solution_file': 'motion_prescribed_walking_solution_90.sto'},
+            {'num_mesh_intervals': 160,
+             'solution_file': 'motion_prescribed_walking_solution_160.sto'},
+            {'num_mesh_intervals': 320,
+             'solution_file': 'motion_prescribed_walking_solution_320.sto'},
         ]
 
     def generate_convergence_results(self, root_dir, args):
@@ -763,11 +767,14 @@ class MotionPrescribedWalking(MocoPaperResult):
 
         modelProcessor = self.create_model_processor(root_dir)
 
-        duration = self.half_time - self.initial_time
+        duration = self.final_time - self.initial_time
         for md in self.convergence_metadata():
             num_mesh_intervals = md['num_mesh_intervals']
             print(f'Convergence analysis: using {num_mesh_intervals} mesh '
                   'intervals.')
+            if 'generate' in md and not md['generate']:
+                print(f'Skipping {num_mesh_intervals}.')
+                continue
             # TODO: We could still get off-by-one mesh intervals.
             mesh_interval = duration / num_mesh_intervals
             solution_filepath = os.path.join(root_dir, 'results',

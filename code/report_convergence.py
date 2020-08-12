@@ -24,8 +24,9 @@ def get_convergence_results(root_dir, result):
         num_mesh_intervals = md['num_mesh_intervals']
         # All problems use Hermite-Simpson transcription.
         if table.getNumRows() != 2 * num_mesh_intervals + 1:
-            raise Exception("Inconsistent number of mesh intervals.")
-        # TODO: num_mesh_intervals = (table.getNumRows() - 1) / 2
+            print("Warning: inconsistent number of mesh intervals "
+                  f"({(table.getNumRows() - 1) / 2} vs {num_mesh_intervals}).")
+        num_mesh_intervals = (table.getNumRows() - 1) / 2
         x.append(num_mesh_intervals)
         costs.append(float(table.getTableMetaDataAsString('objective')))
     # Normalize costs.
@@ -46,9 +47,9 @@ def report_convergence(root_dir):
     ax.set_title('MocoInverse\n(Fig 7, black)')
     ax.semilogx(x, costs, linestyle='', marker='.', color='black')
     ax.set_xlabel('number of mesh intervals')
-    ax.set_xticks([3, 100])
     ax.set_yticks(yticks)
     ax.set_ylim(0, ymax)
+    ax.set_ylabel('objective (normalized)')
     utilities.publication_spines(ax)
 
     # tracking-walking

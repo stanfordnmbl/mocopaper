@@ -1619,10 +1619,10 @@ class MotionTrackingWalking(MocoPaperResult):
              'solution_file': 'motion_tracking_walking_solution_20.sto'},
             {'num_mesh_intervals': 40,
              'solution_file': 'motion_tracking_walking_solution_40.sto'},
-            {'num_mesh_intervals': 80, # takes 6 hours
-             'solution_file': 'motion_tracking_walking_solution_80.sto'},
-            {'num_mesh_intervals': 160,
-             'solution_file': 'motion_tracking_walking_solution_160.sto'},
+            {'num_mesh_intervals': 70,
+             'solution_file': 'motion_tracking_walking_solution_70.sto'},
+            {'num_mesh_intervals': 100,
+             'solution_file': 'motion_tracking_walking_solution_100.sto'},
         ]
 
     def generate_convergence_results(self, root_dir, args):
@@ -1644,6 +1644,9 @@ class MotionTrackingWalking(MocoPaperResult):
             num_mesh_intervals = md['num_mesh_intervals']
             print(f'Convergence analysis: using {num_mesh_intervals} mesh '
                   'intervals.')
+            if 'generate' in md and not md['generate']:
+                print(f'Skipping {num_mesh_intervals}')
+                continue
             # TODO: We could still get off-by-one mesh intervals.
             mesh_interval = duration / num_mesh_intervals
             config.name = str(num_mesh_intervals)

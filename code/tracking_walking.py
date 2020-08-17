@@ -19,7 +19,7 @@ from utilities import toarray
 class MocoTrackConfig:
     def __init__(self, name, legend_entry, tracking_weight, effort_weight,
                  color, linestyle='-',
-                 mesh_interval=0.035, guess=None, flags=[]):
+                 mesh_interval=0.014, guess=None, flags=[]):
         self.name = name
         self.legend_entry = legend_entry
         self.tracking_weight = tracking_weight
@@ -55,6 +55,9 @@ class MotionTrackingWalking(MocoPaperResult):
         self.initial_time = 0.81
         self.half_time = 1.385
         self.final_time = 1.96
+        duration = self.half_time - self.initial_time
+        num_mesh_intervals = 40
+        mesh_interval = duration / num_mesh_intervals
         self.passive_forces = False
         self.inverse_solution_relpath = \
             'results/motion_tracking_walking_inverse_solution.sto'
@@ -64,12 +67,14 @@ class MotionTrackingWalking(MocoPaperResult):
             legend_entry='normal',
             tracking_weight=10,
             effort_weight=10,
+            mesh_interval=mesh_interval,
             color='black')
         self.config_weakhipabd = MocoTrackConfig(
             name='weakhipabd',
             legend_entry='weak hip abductors',
             tracking_weight=10,
             effort_weight=10,
+            mesh_interval=mesh_interval,
             color=self.cmap(0.5),
             guess='track',
             flags=['weakhipabd'])
@@ -78,6 +83,7 @@ class MotionTrackingWalking(MocoPaperResult):
             legend_entry='weak pfs',
             tracking_weight=10,
             effort_weight=10,
+            mesh_interval=mesh_interval,
             color=self.cmap(0.8),
             guess='track',
             flags=['weakpfs'])
@@ -86,6 +92,7 @@ class MotionTrackingWalking(MocoPaperResult):
             legend_entry='weak dorsiflexors',
             tracking_weight=10,
             effort_weight=10,
+            mesh_interval=mesh_interval,
             color=self.cmap(0.8),
             guess='track',
             flags=['weakdfs'])
@@ -94,6 +101,7 @@ class MotionTrackingWalking(MocoPaperResult):
             legend_entry='pass. assisted weak dfs',
             tracking_weight=5,
             effort_weight=10,
+            mesh_interval=mesh_interval,
             color=self.cmap(0.75),
             guess='track',
             flags=['passassistankledf', 'weakdfs'],
@@ -103,6 +111,7 @@ class MotionTrackingWalking(MocoPaperResult):
             legend_entry='Moon gravity',
             tracking_weight=0,
             effort_weight=10,
+            mesh_interval=mesh_interval,
             color=self.cmap(0.9),
             flags=['moongravity'])
         self.configs = [

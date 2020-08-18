@@ -808,7 +808,7 @@ class MotionTrackingWalking(MocoPaperResult):
                 root_dir, config, full_traj)
 
             # Check velocity correction
-            print('Checking velocity correction...')
+            print(f'Checking velocity correction for {config.name}...')
             table = osim.TimeSeriesTable(config.get_solution_path(root_dir))
             for label in table.getColumnLabels():
                 if label.startswith('gamma'):

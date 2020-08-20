@@ -539,6 +539,19 @@ Without this correction, the Hermite splines cannot simultaneously satisfy both 
 For implicit multibody dynamics, we remove the constraints involving $f_{\dot{u}}$ and introduce generalized accelerations as algebraic variables $\upsilon$ to enforce multibody dynamics in “inverse dynamics” form:
 \hermitesimpsonimplicit
 
+\subsection*{Automated test suite}
+
+Moco contains an automated test suite with over 80 test cases. The test suite contains four major types of tests: analytical tests, interface tests, algorithmic tests, and regression tests.
+
+In analytical tests, we ensure Moco produces the correct solutions for problems with known analytical solutions. These tests are commonly used to verify optimal control software and for performance benchmarking [15]. We solve two such problems: the “linear tangent steering” problem described in the main article and a boundary value problem involving a set of linear first-order differential equations presented by Kirk et al. \cite{Kirk:2004} (Example 5.1-1, pg. 198). In addition, we include analytical tests using the \textit{SmoothSphereHalfSpaceForce} contact model to ensure that the smooth model produces correct forces. For example, we test that a point mass containing a contact element with dissipation comes to rest with a normal force that matches the weight of the system after being dropped from a height.
+
+Interface tests ensure that a change made by a user though the Moco interface is reflected within the software. Any values set by the user (using a “set” method) should be returned by Moco when queried (using a “get” method). Interface tests are implemented for user-facing classes in Moco, including \textit{MocoStudy}, \textit{MocoProblem}, \textit{MocoSolver}, \textit{MocoGoal}, \textit{MocoTrajectory}, \textit{MocoInverse}, \textit{MocoTrack}, and the smooth model components \textit{DeGrooteFregly2016Muscle} and \textit{SmoothSphereHalfSpaceForce}. For example, the \textit{MocoGoal} class contains a setting for disabling a goal without removing it from the \textit{MocoProblem}; we include simple tests to ensure that \textit{MocoGoals} are indeed disabled by this setting.
+
+Algorithmic tests check that Moco solves direct collocation problems correctly. These tests check that problems using explicit and implicit dynamics produce the same trajectory, minimizing a cost term produces the expected behavior (e.g., minimum time problems hit the lower bound on final time), and that kinematic constraints are obeyed. For example, we check that adding a coordinate coupler constraint to a double pendulum problem produces coordinate trajectories that obey a linear relationship defined by the constraint. Algorithmic tests also encompass “self-consistency” tests. For example, using a model of a point mass hanging from a muscle, we check that tracking a reference trajectory obtained by a minimum time predictive problem produces the same controls as the original problem.
+
+For complex problems for which there is no known exact solution, we use regression tests, which check that solutions to direct collocation problems do not regress from reference trajectories. These checks ensure that changes to the codebase do not produce any unintended effects. For example, we test that \textit{MocoInverse} and \textit{MocoTrack} always produce the same muscle activity given the same model and solver settings.
+
+
 \subsection*{Moco's direct collocation solvers}
 
 Moco provides two solvers as subclasses of \textit{MocoSolver}: \textit{MocoCasADiSolver} uses the third-party CasADi library~\cite{Andersson:2019}, and \textit{MocoTropterSolver} uses a direct collocation solver we developed named Tropter. CasADi is an open-source package for algorithmic differentiation and is a bridge to nonlinear program solvers IPOPT~\cite{Wachter:2006}, SNOPT~\cite{Gill:2005}, and others.

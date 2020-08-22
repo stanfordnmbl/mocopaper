@@ -37,7 +37,7 @@ def get_convergence_results(root_dir, result):
 def report_convergence(root_dir):
 
     fig = pl.figure(figsize=(5.2, 2.5))
-    ymax = 1.2
+    ymax = 1.25
     yticks = [0, 1.0]
 
     # prescribed-walking

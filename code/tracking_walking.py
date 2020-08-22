@@ -19,7 +19,7 @@ from utilities import toarray
 class MocoTrackConfig:
     def __init__(self, name, legend_entry, tracking_weight, effort_weight,
                  color, linestyle='-',
-                 mesh_interval=0.035, guess=None, flags=[]):
+                 mesh_interval=0.014, guess=None, flags=[]):
         self.name = name
         self.legend_entry = legend_entry
         self.tracking_weight = tracking_weight
@@ -55,6 +55,9 @@ class MotionTrackingWalking(MocoPaperResult):
         self.initial_time = 0.81
         self.half_time = 1.385
         self.final_time = 1.96
+        duration = self.half_time - self.initial_time
+        num_mesh_intervals = 40
+        mesh_interval = duration / num_mesh_intervals
         self.passive_forces = False
         self.inverse_solution_relpath = \
             'results/motion_tracking_walking_inverse_solution.sto'
@@ -64,12 +67,14 @@ class MotionTrackingWalking(MocoPaperResult):
             legend_entry='normal',
             tracking_weight=10,
             effort_weight=10,
+            mesh_interval=mesh_interval,
             color='black')
         self.config_weakhipabd = MocoTrackConfig(
             name='weakhipabd',
             legend_entry='weak hip abductors',
             tracking_weight=10,
             effort_weight=10,
+            mesh_interval=mesh_interval,
             color=self.cmap(0.5),
             guess='track',
             flags=['weakhipabd'])
@@ -78,6 +83,7 @@ class MotionTrackingWalking(MocoPaperResult):
             legend_entry='weak pfs',
             tracking_weight=10,
             effort_weight=10,
+            mesh_interval=mesh_interval,
             color=self.cmap(0.8),
             guess='track',
             flags=['weakpfs'])
@@ -86,6 +92,7 @@ class MotionTrackingWalking(MocoPaperResult):
             legend_entry='weak dorsiflexors',
             tracking_weight=10,
             effort_weight=10,
+            mesh_interval=mesh_interval,
             color=self.cmap(0.8),
             guess='track',
             flags=['weakdfs'])
@@ -94,6 +101,7 @@ class MotionTrackingWalking(MocoPaperResult):
             legend_entry='pass. assisted weak dfs',
             tracking_weight=5,
             effort_weight=10,
+            mesh_interval=mesh_interval,
             color=self.cmap(0.75),
             guess='track',
             flags=['passassistankledf', 'weakdfs'],
@@ -103,6 +111,7 @@ class MotionTrackingWalking(MocoPaperResult):
             legend_entry='Moon gravity',
             tracking_weight=0,
             effort_weight=10,
+            mesh_interval=mesh_interval,
             color=self.cmap(0.9),
             flags=['moongravity'])
         self.configs = [
@@ -799,7 +808,7 @@ class MotionTrackingWalking(MocoPaperResult):
                 root_dir, config, full_traj)
 
             # Check velocity correction
-            print('Checking velocity correction...')
+            print(f'Checking velocity correction for {config.name}...')
             table = osim.TimeSeriesTable(config.get_solution_path(root_dir))
             for label in table.getColumnLabels():
                 if label.startswith('gamma'):
@@ -1619,10 +1628,10 @@ class MotionTrackingWalking(MocoPaperResult):
              'solution_file': 'motion_tracking_walking_solution_20.sto'},
             {'num_mesh_intervals': 40,
              'solution_file': 'motion_tracking_walking_solution_40.sto'},
-            {'num_mesh_intervals': 80, # takes 6 hours
-             'solution_file': 'motion_tracking_walking_solution_80.sto'},
-            {'num_mesh_intervals': 160,
-             'solution_file': 'motion_tracking_walking_solution_160.sto'},
+            {'num_mesh_intervals': 70,
+             'solution_file': 'motion_tracking_walking_solution_70.sto'},
+            {'num_mesh_intervals': 100,
+             'solution_file': 'motion_tracking_walking_solution_100.sto'},
         ]
 
     def generate_convergence_results(self, root_dir, args):
@@ -1644,6 +1653,9 @@ class MotionTrackingWalking(MocoPaperResult):
             num_mesh_intervals = md['num_mesh_intervals']
             print(f'Convergence analysis: using {num_mesh_intervals} mesh '
                   'intervals.')
+            if 'generate' in md and not md['generate']:
+                print(f'Skipping {num_mesh_intervals}')
+                continue
             # TODO: We could still get off-by-one mesh intervals.
             mesh_interval = duration / num_mesh_intervals
             config.name = str(num_mesh_intervals)

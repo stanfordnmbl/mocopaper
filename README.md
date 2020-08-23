@@ -25,11 +25,11 @@ You can use Docker to reproduce the results and paper. First, install Docker
 on your computer. Then, run the following command:
 
     # On Windows using Command Prompt (cmd).
-    docker run --volume %cd%:/output stanfordnmbl/mocopaper:preprint
+    docker run --volume %cd%:/output stanfordnmbl/mocopaper:ploscompbio1
     # On Windows using PowerShell.
-    docker run --volume ${PWD}:/output stanfordnmbl/mocopaper:preprint
+    docker run --volume ${PWD}:/output stanfordnmbl/mocopaper:ploscompbio1
     # On Mac/UNIX using bash.
-    docker run --volume $(pwd):/output stanfordnmbl/mocopaper:preprint
+    docker run --volume $(pwd):/output stanfordnmbl/mocopaper:ploscompbio1
 
 The container takes about 10 hours to run.
 The results, figures, and paper PDF will end up in your current directory.
@@ -38,7 +38,7 @@ If you want to run your own copy of the mocopaper repository instead of using
 the copy of mocopaper stored inside the container, use the following command
 instead:
 
-    docker run --volume <local-mocopaper-repo>:/mocopaper stanfordnmbl/mocopaper:preprint
+    docker run --volume <local-mocopaper-repo>:/mocopaper stanfordnmbl/mocopaper:ploscompbio1
 
 The results are saved to the results and figures folders of
 `<local-mocopaper-repo>`, and the paper is saved to

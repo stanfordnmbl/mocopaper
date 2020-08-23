@@ -2,6 +2,8 @@
 
 # Generate the results and figures.
 python3 code/mocopaper.py
+# Generate the convergence analysis.
+python3 code/mocopaper.py --convergence
 
 # Compile the paper.
 cd paper

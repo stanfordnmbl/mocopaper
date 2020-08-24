@@ -1,7 +1,7 @@
 % Template for PLoS
 %DIF LATEXDIFF DIFFERENCE FILE
 %DIF DEL MocoPaperSubmission0.tex   Sun Aug 23 12:32:58 2020
-%DIF ADD MocoPaper.tex              Sun Aug 23 22:09:48 2020
+%DIF ADD MocoPaper.tex              Mon Aug 24 08:32:20 2020
 % Version 3.5 March 2018
 %
 % % % % % % % % % % % % % % % % % % % % % %
@@ -501,14 +501,15 @@ We also ensured that a time-stepping forward simulation using controls from a mo
 To gain confidence in motion tracking problems, we ensured that using \textit{MocoTrack} on a synthesized motion with known muscle activity produced the original muscle activity. We used the same suspended point mass model and tracked the previous motion prediction (Fig\DIFdelbegin \DIFdel{6}\DIFdelend \DIFaddbegin \DIFadd{~\ref{verification}}\DIFaddend , gray band) while minimizing squared excitations. The muscle activations from \textit{MocoTrack} (Fig\DIFdelbegin \DIFdel{6}\DIFdelend \DIFaddbegin \DIFadd{~\ref{verification}}\DIFaddend , orange line) matched those from the prediction with a root-mean-square error that was 0.47\% of the peak predicted activation. For most tracking problems of interest, we do not know the true muscle activity solution; verifying tracking problems using synthesized data gives us confidence in \DIFdelbegin \DIFdel{Moco’s estimates of }\DIFdelend \DIFaddbegin \DIFadd{the ability of Moco to estimate }\DIFaddend muscle activity.
 
 Moco contains an automated test suite\DIFdelbegin \DIFdel{with over 30 files }\DIFdelend \DIFaddbegin \DIFadd{, with over 80 test cases, }\DIFaddend that extends beyond the verification described here. \DIFdelbegin \DIFdel{For example, the test suite ensures that users receive error messages for incorrect input, that a }\textit{\DIFdel{MocoStudy}} %DIFAUXCMD
-\DIFdel{can be written to and read from an XML file, that kinematic constraints are enforced, and that implicit and explicit differential equations are consistent. We ensure all these tests succeed before accepting changes to the code. }\DIFdelend \DIFaddbegin \DIFadd{The test suite contains four major types of tests: analytical tests, interface tests, algorithmic tests, and regression tests. All tests are located within the source code; we employ continuous integration to ensure all these tests succeed before accepting changes to the code on GitHub. A detailed description of our automated test suite is in S1 Appendix.
+\DIFdel{can be written to and read from an XML file, that kinematic constraints are enforced, and that implicit and explicit differential equations are consistent. We }\DIFdelend \DIFaddbegin \DIFadd{The test suite contains four major types of tests: analytical tests, interface tests, algorithmic tests, and regression tests. All tests are located within the source code; we employ continuous integration to }\DIFaddend ensure all these tests succeed before accepting changes to the code \DIFdelbegin \DIFdel{.
+}\DIFdelend \DIFaddbegin \DIFadd{on GitHub. A detailed description of our automated test suite is in S1 Appendix.
 }\DIFaddend 
 
-\DIFaddbegin \DIFadd{While our automated test suite can give users confidence that Moco implements direct collocation correctly, users must ensure that they use appropriate mesh density (number of mesh intervals per unit time) and constraint tolerance settings for their problems~\mbox{%DIFAUXCMD
+\DIFaddbegin \DIFadd{Our automated test suite can give users confidence that Moco implements direct collocation correctly, but users must ensure that they use appropriate mesh density (number of mesh intervals per unit time) and constraint tolerance settings for their problems~\mbox{%DIFAUXCMD
 \cite{Hicks:2015bo}}\hspace{0pt}%DIFAUXCMD
 . While a problem with a coarse mesh may meet the user's specified constraint tolerance, errors in the dynamics may be too large for the simulation to be useful~\mbox{%DIFAUXCMD
 \cite{Betts:2010}}\hspace{0pt}%DIFAUXCMD
-. While Moco does not currently provide an automated way to evaluate the error in the dynamics, users can perform convergence analyses to ensure that solutions are not overly sensitive to the chosen mesh density or constraint tolerance.
+. Users can perform convergence analyses to ensure that solutions are not overly sensitive to the chosen mesh density or constraint tolerance.
 }
 
 \DIFaddend \section*{Results}
@@ -532,7 +533,7 @@ Moco can estimate muscle activity in walking, which allows studying muscle coord
     \centering
     % \includegraphics{../figures/motion_prescribed_walking.png}
     \caption{{\bf Estimates of muscle activity during walking.}
-        \textit{MocoInverse} produced muscle activations (black) whose timing \DIFdelbeginFL \DIFdelFL{matched }\DIFdelendFL \DIFaddbeginFL \DIFaddFL{was similar to }\DIFaddendFL the timing from electromyography measurements (gray) \DIFaddbeginFL \DIFaddFL{for all muscles shown except iliacus}\DIFaddendFL . Electromyography for gluteus maximus and iliacus comes from~\cite{Perry:2010}; electromyography for all other muscles comes from~\cite{Rajagopal:2016ek} and was normalized such that its peak matched the peak of the \textit{MocoInverse} activations. \DIFdelbeginFL \DIFdelFL{Minimizing }\DIFdelendFL \DIFaddbeginFL \DIFaddFL{Adding a cost term for minimizing }\DIFaddendFL knee joint loading reduced the activity of the biceps femoris short head \DIFdelbeginFL \DIFdelFL{, }\DIFdelendFL and medial gastrocnemius, which span the knee (blue), and increased the activity of other muscles to \DIFdelbeginFL \DIFdelFL{compensate}\DIFdelendFL \DIFaddbeginFL \DIFaddFL{ensure the original prescribed motion was achieved}\DIFaddendFL .
+        \textit{MocoInverse} produced muscle activations (black) whose timing \DIFdelbeginFL \DIFdelFL{matched }\DIFdelendFL \DIFaddbeginFL \DIFaddFL{was similar to }\DIFaddendFL the timing from electromyography measurements (gray) \DIFaddbeginFL \DIFaddFL{for all muscles shown except iliacus}\DIFaddendFL . Electromyography for gluteus maximus and iliacus comes from~\cite{Perry:2010}; electromyography for all other muscles comes from~\cite{Rajagopal:2016ek} and was normalized such that its peak matched the peak of the \textit{MocoInverse} activations. \DIFdelbeginFL \DIFdelFL{Minimizing }\DIFdelendFL \DIFaddbeginFL \DIFaddFL{Adding a cost term for }\DIFaddendFL knee joint loading reduced the activity of the biceps femoris short head \DIFdelbeginFL \DIFdelFL{, }\DIFdelendFL and medial gastrocnemius, which span the knee (blue), and increased the activity of other muscles to \DIFdelbeginFL \DIFdelFL{compensate}\DIFdelendFL \DIFaddbeginFL \DIFaddFL{ensure the original prescribed motion was achieved}\DIFaddendFL .
     }
     \label{walking}
     % \end{adjustwidth}

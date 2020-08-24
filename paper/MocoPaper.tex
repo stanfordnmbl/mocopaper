@@ -389,7 +389,7 @@ To gain confidence in motion tracking problems, we ensured that using \textit{Mo
 
 Moco contains an automated test suite, with over 80 test cases, that extends beyond the verification described here. The test suite contains four major types of tests: analytical tests, interface tests, algorithmic tests, and regression tests. All tests are located within the source code; we employ continuous integration to ensure all these tests succeed before accepting changes to the code on GitHub. A detailed description of our automated test suite is in S1 Appendix.
 
-While our automated test suite can give users confidence that Moco implements direct collocation correctly, users must ensure that they use appropriate mesh density (number of mesh intervals per unit time) and constraint tolerance settings for their problems~\cite{Hicks:2015bo}. While a problem with a coarse mesh may meet the user's specified constraint tolerance, errors in the dynamics may be too large for the simulation to be useful~\cite{Betts:2010}. While Moco does not currently provide an automated way to evaluate the error in the dynamics, users can perform convergence analyses to ensure that solutions are not overly sensitive to the chosen mesh density or constraint tolerance.
+Our automated test suite can give users confidence that Moco implements direct collocation correctly, but users must ensure that they use appropriate mesh density (number of mesh intervals per unit time) and constraint tolerance settings for their problems~\cite{Hicks:2015bo}. While a problem with a coarse mesh may meet the user's specified constraint tolerance, errors in the dynamics may be too large for the simulation to be useful~\cite{Betts:2010}. Users can perform convergence analyses to ensure that solutions are not overly sensitive to the chosen mesh density or constraint tolerance.
 
 \section*{Results}
 
@@ -405,7 +405,7 @@ Moco can estimate muscle activity in walking, which allows studying muscle coord
     \centering
     % \includegraphics{../figures/motion_prescribed_walking.png}
     \caption{{\bf Estimates of muscle activity during walking.}
-        \textit{MocoInverse} produced muscle activations (black) whose timing was similar to the timing from electromyography measurements (gray) for all muscles shown except iliacus. Electromyography for gluteus maximus and iliacus comes from~\cite{Perry:2010}; electromyography for all other muscles comes from~\cite{Rajagopal:2016ek} and was normalized such that its peak matched the peak of the \textit{MocoInverse} activations. Adding a cost term for minimizing knee joint loading reduced the activity of the biceps femoris short head and medial gastrocnemius, which span the knee (blue), and increased the activity of other muscles to ensure the original prescribed motion was achieved.
+        \textit{MocoInverse} produced muscle activations (black) whose timing was similar to the timing from electromyography measurements (gray) for all muscles shown except iliacus. Electromyography for gluteus maximus and iliacus comes from~\cite{Perry:2010}; electromyography for all other muscles comes from~\cite{Rajagopal:2016ek} and was normalized such that its peak matched the peak of the \textit{MocoInverse} activations. Adding a cost term for knee joint loading reduced the activity of the biceps femoris short head and medial gastrocnemius, which span the knee (blue), and increased the activity of other muscles to ensure the original prescribed motion was achieved.
     }
     \label{walking}
     % \end{adjustwidth}

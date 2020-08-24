@@ -442,7 +442,7 @@ We next weakened the ankle dorsiflexor muscles (tibialis anterior, extensor digi
 
 \subsection*{Predicting and assisting a squat-to-stand motion}
 
-To show that Moco can predict motions and optimize parameters of a model, we predicted a squat-to-stand motion that minimized a combination of effort, expressed as the sum of squared excitations, and the duration of the motion. The initial pose was prescribed to be squatting~\cite{Fregly:2015}, and the final pose was prescribed to be upright standing. No motion was tracked. The model contained a torso and a single leg with 9 muscles obeying activation dynamics and compliant tendon dynamics; muscle strengths were based on those from a previous study~\cite{Ong:2019}. We used Moco's default initial guess, in which each variable's value is the midpoint of the variable's bounds. The predicted motion and muscle activations are shown in Fig~\ref{squattotstand} (black lines). As expected, extensor muscles such as the gluteus maximus, hamstrings, and vasti exhibited the greatest activity.
+To show that Moco can predict motions and optimize parameters of a model, we predicted a squat-to-stand motion that minimized a combination of effort, expressed as the sum of squared excitations, and the duration of the motion. The initial pose was prescribed to be squatting~\cite{Fregly:2015}, and the final pose was prescribed to be upright standing. No motion was tracked. The model contained a torso and a single leg with 9 muscles obeying activation dynamics and compliant tendon dynamics; muscle strengths were based on those from a previous study~\cite{Ong:2019}. We used Moco's default initial guess, in which each variable's value is the midpoint of the variable's bounds. The predicted motion and muscle activations are shown in Fig~\ref{squattostand} (black lines). As expected, extensor muscles such as the gluteus maximus, hamstrings, and vasti exhibited the greatest activity.
 
 % Place figure captions after the first paragraph in which they are cited.
 \begin{figure}[!h]
@@ -452,11 +452,11 @@ To show that Moco can predict motions and optimize parameters of a model, we pre
         \caption{{\bf Predicting and assisting a squat-to-stand motion.}
             Left: We predicted a squat-to-stand motion with prescribed initial and final poses that minimized the sum of squared muscle excitations and final time, then added a torsional spring to the knee and solved for the optimal spring stiffness $k$. Right: The activations of key muscles throughout the motion without (black) and with (blue) the assistive spring show that the spring allowed gluteus maximus and vasti activity to decrease substantially.
         }
-        \label{squattotstand}
+        \label{squattostand}
     % \end{adjustwidth}
 \end{figure}
 
-Next, we added a torsional spring to the knee and solved for the optimal motion, muscle activations, and spring stiffness. The spring was in equilibrium when the knee was extended, as illustrated in Fig~\ref{squattotstand}. We used the same cost as in the unassisted case; no motion was tracked. With the assistive device, the motion was achieved with lower muscle activity. The optimal spring stiffness was 90 N-m/rad.
+Next, we added a torsional spring to the knee and solved for the optimal motion, muscle activations, and spring stiffness. The spring was in equilibrium when the knee was extended, as illustrated in Fig~\ref{squattostand}. We used the same cost as in the unassisted case; no motion was tracked. With the assistive device, the motion was achieved with lower muscle activity. The optimal spring stiffness was 90 N-m/rad.
 
 Both predictions converged in 3 minutes. Moco's ability to rapidly predict motions and optimize device parameters makes it a valuable tool for designing assistive devices.
 

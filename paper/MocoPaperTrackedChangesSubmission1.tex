@@ -1,7 +1,7 @@
 % Template for PLoS
 %DIF LATEXDIFF DIFFERENCE FILE
-%DIF DEL MocoPaperSubmission0.tex   Sun Aug 23 12:32:58 2020
-%DIF ADD MocoPaper.tex              Mon Aug 24 12:21:17 2020
+%DIF DEL MocoPaperSubmission0.tex   Mon Aug 24 12:40:08 2020
+%DIF ADD MocoPaper.tex              Mon Aug 24 12:24:09 2020
 % Version 3.5 March 2018
 %
 % % % % % % % % % % % % % % % % % % % % % %
@@ -324,9 +324,7 @@ Musculoskeletal simulations are used in many different applications, ranging fro
 % Author Summary not valid for PLOS ONE submissions.
 % \section*{Author summary}
 
-\DIFdelbegin %DIFDELCMD < \linenumbers
-%DIFDELCMD < %%%
-\DIFdelend %DIF >  TODO \linenumbers
+\linenumbers
 
 % Use "Eq" instead of "Equation" for equation citations.
 \section*{Introduction}
@@ -598,7 +596,7 @@ We next weakened the ankle dorsiflexor muscles (tibialis anterior, extensor digi
 
 \subsection*{Predicting and assisting a squat-to-stand motion}
 
-To show that Moco can predict motions and optimize parameters of a model, we predicted a squat-to-stand motion that minimized a combination of \DIFaddbegin \DIFadd{muscle }\DIFaddend effort, expressed as the sum of squared excitations \DIFaddbegin \DIFadd{(weight: 1.0)}\DIFaddend , and the duration of the motion \DIFaddbegin \DIFadd{(weight: 1.0)}\DIFaddend . The initial pose was prescribed to be squatting~\cite{Fregly:2015}, and the final pose was prescribed to be upright standing. No motion was tracked. The model contained a torso and a single leg \DIFdelbegin \DIFdel{with }\DIFdelend \DIFaddbegin \DIFadd{actuated by }\DIFaddend 9 muscles \DIFdelbegin \DIFdel{obeying activation dynamicsand }\DIFdelend \DIFaddbegin \DIFadd{with activation dynamics; 6 of these muscles had }\DIFaddend compliant tendon dynamics \DIFdelbegin \DIFdel{; muscle strengths were based on those }\DIFdelend \DIFaddbegin \DIFadd{(hamstrings, rectus femoris, vasti, gastrocnemius, soleus, and tibialis anterior). Muscle strengths were taken }\DIFaddend from a previous study~\cite{Ong:2019} \DIFdelbegin \DIFdel{. We used Moco's default initial guess , in which each variable's value is the }\DIFdelend \DIFaddbegin \DIFadd{and doubled to model both legs as one. We handled foot--ground contact by fixing the foot of the model to the ground with a weld joint. The model contained the same kinematic constraints dictating patellar motion as described in the previous result. The initial guess for the kinematic variables was the }\DIFaddend midpoint of the \DIFdelbegin \DIFdel{variable's bounds }\DIFdelend \DIFaddbegin \DIFadd{bounds on the variables; the initial guess for muscle excitations and activations was 0.05}\DIFaddend . The predicted motion and muscle activations are shown in Fig~\DIFdelbegin \DIFdel{\ref{squattotstand} }\DIFdelend \DIFaddbegin \DIFadd{\ref{squattostand} }\DIFaddend (black lines). As expected\DIFaddbegin \DIFadd{~\mbox{%DIFAUXCMD
+To show that Moco can predict motions and optimize parameters of a model, we predicted a squat-to-stand motion that minimized a combination of \DIFaddbegin \DIFadd{muscle }\DIFaddend effort, expressed as the sum of squared excitations \DIFaddbegin \DIFadd{(weight: 1.0)}\DIFaddend , and the duration of the motion \DIFaddbegin \DIFadd{(weight: 1.0)}\DIFaddend . The initial pose was prescribed to be squatting~\cite{Fregly:2015}, and the final pose was prescribed to be upright standing. No motion was tracked. The model contained a torso and a single leg \DIFdelbegin \DIFdel{with }\DIFdelend \DIFaddbegin \DIFadd{actuated by }\DIFaddend 9 muscles \DIFdelbegin \DIFdel{obeying activation dynamicsand }\DIFdelend \DIFaddbegin \DIFadd{with activation dynamics; 6 of these muscles had }\DIFaddend compliant tendon dynamics \DIFdelbegin \DIFdel{; muscle strengths were based on those }\DIFdelend \DIFaddbegin \DIFadd{(hamstrings, rectus femoris, vasti, gastrocnemius, soleus, and tibialis anterior). Muscle strengths were taken }\DIFaddend from a previous study~\cite{Ong:2019} \DIFdelbegin \DIFdel{. We used Moco's default initial guess , in which each variable's value is the }\DIFdelend \DIFaddbegin \DIFadd{and doubled to model both legs as one. We handled foot--ground contact by fixing the foot of the model to the ground with a weld joint. The model contained the same kinematic constraints dictating patellar motion as described in the previous result. The initial guess for the kinematic variables was the }\DIFaddend midpoint of the \DIFdelbegin \DIFdel{variable's bounds }\DIFdelend \DIFaddbegin \DIFadd{bounds on the variables; the initial guess for muscle excitations and activations was 0.05}\DIFaddend . The predicted motion and muscle activations are shown in Fig~\ref{squattostand} (black lines). As expected\DIFaddbegin \DIFadd{~\mbox{%DIFAUXCMD
 \cite{Yavuz:2017}}\hspace{0pt}%DIFAUXCMD
 }\DIFaddend , extensor muscles such as the gluteus maximus, hamstrings, and vasti exhibited \DIFdelbegin \DIFdel{the greatest }\DIFdelend \DIFaddbegin \DIFadd{substantial }\DIFaddend activity.
 
@@ -610,13 +608,11 @@ To show that Moco can predict motions and optimize parameters of a model, we pre
         \caption{{\bf Predicting and assisting a squat-to-stand motion.}
             Left: We predicted a squat-to-stand motion with prescribed initial and final poses that minimized the sum of squared muscle excitations and final time, then added a torsional spring to the knee and solved for the optimal spring stiffness $k$. Right: The activations of key muscles throughout the motion without (black) and with (blue) the assistive spring show that the spring allowed gluteus maximus and vasti activity to decrease substantially.
         }
-        \DIFdelbeginFL %DIFDELCMD < \label{squattotstand}
-%DIFDELCMD <     %%%
-\DIFdelendFL \DIFaddbeginFL \label{squattostand}
-    \DIFaddendFL % \end{adjustwidth}
+        \label{squattostand}
+    % \end{adjustwidth}
 \end{figure}
 
-Next, we added a torsional spring to the knee and solved for the optimal motion, muscle activations, and spring stiffness. The spring was in equilibrium when the knee was extended, as illustrated in Fig~\DIFdelbegin \DIFdel{\ref{squattotstand}}\DIFdelend \DIFaddbegin \DIFadd{\ref{squattostand}}\DIFaddend . We used the same cost as in the unassisted case; no motion was tracked. With the assistive device, the motion was achieved with lower muscle activity. The optimal spring stiffness was 90 N-m/rad.
+Next, we added a torsional spring to the knee and solved for the optimal motion, muscle activations, and spring stiffness. The spring was in equilibrium when the knee was extended, as illustrated in Fig~\ref{squattostand}. We used the same cost as in the unassisted case; no motion was tracked. With the assistive device, the motion was achieved with lower muscle activity. The optimal spring stiffness was 90 N-m/rad.
 
 Both predictions converged in 3 minutes. \DIFdelbegin \DIFdel{Moco's }\DIFdelend \DIFaddbegin \DIFadd{The }\DIFaddend ability to rapidly predict motions and optimize device parameters makes \DIFdelbegin \DIFdel{it }\DIFdelend \DIFaddbegin \DIFadd{Moco }\DIFaddend a valuable tool for designing assistive devices.
 

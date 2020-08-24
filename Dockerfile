@@ -28,7 +28,10 @@ RUN git clone https://github.com/opensim-org/opensim-moco.git /opensim-moco \
         && cd /opensim-moco \
         && git checkout 0.4.0
 
+COPY ./opensim-moco-eigen-url.patch eigen-url.patch
+
 RUN cd /opensim-moco \
+        && patch -p1 < ../eigen-url.patch \
         && git submodule update --init \
         && mkdir ../moco_dependencies_build \
         && cd ../moco_dependencies_build \

@@ -1,7 +1,7 @@
 % Template for PLoS
 %DIF LATEXDIFF DIFFERENCE FILE
 %DIF DEL MocoPaperSubmission1.tex   Tue Oct 13 22:53:25 2020
-%DIF ADD MocoPaper.tex              Fri Oct 16 23:45:45 2020
+%DIF ADD MocoPaper.tex              Mon Oct 26 19:56:12 2020
 % Version 3.5 March 2018
 %
 % % % % % % % % % % % % % % % % % % % % % %
@@ -320,7 +320,10 @@ Musculoskeletal simulations are used in many different applications, ranging fro
 % Please keep the Author Summary between 150 and 200 words
 % Use first person. PLOS ONE authors please skip this step.
 % Author Summary not valid for PLOS ONE submissions.
-% \section*{Author summary}
+%DIF <  \section*{Author summary}
+\DIFaddbegin \section*{\DIFadd{Author summary}}
+\DIFadd{Computer simulation has become an increasingly popular tool for studying the musculoskeletal system. Simulations are used to study the role of muscles in walking and running, to analyze the gait of individuals with neurological disease, and to design prostheses and exoskeletons. Historically, researchers have relied on experimental data to generate simulations and estimate muscle activity. Modern simulation approaches based on the direct collocation optimal control method allow researchers to not only estimate muscle activity, but also predict new motions without the need for experimental data. However, direct collocation methods are difficult and time-consuming to implement and require expertise in optimal control and optimization theory. Here we introduce OpenSim Moco, an open source software package that makes predicting new motions accessible to those without an optimal control background. Moco leverages the existing modeling tools offered by the OpenSim musculoskeletal modeling package and provides an easy-to-use interface that facilitates generating and sharing simulation pipelines. Moco is modular and easily extensible and includes a testing suite that solves problems with known solutions. We provide examples including predicting muscle activity that minimizes knee loading, predicting how muscle weakness affects normal walking, and optimizing a knee exoskeleton to assist a squat-to-stand motion.
+}\DIFaddend 
 
 \linenumbers
 

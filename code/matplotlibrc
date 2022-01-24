@@ -1,7 +1,0 @@
-# Matplotlib's default backend requires a DISPLAY / Xserver.
-backend : Agg
-font.sans-serif : Arial, Helvetica, sans-serif
-font.size : 8
-axes.titlesize : 8
-axes.labelsize : 8
-image.cmap : tab10
